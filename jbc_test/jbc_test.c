@@ -1,5 +1,5 @@
 /*
- * jbc_tester.c     the jbc tester app frontend
+ * jbc_test.c       the jbc tester app frontend
  *
  * part of samiam - the fast sam interpreter
  *
@@ -27,7 +27,6 @@
  */
 
 #include <stdio.h>
-#include <string.h>
 #include <sam.h>
 
 #include "libjbr.h"

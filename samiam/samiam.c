@@ -72,11 +72,13 @@ main(int	 argc,
 
     if (argc > 1 && (strcmp (argv[1], "-q") == 0)) {
 	quiet = 1;
-	++argv; --argc;
+	++argv;
+	--argc;
     }
     if (argc > 1) {
 	file = argv[1];
-	++argv; --argc;
+	++argv;
+	--argc;
     }
     if (argc > 1) {
 	usage();

@@ -632,17 +632,6 @@ sam_heap_pointer_new(size_t start,
     return p;
 }
 
-static void
-sam_heap_pointer_print(/*@null@*/ sam_heap_pointer *p)
-{
-    if (p == NULL) {
-	fputs("NULL\n", stderr);
-	return;
-    }
-    fprintf(stderr, "( %u, %u ) -> ", (unsigned)p->start, (unsigned)p->size);
-    sam_heap_pointer_print(p->next);
-}
-
 /** Update the linked list of pointers to used locations in the heap to
  * reflect a newly allocated or freed block. */
 static sam_heap_pointer *
@@ -2603,12 +2592,6 @@ sam_stack_trace(const sam_execution_state *s)
 	fputc('\n', stderr);
     }
     fputc('\n', stderr);
-    /*
-       fputs("Free heap locations: ", stderr);
-       sam_heap_pointer_print(s->heap->free_list);
-       fputs("Used heap locations: ", stderr);
-       sam_heap_pointer_print(s->heap->used_list);
-       */
 }
 
 static sam_int

@@ -1,5 +1,6 @@
 /*
  * spawn.c          launch many instances of samiam in parallel
+ *		    (deprecated in favor of tester.pl)
  *
  * part of samiam - the fast sam interpreter
  *
