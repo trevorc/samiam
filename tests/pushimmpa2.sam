@@ -1,0 +1,6 @@
+PUSHIMMPA "label"
+JUMPIND
+PUSHIMM 5
+label:
+PUSHIMM 9
+STOP

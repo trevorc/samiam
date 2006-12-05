@@ -1,0 +1,5 @@
+PUSHIMMSTR "hello world"
+DUP
+WRITESTR
+FREE
+STOP

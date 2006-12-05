@@ -1,0 +1,6 @@
+PUSHIMM 2 // pushes 2
+// this doesn't
+PUSHIMM // push
+2 // ADD // psych
+SUB
+STOP

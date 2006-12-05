@@ -1,0 +1,15 @@
+SEV  NUM DESC
+LOW  00  no argument parsing in samiam.
+MED  01  multiple labels
+HI   02  shitty error messages for parsing
+LOW  03  c string parsing "hello.\n"
+LOW  04  character parsing PUSHIMMCH'a'STOP
+HI   05  m1/m2 confusion in sam_op_add sam_integer_arithmetic
+LOW  06  ordering of sam_op_*()
+MED  09  ieee 754 floating point exceptions not handled.
+HI   10  floating pointer < and > might be wrong.
+HI   11  sam_round might be wrong.
+HI-C 13  remove items from this list
+MED  14  instructions should manipulate the pc, not a for loop.
+MED  15  popsp should be able to cope with integer operands
+LOW  16  separate io functions from sam_*.c
