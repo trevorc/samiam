@@ -17,6 +17,9 @@ typedef int (*sam_write_str_func)(char *s);
 /**
  *  Input/output callbacks. Used by various i/o opcodes.
  */
+typedef struct {
+ *  Input/output callbacks. Used by various io opcodes.
+    /*@null@*/ /*@dependent@*/ sam_read_float_func  read_float_func;
     /*@null@*/ /*@dependent@*/ sam_read_char_func   read_char_func;
     sam_read_int_func	    read_int_func;
     sam_read_float_func	    read_float_func;
@@ -28,5 +31,8 @@ typedef int (*sam_write_str_func)(char *s);
     sam_write_str_func	    write_str_func;
  *  Entry point to libsam.
  *
+ *  @param options The bitwise OR of the flags controlling libsam's
+ *		   behavior.
+		    /*@null@*/ sam_io_funcs *io_funcs);
 
 		    /*@null@*/ const char  *file,

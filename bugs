@@ -13,3 +13,5 @@ T    HI   11  sam_round might be wrong.
 T    MED  14  instructions should manipulate the pc, not a for loop.
      MED  15  popsp should be able to cope with integer operands
      LOW  16  separate io functions from sam_*.c
+     MED  17  document everything!
+     LOW  18  dynamic loading either needs to be removed entirely or fixed.

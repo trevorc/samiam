@@ -2626,8 +2626,9 @@ sam_execute(/*@in@*/ sam_array	  *instructions,
     s.labels = labels;
     s.io_funcs = io_funcs;
 
-    for (s.pc = 0; s.pc < s.program->len && err == 0; ++s.pc) {
+    while (s.pc < s.program->len && err == 0) {
 	err = ((sam_instruction *)s.program->arr[s.pc])->handler(&s);
+	++s.pc;
     }
     sam_check_for_leaks(&s);
     if (err == 0) {

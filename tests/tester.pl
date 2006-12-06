@@ -2,7 +2,7 @@
 use strict;
 use warnings;
 
-my $app = "../bin/samiam";
+my $app = "../samiam/samiam";
 my $filename = "tests.db";
 my @tests = ();
 my @pids = ();
