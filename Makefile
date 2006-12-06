@@ -12,6 +12,9 @@ install:
 	$(INSTALL) -vd $(DESTDIR)$(PREFIX)/bin
 	$(INSTALL) -v libsam/libsam.so$(VERSION) $(DESTDIR)$(PREFIX)/lib
 	$(INSTALL) -v samiam/samiam $(DESTDIR)$(PREFIX)/bin
+	( cd $(DESTDIR)$(PREFIX)/lib && \
+	  ln -sf libsam.so$(VERSION) libsam.so$(MAJOR) && \
+	  ln -sf libsam.so$(VERSION) libsam.so )
 
 uninstall:
 	$(RM) $(PREFIX)/lib/libsam.so$(VERSION)
