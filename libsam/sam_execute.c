@@ -1024,6 +1024,7 @@ sam_integer_arithmetic(sam_execution_state		*s,
 	    break;
 	case SAM_OP_GREATER:
 	    m1->value.i = m1->value.i > m2->value.i;
+	    break;
 	case SAM_OP_LESS:
 	    m1->value.i = m1->value.i < m2->value.i;
 	    break;
@@ -2264,7 +2265,7 @@ sam_op_writestr(sam_execution_state *s)
 {
     sam_memory_location *m;
     sam_memory_address   ma;
-    size_t		 i = 0, len = 0;
+    size_t		 i, len = 0;
 
     if ((m = sam_pop(s)) == NULL) {
 	return sam_error_stack_underflow();
@@ -2280,6 +2281,7 @@ sam_op_writestr(sam_execution_state *s)
     if (ma.index >= s->heap.a.len) {
 	return sam_error_segmentation_fault(ma);
     }
+    i = ma.index;
 
     if (s->io_funcs->write_str_func == NULL) {
 	for (;;) {
@@ -2301,22 +2303,22 @@ sam_op_writestr(sam_execution_state *s)
 	/* XXX only until string parsing is fixed */
 	return sam_putchar('\n');
     }
-    for (;;) {
-	m = s->heap.a.arr[len];
-	if (m == NULL || m->value.c == '\0') {
-	    break;
-	}
-	if (++len == s->heap.a.len) {
+    for (len = 0, i = ma.index; ; ++i, ++len) {
+	if (i == s->heap.a.len) {
 	    ma.index = len;
 	    return sam_error_segmentation_fault(ma);
+	}
+	m = s->heap.a.arr[i];
+	if(m == NULL || m->value.c == '\0') {
+	    break;
 	}
     }
     {
 	sam_error  rv;
-	char	  *str = sam_malloc(sizeof (len + 1));
+	char	  *str = sam_malloc(len + 1);
 
-	for (i = 0; i < len; ++i) {
-	    m = s->heap.a.arr[i];
+	for (i = 0; i <= len; ++i) {
+	    m = s->heap.a.arr[i + ma.index];
 	    if (m == NULL || m->value.c == '\0') {
 		str[i] = '\0';
 		break;
@@ -2628,6 +2630,8 @@ sam_execute(/*@in@*/ sam_array	  *instructions,
 
     while (s.pc < s.program->len && err == 0) {
 	err = ((sam_instruction *)s.program->arr[s.pc])->handler(&s);
+/*	sam_stack_trace(&s);
+	getchar();*/
 	++s.pc;
     }
     sam_check_for_leaks(&s);
