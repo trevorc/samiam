@@ -74,5 +74,5 @@ main(int	 argc,
 	usage();
 	return 1;
     }
-    return sam_main(1, argv[1], &io_funcs);
+    return sam_main(0, argv[1], &io_funcs);
 }

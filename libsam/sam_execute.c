@@ -2630,8 +2630,6 @@ sam_execute(/*@in@*/ sam_array	  *instructions,
 
     while (s.pc < s.program->len && err == 0) {
 	err = ((sam_instruction *)s.program->arr[s.pc])->handler(&s);
-/*	sam_stack_trace(&s);
-	getchar();*/
 	++s.pc;
     }
     sam_check_for_leaks(&s);
