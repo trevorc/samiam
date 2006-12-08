@@ -46,9 +46,6 @@ readInt(int *n)
 	return -1;
     }
     l = strtol(buffer, &endptr, 0);
-    if (endptr == NULL || *endptr != '\0') {
-	return -1;
-    }
     *n = (int)l;
 
     return 0;
@@ -64,9 +61,6 @@ readFloat(double *f)
 	return -1;
     }
     *f = strtod(buffer, &endptr);
-    if (endptr == NULL || *endptr != '\0') {
-	return -1;
-    }
     return 0;
 }
 

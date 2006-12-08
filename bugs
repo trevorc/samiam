@@ -19,3 +19,5 @@ T    MED  14  instructions should manipulate the pc, not a for loop.
 	      of memory. this doesn't play well with machines with a small amount
 	      of ram or very large heaps or stacks.
      MED  20  the stack doesn't notice when it's overflowed
+     MED  21  lables are not printed in sam_stack_trace
+     MED  22  the allocator is slow and inefficient
