@@ -122,24 +122,25 @@ static sam_label *
 sam_label_new(/*@observer@*/ char *name,
 	      sam_program_address  pa)
 {
-    sam_label *l = sam_malloc(sizeof(sam_label));
+    sam_label *l = sam_malloc(sizeof (sam_label));
     l->name = name;
     l->pa = pa;
     return l;
 }
 
 /*@null@*/ static sam_instruction *
-sam_instruction_new(/*@in@*/ const char *name)
+sam_instruction_new(/*@in@*/ /*@dependent@*/ const char *name)
 {
     sam_instruction *i;
     int j;
 
     for (j = 0; sam_instructions[j].handler != NULL; ++j) {
 	if (strcmp(name, sam_instructions[j].name) == 0) {
-	    i = sam_malloc(sizeof(sam_instruction));
+	    i = sam_malloc(sizeof (sam_instruction));
 	    i->name = name;
 	    i->optype = sam_instructions[j].optype;
 	    i->handler = sam_instructions[j].handler;
+	    i->operand.i = 0;
 	    return i;
 	}
     }
@@ -179,6 +180,7 @@ sam_try_parse_string(/*@in@*/  char **input,
     char *start = *input + 1;
 
     if(**input != '"') {
+	*string = NULL;
 	return FALSE;
     }
 
@@ -247,7 +249,7 @@ sam_try_parse_escape_sequence(char **input,
 	case '"':  /*@fallthrough@*/
 	case '\'': /*@fallthrough@*/
 	case '\\':
-	    *c = *prev;
+	    *c = (int)*prev;
 	    break;
 	case 'a':
 	    *c = (int)'\a';
@@ -287,7 +289,7 @@ sam_try_parse_escape_sequence(char **input,
 	case '8': /*@fallthrough@*/
 	case '9':
 	    n = strtol(prev, &start, base);
-	    *c = n;
+	    *c = (int)n;
 	    break;
 	default:
 	    return FALSE;
@@ -314,7 +316,7 @@ sam_try_parse_char(/*@in@*/ char **input,
 	}
     } else if (*start != '\0') {
 	*c = (int)*start++;
-	if (c == '\0') {
+	if (*c == (int)'\0') {
 	    return FALSE;
 	}
     } else {

@@ -154,11 +154,11 @@ extern void free(/*@only@*/ /*@out@*/ /*@null@*/ void *p);
 /*@only@*/ /*@notnull@*/ extern void *sam_realloc(/*@only@*/ void *p, size_t size);
 extern void sam_array_init(/*@out@*/ sam_array *a);
 extern void sam_array_ins(/*@in@*/ sam_array *a, /*@only@*/ void *m);
-/*@only@*/ extern void *sam_array_rem(sam_array *a);
+/*@only@*/ /*@null@*/ extern void *sam_array_rem(sam_array *a);
 extern void sam_array_free(sam_array *a);
 extern void sam_string_init(/*@out@*/ sam_string *s);
 extern void sam_string_ins(/*@in@*/ sam_string *s, char *src, size_t n);
 extern void sam_string_free(sam_string *s);
-extern char *sam_string_read(/*@in@*/ FILE *in, /*@out@*/ sam_string *s);
+/*@null@*/ extern char *sam_string_read(/*@in@*/ FILE *in, /*@out@*/ sam_string *s);
 
 #endif /* SAM_UTIL_H */

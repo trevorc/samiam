@@ -91,7 +91,7 @@ sam_array_init(sam_array *a)
 
 void
 sam_array_ins(/*@in@*/	 sam_array *a,
-	      /*@null@*/ /*@only@*/ void *m)
+	      /*@only@*/ void *m)
 {
     ++a->len;
     if (a->alloc < a->len) {
@@ -157,7 +157,7 @@ sam_string_free(sam_string *s)
     free(s->data);
 }
 
-char *
+/*@null@*/ char *
 sam_string_read(/*@in@*/  FILE *in,
 		/*@out@*/ sam_string *s)
 {

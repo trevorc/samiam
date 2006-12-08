@@ -635,7 +635,7 @@ sam_heap_pointer_new(size_t start,
 /** Update the linked list of pointers to used locations in the heap to
  * reflect a newly allocated or freed block. */
 static sam_heap_pointer *
-sam_heap_pointer_update(/*@only@*/ sam_heap_pointer *p,
+sam_heap_pointer_update(/*@null@*/ sam_heap_pointer *p,
 			size_t start,
 			size_t size)
 {
@@ -2425,7 +2425,7 @@ const sam_instruction sam_instructions[] = {
     { "PUSHIMMCH",	TYPE_CHAR,  {0}, sam_op_pushimmch  },
     { "PUSHIMMMA",	TYPE_INT,   {0}, sam_op_pushimmma  },
     { "PUSHIMMPA",	TYPE_LABEL |
-	TYPE_INT,   {0}, sam_op_pushimmpa  },
+			TYPE_INT,   {0}, sam_op_pushimmpa  },
     { "PUSHIMMSTR",	TYPE_STR,   {0}, sam_op_pushimmstr },
     { "PUSHSP",		TYPE_NONE,  {0}, sam_op_pushsp	   },
     { "PUSHFBR",	TYPE_NONE,  {0}, sam_op_pushfbr	   },
@@ -2476,13 +2476,13 @@ const sam_instruction sam_instructions[] = {
     { "ISPOS",		TYPE_NONE,  {0}, sam_op_ispos	   },
     { "ISNEG",		TYPE_NONE,  {0}, sam_op_isneg	   },
     { "JUMP",		TYPE_LABEL |
-	TYPE_INT,   {0}, sam_op_jump	   },
+			TYPE_INT,   {0}, sam_op_jump	   },
     { "JUMPC",		TYPE_LABEL |
-	TYPE_INT,   {0}, sam_op_jumpc	   },
+			TYPE_INT,   {0}, sam_op_jumpc	   },
     { "JUMPIND",	TYPE_NONE,  {0}, sam_op_jumpind	   },
     { "RST",		TYPE_NONE,  {0}, sam_op_rst	   },
     { "JSR",		TYPE_LABEL |
-	TYPE_INT,   {0}, sam_op_jsr	   },
+			TYPE_INT,   {0}, sam_op_jsr	   },
     { "JSRIND",		TYPE_NONE,  {0}, sam_op_jsrind	   },
     { "SKIP",		TYPE_NONE,  {0}, sam_op_skip	   },
     { "LINK",		TYPE_NONE,  {0}, sam_op_link	   },

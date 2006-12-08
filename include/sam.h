@@ -21,14 +21,14 @@ typedef struct {
  *  Input/output callbacks. Used by various io opcodes.
     /*@null@*/ /*@dependent@*/ sam_read_float_func  read_float_func;
     /*@null@*/ /*@dependent@*/ sam_read_char_func   read_char_func;
-    sam_read_int_func	    read_int_func;
-    sam_read_float_func	    read_float_func;
-    sam_read_char_func	    read_char_func;
-    sam_read_str_func	    read_str_func;
-    sam_write_int_func	    write_int_func;
-    sam_write_float_func    write_float_func;
-    sam_write_char_func	    write_char_func;
-    sam_write_str_func	    write_str_func;
+    /*@null@*/ /*@dependent@*/ sam_read_str_func    read_str_func;
+    /*@null@*/ /*@dependent@*/ sam_write_int_func   write_int_func;
+    /*@null@*/ /*@dependent@*/ sam_write_float_func write_float_func;
+    /*@null@*/ /*@dependent@*/ sam_write_char_func  write_char_func;
+    /*@null@*/ /*@dependent@*/ sam_write_str_func   write_str_func;
+} sam_io_funcs;
+
+/**
  *  Entry point to libsam.
  *
  *  @param options The bitwise OR of the flags controlling libsam's

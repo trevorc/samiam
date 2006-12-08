@@ -26,8 +26,11 @@
  * SOFTWARE.
  */
 
+#include "../libsam/config.h"
+
 #include <stdio.h>
 #include <stdlib.h>
+
 #include "libjbr.h"
 
 static char buffer[36];
@@ -35,59 +38,87 @@ static char buffer[36];
 int
 readInt(int *n)
 {
+    long l;
+    char *endptr;
+
     printf("Processor Input (enter integer): ");
-    *n = atoi(fgets(buffer, 36, stdin));
+    if (fgets(buffer, 36, stdin) == NULL) {
+	return -1;
+    }
+    l = strtol(buffer, &endptr, 0);
+    if (endptr == NULL || *endptr != '\0') {
+	return -1;
+    }
+    *n = (int)l;
+
     return 0;
 }
 
 int
 readFloat(double *f)
 {
+    char *endptr;
+
     printf("Processor Input (enter float): ");
-    *f = atof(fgets(buffer, 36, stdin));
+    if (fgets(buffer, 36, stdin) == NULL) {
+	return -1;
+    }
+    *f = strtod(buffer, &endptr);
+    if (endptr == NULL || *endptr != '\0') {
+	return -1;
+    }
     return 0;
 }
 
 int
 readChar(char *c)
 {
+    int n;
+
     printf("Processor Input (enter character): ");
-    *c = getchar();
-    getchar();
+    if ((n = getchar()) == EOF) {
+	return -1;
+    }
+    *c = (char)n;
+    if ((n = getchar()) == EOF ||
+	(n != (int)'\n' && ungetc(n, stdin) == EOF)) {
+	return -1;
+    }
+
     return 0;
 }
 
 int
-readString(char **s)
+readString(UNUSED char **s)
 {
-    *s = NULL;
+    printf("Processor Input (enter string): ");
     return 0;
 }
 
 int
 printChar(char c)
 {
-    printf("Processor Output: %c\n",c);
+    printf("Processor Output: %c\n", c);
     return 0;
 }
 
 int
 printFloat(double f)
 {
-    printf("Processor Output: %f\n",f);
+    printf("Processor Output: %f\n", f);
     return 0;
 }
 
 int
 printInt(int i)
 {
-    printf("Processor Output: %i\n",i);
+    printf("Processor Output: %i\n", i);
     return 0;
 }
 
 int
 printString(char *s)
 {
-    printf("Processor Output: %s\n",s);
+    printf("Processor Output: %s\n", s);
     return 0;
 }

@@ -15,3 +15,7 @@ T    MED  14  instructions should manipulate the pc, not a for loop.
      LOW  16  separate io functions from sam_*.c
      MED  17  document everything!
      LOW  18  dynamic loading either needs to be removed entirely or fixed.
+     MED  19  the heap and stack must be allocated as one huge contiguous region
+	      of memory. this doesn't play well with machines with a small amount
+	      of ram or very large heaps or stacks.
+     MED  20  the stack doesn't notice when it's overflowed
