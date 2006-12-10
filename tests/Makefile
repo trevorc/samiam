@@ -1,10 +1,10 @@
 RM=rm -f
 TMPDIR=/tmp
 
+all: equal1.sam
 
-all: tests
-tests: equal1.sam
-	@perl tester.pl
+check: equal1.sam
+	@LD_LIBRARY_PATH=../libsam perl tester.pl
 
 equal1.sam: gen_equal.pl
 	@perl gen_equal.pl

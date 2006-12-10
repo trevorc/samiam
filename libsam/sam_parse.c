@@ -212,7 +212,7 @@ sam_try_parse_number(/*@in@*/ char     **input,
 		     sam_value  *operand,
 		     sam_type	*optype)
 {
-    char     *endptr;
+    char *endptr;
 
     if ((*optype & TYPE_INT) != 0) {
 	operand->i = strtol(*input, &endptr, 0);

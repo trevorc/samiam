@@ -23,10 +23,11 @@ uninstall:
 	$(RM) $(PREFIX)/bin/samiam
 
 check: all
-	$(MAKE) -C tests
+	$(MAKE) -C tests $@
 
 %:
 	$(MAKE) -C libsam $@
 	$(MAKE) -C samiam $@
 	$(MAKE) -C spawn $@
 	$(MAKE) -C jbc_test $@
+	$(MAKE) -C tests $@
