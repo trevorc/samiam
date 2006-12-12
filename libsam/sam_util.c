@@ -1,5 +1,6 @@
 /*
  * sam_util.c       arrays, strings, and value types
+ * $Id$
  *
  * part of samiam - the fast sam interpreter
  *
@@ -24,6 +25,11 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ *
+ * $Log$
+ * Revision 1.3  2006/12/12 23:31:36  trevor
+ * Added the Id and Log tags and copyright notice where they were missing.
+ *
  */
 
 #include "config.h"
