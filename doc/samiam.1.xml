@@ -9,7 +9,9 @@
   <refmeta>
     <refentrytitle><application>samiam</application></refentrytitle>
     <manvolnum>1</manvolnum>
-    <refmiscinfo class="setdesc">User Commands</refmiscinfo>
+    <refmiscinfo class="manual">User Commands</refmiscinfo>
+    <refmiscinfo class="version">1.0</refmiscinfo>
+    <refmiscinfo class="source">samiam.c</refmiscinfo>
   </refmeta>
   <refnamediv>
     <refname><application>samiam</application></refname>
@@ -77,11 +79,6 @@
       inspecting any errors or warnings emitted during execution.</para>
   </refsect1>
   <refsect1>
-    <title>EXAMPLES</title>
-    <para>See tester.pl in the source distribution for an example
-      application of <command>samiam</command>.</para>
-  </refsect1>
-  <refsect1>
     <title>AUTHOR</title>
     <para>Written by Trevor Caira and Jimmy Hartzell.</para>
   </refsect1>
@@ -111,6 +108,6 @@
   <refsect1>
     <title>BUGS</title>
     <para>See the BUGS file provided with the source distribution to see the
-      current known limitations of <command>samiam</command></para>
+      current known limitations of <command>samiam</command>.</para>
   </refsect1>
 </refentry>

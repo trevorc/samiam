@@ -2,7 +2,7 @@
 
 RM=rm -f
 XSLTPROC=xsltproc
-PREFIX=/usr/share/apps/ksgmltools2/docbook/xsl
+PREFIX=/usr/share/xml/docbook/stylesheet/nwalsh
 OUT=samiam.1
 
 all: $(OUT)
