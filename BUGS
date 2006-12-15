@@ -25,3 +25,4 @@ T    MED  14  instructions should manipulate the pc, not a for loop.
      MED  22  the allocator is slow and inefficient
      MED  23  the makefiles are broken on bsd make
      LOW  24  make install assumes the suffixes .so and .gz
+     MED  25  build fails on cygwin due to library linking issues
