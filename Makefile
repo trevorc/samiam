@@ -19,18 +19,17 @@ install:
 	$(INSTALL) -vd $(DESTDIR)$(MANDIR)/man1
 	$(INSTALL) -v libsam/libsam.so$(VERSION) $(DESTDIR)$(LIBDIR)
 	$(INSTALL) -v samiam/samiam $(DESTDIR)$(BINDIR)
-	$(INSTALL) -v 
 	( cd $(DESTDIR)$(LIBDIR) && \
 	  ln -sf libsam.so$(VERSION) libsam.so$(MAJOR) && \
 	  ln -sf libsam.so$(VERSION) libsam.so )
-	$(INSTALL) -v doc/samiam.1.gz $(DESTDIR)$(MANDIR)/man1
+	$(INSTALL) -vm 644 doc/samiam.1 $(DESTDIR)$(MANDIR)/man1
 
 uninstall:
 	$(RM) $(LIBDIR)/libsam.so$(VERSION)
 	$(RM) $(LIBDIR)/libsam.so$(MAJOR)
 	$(RM) $(LIBDIR)/libsam.so
 	$(RM) $(BINDIR)/samiam
-	$(RM) $(MANDIR)/man1/samiam.1.gz
+	$(RM) $(MANDIR)/man1/samiam.1
 
 check: all
 	$(MAKE) -C tests $@
