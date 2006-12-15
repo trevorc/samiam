@@ -1,3 +1,5 @@
+# $Id$
+
 Z=gz
 RM=rm -f
 COMPRESS=gzip

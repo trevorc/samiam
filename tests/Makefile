@@ -1,3 +1,5 @@
+# $Id$
+
 RM=rm -f
 TMPDIR=/tmp
 

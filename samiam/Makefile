@@ -1,3 +1,5 @@
+# $Id$
+
 include ../rul.mk
 
 NAME=samiam
