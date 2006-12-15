@@ -1,26 +1,36 @@
+# $Id$
+
 include rul.mk
 
 DESTDIR=
 PREFIX=/usr/local
+BINDIR=$(PREFIX)/bin
+LIBDIR=$(PREFIX)/lib
+MANDIR=$(PREFIX)/share/man
 INSTALL=install
 
 all:
 clean:
 
 install:
-	$(INSTALL) -vd $(DESTDIR)$(PREFIX)/lib
-	$(INSTALL) -vd $(DESTDIR)$(PREFIX)/bin
-	$(INSTALL) -v libsam/libsam.so$(VERSION) $(DESTDIR)$(PREFIX)/lib
-	$(INSTALL) -v samiam/samiam $(DESTDIR)$(PREFIX)/bin
-	( cd $(DESTDIR)$(PREFIX)/lib && \
+	$(INSTALL) -vd $(DESTDIR)$(LIBDIR)
+	$(INSTALL) -vd $(DESTDIR)$(BINDIR)
+	$(INSTALL) -vd $(DESTDIR)$(MANDIR)
+	$(INSTALL) -vd $(DESTDIR)$(MANDIR)/man1
+	$(INSTALL) -v libsam/libsam.so$(VERSION) $(DESTDIR)$(LIBDIR)
+	$(INSTALL) -v samiam/samiam $(DESTDIR)$(BINDIR)
+	$(INSTALL) -v 
+	( cd $(DESTDIR)$(LIBDIR) && \
 	  ln -sf libsam.so$(VERSION) libsam.so$(MAJOR) && \
 	  ln -sf libsam.so$(VERSION) libsam.so )
+	$(INSTALL) -v doc/samiam.1.gz $(DESTDIR)$(MANDIR)/man1
 
 uninstall:
-	$(RM) $(PREFIX)/lib/libsam.so$(VERSION)
-	$(RM) $(PREFIX)/lib/libsam.so$(MAJOR)
-	$(RM) $(PREFIX)/lib/libsam.so
-	$(RM) $(PREFIX)/bin/samiam
+	$(RM) $(LIBDIR)/libsam.so$(VERSION)
+	$(RM) $(LIBDIR)/libsam.so$(MAJOR)
+	$(RM) $(LIBDIR)/libsam.so
+	$(RM) $(BINDIR)/samiam
+	$(RM) $(MANDIR)/man1/samiam.1.gz
 
 check: all
 	$(MAKE) -C tests $@
@@ -31,3 +41,4 @@ check: all
 	$(MAKE) -C spawn $@
 	$(MAKE) -C jbc_test $@
 	$(MAKE) -C tests $@
+	$(MAKE) -C doc $@

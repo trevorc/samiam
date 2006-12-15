@@ -1,3 +1,5 @@
+# $Id$
+
 CC=gcc
 RM=rm -f
 LDFLAGS=-lm
