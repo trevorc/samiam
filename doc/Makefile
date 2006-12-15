@@ -1,17 +1,14 @@
 # $Id$
 
-Z=gz
 RM=rm -f
-COMPRESS=gzip
-OUT=samiam.1.gz
-
-.SUFFIXES: .$(Z)
+XSLTPROC=xsltproc
+PREFIX=/usr/share/apps/ksgmltools2/docbook/xsl
+OUT=samiam.1
 
 all: $(OUT)
 
 clean:
 	$(RM) $(OUT)
 
-%.$(Z): %
-	$(COMPRESS) -c --best $< >$@
-
+%: %.xml
+	$(XSLTPROC) -nonet $(PREFIX)/manpages/docbook.xsl $<
