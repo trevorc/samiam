@@ -1,0 +1,30 @@
+// Lifted from http://www.cs.cornell.edu/courses/cs212/2002fa/
+
+main: PUSHIMM 0
+      PUSHIMM 0
+      PUSHIMM 5
+      LINK
+      JSR fact
+      POPFBR
+      ADDSP -1
+      STOREOFF 0
+      STOP
+      
+fact: PUSHOFF -1
+      ISNIL
+      JUMPC zer
+      PUSHOFF -1
+      PUSHIMM 0
+      PUSHOFF -1
+      PUSHIMM 1
+      SUB
+      LINK
+      JSR fact
+      POPFBR
+      ADDSP -1
+      TIMES
+      STOREOFF -2
+      JUMPIND
+ zer: PUSHIMM 1
+      STOREOFF -2
+      JUMPIND
