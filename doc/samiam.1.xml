@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- $Id$ -->
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.1.2//EN"
+                   "http://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd">
+<refentry>
+  <refentryinfo>
+    <date>$Date$</date>
+  </refentryinfo>
+  <refmeta>
+    <refentrytitle><application>samiam</application></refentrytitle>
+    <manvolnum>1</manvolnum>
+    <refmiscinfo class="setdesc">User Commands</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname><application>samiam</application></refname>
+    <refpurpose>sam assembly language interpreter</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <refsynopsisdivinfo><date>$Date$</date></refsynopsisdivinfo>
+    <cmdsynopsis>
+      <command>samiam</command>
+      <arg><option>-q</option></arg>
+      <arg rep="repeat"><replaceable class="parameter">samfile</replaceable></arg>
+    </cmdsynopsis>
+  </refsynopsisdiv>
+  <refsect1>
+    <title>DESCRIPTION</title>
+    <para><command>samiam</command>
+      is a fast, portable, and mostly compatible replacement for David Levitan
+      and Ivan Gyurdiev's
+      <citerefentry><refentrytitle>SaM</refentrytitle><manvolnum>1</manvolnum></citerefentry>.
+      This manual documents the standard frontend to
+      <citerefentry><refentrytitle>libsam</refentrytitle><manvolnum>3</manvolnum></citerefentry>,
+      intended for general purpose interpreting. For API documentation and
+      details on the samiam implementation of the sam programming language, see
+      <citerefentry><refentrytitle>libsam</refentrytitle><manvolnum>3</manvolnum></citerefentry>.</para>
+    <para>The design of this interpreter does not mirror SaM. Instead, the
+      interpreter has been packaged as a shared library, accessibly both
+      programmatically using the
+      <citerefentry><refentrytitle>libsam</refentrytitle><manvolnum>3</manvolnum></citerefentry>
+      API and its bindings, and through frontends such as the one documented
+      by this manual. This frontend is intended as a simple general-purpose
+      interface to the interpreter.</para>
+    <para>Unlike SaM, <command>samiam</command> is generally does not
+      accept faulty assembly code, in particular, code which makes
+      illegal accesses to freed or unallocated memory. This is
+      intentional; the original purpose of <command>samiam</command> was
+      to find bugs in a compiler which targets sam.</para>
+  </refsect1>
+  <refsect1>
+    <title>OPTIONS</title>
+    <variablelist>
+      <varlistentry>
+	<term>-q</term>
+	<listitem>
+	  <para>Suppress non-fatal errors. Useful for batch execution.</para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term><replaceable class="parameter">samfile</replaceable></term>
+	<listitem>
+	  <para>Read the file containing sam instructions, typically one per line,
+	    though will accept commands delimited alternatively as documented in
+	    <citerefentry><refentrytitle>libsam</refentrytitle><manvolnum>3</manvolnum></citerefentry>.</para>
+	</listitem>
+      </varlistentry>
+    </variablelist>
+  </refsect1>
+  <refsect1>
+    <title>EXIT STATUS</title>
+    <para><command>samiam</command> returns the exit status of the sam
+      program on success, 253 if there was an error parsing the command
+      line arguments, 254 if there was a problem parsing the sam source,
+      and 255 if no return value could be extracted from the sam program,
+      i.e. the stack was empty on exit. Note that the only way to
+      distinguish the source of a 253, 254 or 255 error code is by
+      inspecting any errors or warnings emitted during execution.</para>
+  </refsect1>
+  <refsect1>
+    <title>EXAMPLES</title>
+    <para>See tester.pl in the source distribution for an example
+      application of <command>samiam</command>.</para>
+  </refsect1>
+  <refsect1>
+    <title>AUTHOR</title>
+    <para>Written by Trevor Caira and Jimmy Hartzell.</para>
+  </refsect1>
+  <refsect1>
+    <title>COPYRIGHT</title>
+    <para>Copyright (C) 2006 Trevor Caira and Jimmy Hartzell.</para>
+    <para>This is free software. See COPYING in the source distribution for the
+      copyright notice.</para>
+  </refsect1>
+  <refsect1>
+    <title>SEE ALSO</title>
+    <para>
+      <citerefentry>
+	<refentrytitle>SaM</refentrytitle>
+	<manvolnum>1</manvolnum>
+      </citerefentry>,
+      <citerefentry>
+	<refentrytitle>gsam</refentrytitle>
+	<manvolnum>1</manvolnum>
+      </citerefentry>,
+      <citerefentry>
+	<refentrytitle>libsam</refentrytitle>
+	<manvolnum>3</manvolnum>
+      </citerefentry>
+    </para>
+  </refsect1>
+  <refsect1>
+    <title>BUGS</title>
+    <para>See the BUGS file provided with the source distribution to see the
+      current known limitations of <command>samiam</command></para>
+  </refsect1>
+</refentry>
