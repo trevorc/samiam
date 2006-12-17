@@ -27,8 +27,14 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.6  2006/12/17 01:54:01  trevor
+ * UNUSED -> /*@unused@*/
+ *
  * Revision 1.5  2006/12/12 23:31:35  trevor
- * Added the $Id$ and $Log$ tags and copyright notice where they were missing.
+ * Added the $Id$ and $Log$
+ * Added the $Id$ and Revision 1.6  2006/12/17 01:54:01  trevor
+ * Added the $Id$ and UNUSED -> /*@unused@*/
+ * Added the $Id$ and tags and copyright notice where they were missing.
  *
  */
 
@@ -89,7 +95,7 @@ readChar(char *c)
 }
 
 int
-readString(UNUSED char **s)
+readString(/*@unused@*/ char **s)
 {
     printf("Processor Input (enter string): ");
     return 0;
