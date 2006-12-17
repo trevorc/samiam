@@ -1,5 +1,12 @@
 $Id$
 
+Key:
+LOW	Would be a nice feature.
+MED	Fix this by the next major version.
+HI	Release-critical bug.
+---	Fixed bug.
+***	Closed bug.
+
 ASGN SEV  NUM DESC
 T    LOW  00  no argument parsing in samiam.
      MED  01  multiple labels
@@ -7,22 +14,24 @@ T    LOW  00  no argument parsing in samiam.
      LOW  03  c string parsing "hello.\n"
      LOW  04  character parsing PUSHIMMCH'a'STOP
 J    ---  05  m1/m2 confusion in sam_op_add sam_integer_arithmetic
-T    LOW  06  ordering of sam_op_*()
-T    MED  09  ieee 754 floating point exceptions not handled.
-T    HI   10  floating pointer < and > might be wrong.
+T    ---  06  ordering of sam_op_*()
+     MED  09  ieee 754 floating point exceptions not handled.
+T    HI   10  floating point < and > might be wrong.
 T    HI   11  sam_round might be wrong.
      HI-C 13  remove items from this list
-T    MED  14  instructions should manipulate the pc, not a for loop.
+     ***  14  instructions should manipulate the pc, not a for loop.
      MED  15  popsp should be able to cope with integer stack inputs
-     LOW  16  separate io functions from sam_*.c
-     MED  17  document everything!
-     LOW  18  dynamic loading either needs to be removed entirely or fixed.
+     HI   16  separate io functions from sam_*.c
+     HI   17  document everything!
+T    ---  18  dynamic loading either needs to be removed entirely or fixed.
      MED  19  the heap and stack must be allocated as one huge contiguous region
 	      of memory. this doesn't play well with machines with a small amount
 	      of ram or very large heaps or stacks.
-     MED  20  the stack doesn't notice when it's overflowed
-     MED  21  lables are not printed in sam_stack_trace
+T    ---  20  the stack doesn't notice when it's overflowed
+     MED  21  labels are not printed in sam_stack_trace
      MED  22  the allocator is slow and inefficient
      MED  23  the makefiles are broken on bsd make
      LOW  24  make install assumes the suffixes .so and .gz
-     MED  25  build fails on cygwin due to library linking issues
+     LOW  25  build fails on cygwin due to library linking issues
+     HI   26  searching for labels is O(n)
+     LOW  27  clean up sam_op_writestr and sam_op_printstr
