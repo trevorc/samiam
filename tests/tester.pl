@@ -27,8 +27,14 @@
 # SOFTWARE.
 #
 # $Log$
+# Revision 1.4  2006/12/17 15:27:26  trevor
+# Compare the return value with the the expected value & 0xff.
+#
 # Revision 1.3  2006/12/12 23:31:36  trevor
-# Added the $Id$ and $Log$ tags and copyright notice where they were missing.
+# Added the $Id$ and $Log$
+# Added the $Id$ and Revision 1.4  2006/12/17 15:27:26  trevor
+# Added the $Id$ and Compare the return value with the the expected value & 0xff.
+# Added the $Id$ and tags and copyright notice where they were missing.
 #
 
 use strict;
@@ -59,8 +65,8 @@ while (<DB>) {
 	    print "couldn't execute $app: $!.\n";
 	} elsif ($? & 127) {
 	    printf "child died with signal %d.\n", ($? & 127);
-	} elsif ($rv != ($? >> 8)) {
-	    printf "%d\t$rv\t\t$test\n", ($? >> 8);
+	} elsif (($? >> 8) != ($rv & 0xff)) {
+	    printf "%d\t%d\t\t$test\n", ($? >> 8), ($rv & 0xff);
 	}
 	exit;
     }
