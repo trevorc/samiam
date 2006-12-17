@@ -27,6 +27,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.10  2006/12/17 15:29:15  trevor
+ * Fixed #11.
+ *
  * Revision 1.9  2006/12/17 13:54:42  trevor
  * Warn about use of uninitialized variables, and initialize them to (int)0.
  *
@@ -154,18 +157,28 @@ typedef enum {
 static int
 sam_round(sam_float f)
 {
-    sam_float fl = (sam_float)floor(f);
+    if (f < 0) {
+	sam_float fl = ceil(f);
 
-    if (f - fl >= .5) {
-	return (int)ceil(f);
+	if (fabs(f - fl) >= .5) {
+	    return floor(f);
+	} else {
+	    return fl;
+	}
     } else {
-	return (int)fl;
+	sam_float fl = floor(f);
+
+	if (fabs(f - fl) >= .5) {
+	    return ceil(f);
+	} else {
+	    return fl;
+	}
     }
 }
 
 static sam_ml *
 sam_ml_new(sam_value v,
-			sam_type  t)
+	   sam_type  t)
 {
     sam_ml *m = sam_malloc(sizeof (sam_ml));
 
