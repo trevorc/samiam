@@ -26,6 +26,10 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.4  2006/12/17 00:15:42  trevor
+ * Added two new types: TYPE_HA and TYPE_SA. Removed TYPE_MA. Shifted values
+ * of types down. Removed dynamic loading defs.
+ *
  * Revision 1.3  2006/12/12 23:31:36  trevor
  * Added the Id and Log tags and copyright notice where they were missing.
  *
@@ -33,6 +37,8 @@
 
 #ifndef SAM_UTIL_H
 #define SAM_UTIL_H
+
+#include <limits.h>
 
 /** Convenience type for code readability. */
 typedef enum {
@@ -63,18 +69,19 @@ typedef struct {
  *  locations.
  */
 typedef enum {
-    TYPE_NONE  = 1 << 0, /**< A null operand. */
-    TYPE_INT   = 1 << 1, /**< An integer type. */
-    TYPE_FLOAT = 1 << 2, /**< An IEEE 754 floating point number. */
-    TYPE_CHAR  = 1 << 3, /**< A single ASCII character. */
-    TYPE_LABEL = 1 << 4, /**< A double-quote delimited string or bare
+    TYPE_NONE,		/**< A null operand. */
+    TYPE_INT   = 1 << 0, /**< An integer type. */
+    TYPE_FLOAT = 1 << 1, /**< An IEEE 754 floating point number. */
+    TYPE_CHAR  = 1 << 2, /**< A single ASCII character. */
+    TYPE_LABEL = 1 << 3, /**< A double-quote delimited string or bare
 			  *   label stored as a C string pointing to a
 			  *   program address. */
-    TYPE_STR   = 1 << 5, /**< A list of characters to be allocated on the
+    TYPE_STR   = 1 << 4, /**< A list of characters to be allocated on the
 			  *   heap and represented as a memory address. */
-    TYPE_MA    = 1 << 6, /**< A memory address pointing to a location on
-			  *   the stack (nonnegative) or a location on
-			  *   the heap (negative) */
+    TYPE_SA    = 1 << 5, /**< A memory address pointing to a location on
+			  *   the stack. */
+    TYPE_HA    = 1 << 6, /**< A memory address pointing to a location on
+			  *   the heap. */
     TYPE_PA    = 1 << 7	 /**< A program address pointing to an
 			  *   instruction in the source file. */
 } sam_type;
@@ -87,23 +94,23 @@ typedef long sam_int;
 typedef int sam_char;
 
 /** An index into the array of instructions. */
-typedef size_t sam_program_address;
+typedef size_t sam_pa;
 
-/** An index into the stack or the heap. */
-typedef struct {
-    unsigned stack:  1;	/** sam_bool#TRUE if this is a stack address,
-			 *  sam_bool#FALSE if it's a heap address. */
-    unsigned index: 15;	/** The index into the corresponding array. */
-} sam_memory_address;
+/** An index into the heap. */
+typedef size_t sam_ha;
+
+/** An index into the stack. */
+typedef size_t sam_sa;
 
 /** A value on the stack, heap or as an operand. */
 typedef union {
-    sam_int		 i;
-    sam_float		 f;
-    sam_char		 c;
-    char		*s;
-    sam_program_address	 pa;
-    sam_memory_address	 ma;
+    sam_int   i;
+    sam_float f;
+    sam_char  c;
+    char     *s;
+    sam_pa    pa;
+    sam_ha    ha;
+    sam_sa    sa;
 } sam_value;
 
 struct _sam_instruction;
@@ -122,6 +129,11 @@ typedef enum {
 			 *   the heap. */
     SAM_ESTACK_UNDRFLW,	/**< An attempt was made to pop a value off the
 			 *   stack when the stack contained no items */
+    SAM_ESTACK_OVERFLW,	/**< An attempt was made to push a value onto
+			 *   the stack when the stack was already at its
+			 *   capacity. */
+    SAM_ENOMEM,		/**< An allocation failed because the heap was at
+			 *   its capacity. */
     SAM_ETYPE_CONVERT,	/**< An unexpected source type was found when 
 			 * using a type conversion operator. */
     SAM_EFINAL_STACK,	/**< Program execution terminated with more than
@@ -135,12 +147,6 @@ typedef enum {
     SAM_ENOSYS		/**< This opcode is not supported on this
 			 *   system because support for it was not
 			 *   compiled in. */
-#if defined(SAM_EXTENSIONS) && defined(HAVE_DLFCN_H)
-    ,
-    SAM_EDLOPEN,	/**< There was a problem interfacing with the
-			 *   dynamic linking loader. */
-    SAM_EDLSYM		/**< The given symbol could not be resolved. */
-#endif /* SAM_EXTENSIONS && HAVE_DLFCN_H */
 } sam_error;
 
 /** An opcode handler function. This type of function is paired with
@@ -167,7 +173,7 @@ typedef struct _sam_instruction {
 typedef struct {
     /*@observer@*/ char *name;	/**< The pointer into the input to the
 				 *   name of the label. */
-    sam_program_address pa;	/**< The index into the array of
+    sam_pa pa;			/**< The index into the array of
 				 *   instructions pointing to the
 				 *   following instruction from the
 				 *   source. */
