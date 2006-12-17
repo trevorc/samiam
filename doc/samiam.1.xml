@@ -75,7 +75,7 @@
       line arguments, 254 if there was a problem parsing the sam source,
       and 255 if no return value could be extracted from the sam program,
       i.e. the stack was empty on exit. Note that the only way to
-      distinguish the source of a 253, 254 or 255 error code is by
+      distinguish the source of a 253, 254 or 255 exit code is by
       inspecting any errors or warnings emitted during execution.</para>
   </refsect1>
   <refsect1>
