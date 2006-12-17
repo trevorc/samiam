@@ -27,14 +27,14 @@
 # SOFTWARE.
 #
 # $Log$
+# Revision 1.5  2006/12/17 15:29:36  trevor
+# Typo.
+#
 # Revision 1.4  2006/12/17 15:27:26  trevor
 # Compare the return value with the the expected value & 0xff.
 #
 # Revision 1.3  2006/12/12 23:31:36  trevor
-# Added the $Id$ and $Log$
-# Added the $Id$ and Revision 1.4  2006/12/17 15:27:26  trevor
-# Added the $Id$ and Compare the return value with the the expected value & 0xff.
-# Added the $Id$ and tags and copyright notice where they were missing.
+# Added the Id and Log tags and copyright notice where they were missing.
 #
 
 use strict;
