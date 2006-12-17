@@ -27,6 +27,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.9  2006/12/17 13:54:42  trevor
+ * Warn about use of uninitialized variables, and initialize them to (int)0.
+ *
  * Revision 1.8  2006/12/17 00:39:29  trevor
  * Removed dynamic loading code (Closes: #18). Check return values of sam_push()
  * for overflow, added heap overflow checks (Closes: #20).
@@ -395,6 +398,16 @@ sam_error_final_stack_state(void)
 	stack_trace = TRUE;
     }
     return SAM_EFINAL_STACK;
+}
+
+static void
+sam_error_uninitialized(sam_execution_state *s)
+{
+    if ((options & quiet) == 0) {
+	fprintf(stderr,
+		"warning: use of uninitialized memory at program address "
+		"%d.\n", s->pc);
+    }
 }
 
 static void
@@ -827,6 +840,16 @@ sam_addition(sam_execution_state *s,
     if ((m1 = sam_pop(s)) == NULL) {
 	free(m2);
 	return sam_error_stack_underflow();
+    }
+    if (m1->type == TYPE_NONE) {
+	sam_error_uninitialized(s);
+	m1->type = TYPE_INT;
+	m1->value.i = 0;
+    }
+    if (m2->type == TYPE_NONE) {
+	sam_error_uninitialized(s);
+	m2->type = TYPE_INT;
+	m2->value.i = 0;
     }
     switch (m1->type) {
 	case TYPE_PA:
