@@ -17,6 +17,7 @@ swap.sam	6
 addsp.sam	13
 addsp2.sam	12
 addsp3.sam	10
+addsp4.sam	12
 comments.sam	0
 malloc.sam	5
 pushind.sam	142
@@ -87,3 +88,4 @@ quote-label.sam	87
 writestr.sam	0
 writestr2.sam	0
 fac.sam		120
+free.sam	2
