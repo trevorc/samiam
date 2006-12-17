@@ -17,7 +17,7 @@ J    ---  05  m1/m2 confusion in sam_op_add sam_integer_arithmetic
 T    ---  06  ordering of sam_op_*()
      MED  09  ieee 754 floating point exceptions not handled.
 T    HI   10  floating point < and > might be wrong.
-T    HI   11  sam_round might be wrong.
+T    ---  11  sam_round IS wrong.
      HI-C 13  remove items from this list
      ***  14  instructions should manipulate the pc, not a for loop.
      MED  15  popsp should be able to cope with integer stack inputs
