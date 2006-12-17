@@ -27,14 +27,14 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.7  2006/12/17 14:00:33  trevor
+ * cleaned up log message.
+ *
  * Revision 1.6  2006/12/17 01:54:01  trevor
- * UNUSED -> /*@unused@*/
+ * UNUSED -> *@unused@*
  *
  * Revision 1.5  2006/12/12 23:31:35  trevor
- * Added the $Id$ and $Log$
- * Added the $Id$ and Revision 1.6  2006/12/17 01:54:01  trevor
- * Added the $Id$ and UNUSED -> /*@unused@*/
- * Added the $Id$ and tags and copyright notice where they were missing.
+ * Added the Id and Log tags and copyright notice where they were missing.
  *
  */
 
