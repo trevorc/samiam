@@ -6,7 +6,7 @@ TMPDIR=/tmp
 all: equal1.sam
 
 check: equal1.sam
-	@LD_LIBRARY_PATH=../libsam perl tester.pl
+	@LD_PRELOAD=../libsam/libsam.so.1.0.0 perl tester.pl
 
 equal1.sam: gen_equal.pl
 	@perl gen_equal.pl
