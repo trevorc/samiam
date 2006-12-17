@@ -26,8 +26,11 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.3  2006/12/17 02:53:26  trevor
+ * UNUSED was unused. so i removd it.
+ *
  * Revision 1.2  2006/12/12 23:31:36  trevor
- * Added the $Id$ and $Log$ tags and copyright notice where they were missing.
+ * Added the Id and Log tags and copyright notice where they were missing.
  *
  */
 
@@ -40,9 +43,7 @@
 #define HAVE_MMAN_H	1
 #define HAVE_UNISTD_H	1
 #define HAVE_LOCALE_H	1
-#undef HAVE_DLFCN_H
-
-#undef SAM_EXTENSIONS
+#define SAM_EXTENSIONS	1
 
 #if !defined(__WORDSIZE)
 # define __WORDSIZE 32
@@ -57,10 +58,10 @@ typedef float sam_float;
 # define SAM_EPSILON FLT_EPSILON
 #endif /* __WORDSIZE == 64 */
 
-#if defined(__GNUC__)
-# define UNUSED /*@unused@*/ __attribute__((__unused__))
-#else 
-# define UNUSED /*@unused@*/
-#endif /* __GNUC__ */
+/** Greatest value a sam_heap_address can hold. */
+#define SAM_HEAP_PTR_MAX ULONG_MAX
+
+/** Greatest value a sam_stack_address can hold. */
+#define SAM_STACK_PTR_MAX ULONG_MAX
 
 #endif /* CONFIG_H */
