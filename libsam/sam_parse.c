@@ -27,6 +27,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.5  2006/12/17 00:44:15  trevor
+ * Remove dynamic loading #includes. Rename sam_program_address to sam_pa.
+ *
  * Revision 1.4  2006/12/12 23:31:36  trevor
  * Added the Id and Log tags and copyright notice where they were missing.
  *
@@ -48,10 +51,6 @@
 #if defined(HAVE_UNISTD_H) || defined(HAVE_MMAN_H)
 # include <unistd.h>
 #endif /* HAVE_UNISTD_H || HAVE_MMAN_H */
-
-#if defined(HAVE_DLFCN_H)
-# include <dlfcn.h>
-#endif /* HAVE_DLFCN_H */
 
 #include "sam_util.h"
 #include "sam_main.h"
@@ -126,7 +125,7 @@ sam_error_operand(const char *opcode,
 
 static sam_label *
 sam_label_new(/*@observer@*/ char *name,
-	      sam_program_address  pa)
+	      sam_pa pa)
 {
     sam_label *l = sam_malloc(sizeof (sam_label));
     l->name = name;
@@ -537,8 +536,8 @@ sam_parse(sam_string *s,
 	  sam_array  *instructions,
 	  sam_array  *labels)
 {
-    sam_program_address	 cur_line = 0;
-    char		*input;
+    sam_pa  cur_line = 0;
+    char   *input;
 
     if (file == NULL) {
 	input = sam_string_read(stdin, s);
