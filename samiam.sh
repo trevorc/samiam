@@ -1,5 +1,5 @@
 #!/bin/sh
 # $Id$
 
-export LD_LIBRARY_PATH=libsam
+export LD_PRELOAD=libsam/libsam.so.1.0.0
 samiam/samiam $@
