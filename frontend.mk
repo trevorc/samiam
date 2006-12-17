@@ -1,3 +1,5 @@
+# $Id$
+
 LDFLAGS+=-L../libsam -lsam
 
 all: $(NAME)
