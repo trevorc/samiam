@@ -91,3 +91,8 @@ writestr.sam	0
 writestr2.sam	0
 fac.sam		120
 free.sam	2
+cmpf.sam	0
+cmpf2.sam	-1
+cmpf3.sam	-1
+cmpf4.sam	1
+cmpf5.sam	1
