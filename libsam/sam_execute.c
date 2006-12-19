@@ -27,6 +27,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.14  2006/12/19 08:33:56  anyoneeb
+ * Some splint warning fixes.
+ *
  * Revision 1.13  2006/12/19 07:28:09  anyoneeb
  * Split sam_value into sam_op_value and sam_ml_value.
  *
@@ -187,24 +190,24 @@ typedef enum {
  * Portable implementation of round(3) for non-C99 and non-POSIX.1-2001
  * implementing systems (but returns int instead of double).
  */
-static int
+static sam_int
 sam_round(sam_float f)
 {
     if (f < 0) {
-	sam_float fl = ceil(f);
+	sam_float fl = (sam_float) ceil(f);
 
 	if (fabs(f - fl) >= .5) {
-	    return floor(f);
+	    return (sam_int) floor(f);
 	} else {
-	    return fl;
+	    return (sam_int) fl;
 	}
     } else {
-	sam_float fl = floor(f);
+	sam_float fl = (sam_float) floor(f);
 
 	if (fabs(f - fl) >= .5) {
-	    return ceil(f);
+	    return (sam_int) ceil(f);
 	} else {
-	    return fl;
+	    return (sam_int) fl;
 	}
     }
 }
@@ -478,7 +481,7 @@ sam_error_uninitialized(sam_execution_state *s)
     if ((options & quiet) == 0) {
 	fprintf(stderr,
 		"warning: use of uninitialized memory at program address "
-		"%d.\n", s->pc);
+		"%d.\n", (int) s->pc);
     }
 }
 

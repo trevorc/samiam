@@ -3,7 +3,7 @@
  *
  * part of samiam - the fast sam interpreter
  *
- * Copyright (c) 2006 Trevor Caira, Jimmy Hartzell
+ * Copyright (c) 2006 Trevor Caira, Jimmy Hartzell, Daniel Perelman
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -26,6 +26,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.4  2006/12/19 08:33:56  anyoneeb
+ * Some splint warning fixes.
+ *
  * Revision 1.3  2006/12/17 02:53:26  trevor
  * UNUSED was unused. so i removd it.
  *
@@ -39,6 +42,7 @@
 
 #include <limits.h>
 #include <float.h>
+#include <stdint.h>
 
 #define HAVE_MMAN_H	1
 #define HAVE_UNISTD_H	1
@@ -59,9 +63,9 @@ typedef float sam_float;
 #endif /* __WORDSIZE == 64 */
 
 /** Greatest value a sam_heap_address can hold. */
-#define SAM_HEAP_PTR_MAX ULONG_MAX
+#define SAM_HEAP_PTR_MAX SIZE_MAX
 
 /** Greatest value a sam_stack_address can hold. */
-#define SAM_STACK_PTR_MAX ULONG_MAX
+#define SAM_STACK_PTR_MAX SIZE_MAX
 
 #endif /* CONFIG_H */
