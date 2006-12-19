@@ -27,6 +27,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.16  2006/12/19 09:36:47  anyoneeb
+ * More splint warning fixes.
+ *
  * Revision 1.15  2006/12/19 09:29:34  trevor
  * Removed implicit casts.
  *
@@ -889,12 +892,14 @@ sam_storeabs(sam_execution_state *s,
 {
     if (ma.stack) {
 	if (ma.index.sa >= s->stack.len) {
+	    free(m);
 	    return sam_error_segmentation_fault(ma);
 	}
 	free(s->stack.arr[ma.index.sa]);
 	s->stack.arr[ma.index.sa] = m;
     } else {
 	if (ma.index.ha >= s->heap.a.len) {
+	    free(m);
 	    return sam_error_segmentation_fault(ma);
 	}
 	free(s->heap.a.arr[ma.index.ha]);
@@ -1104,11 +1109,11 @@ sam_integer_arithmetic(sam_execution_state		*s,
 	    m1->value.i = m1->value.i < m2->value.i;
 	    break;
     }
+    free(m2);
     if (!sam_push(s, m1)) {
 	return sam_error_stack_overflow();
     }
 
-    free(m2);
     return SAM_OK;
 }
 
@@ -1164,12 +1169,12 @@ sam_float_arithmetic(sam_execution_state	    *s,
 		0: m1->value.f < m2->value.f? -1: 1;
 	    break;
     }
+    free(m2);
     m1->type = SAM_ML_TYPE_FLOAT;
     if (!sam_push(s, m1)) {
 	return sam_error_stack_overflow();
     }
 
-    free(m2);
     return SAM_OK;
 }
 
@@ -1268,11 +1273,11 @@ sam_bitshiftind(sam_execution_state *s,
     } else {
 	m1->value.i >>= m2->value.i;
     }
+    free(m2);
     if (!sam_push(s, m1)) {
 	return sam_error_stack_overflow();
     }
 
-    free(m1);
     return SAM_OK;
 }
 
@@ -1574,8 +1579,7 @@ sam_op_popsp(sam_execution_state *s)
     index = m->value.sa;
     free(m);
 
-    sam_sp_shift(s, index);
-    return SAM_OK;
+    return sam_sp_shift(s, index);
 }
 
 static sam_error
@@ -1677,9 +1681,9 @@ sam_op_malloc(sam_execution_state *s)
 	return sam_error_no_memory();
     }
     for (i = v.ha; i < (size_t)m->value.i + v.ha; ++i) {
-	sam_ml *m = s->heap.a.arr[i];
-	m->type = SAM_ML_TYPE_NONE;
-	m->value.i = 0;
+	sam_ml *m_i = s->heap.a.arr[i];
+	m_i->type = SAM_ML_TYPE_NONE;
+	m_i->value.i = 0;
     }
     free(m);
     if (!sam_push(s, sam_ml_new(v, SAM_ML_TYPE_HA))) {
@@ -1798,6 +1802,7 @@ sam_op_storeabs(sam_execution_state *s)
 	return sam_error_stack_underflow();
     }
     if (cur->optype != SAM_OP_TYPE_INT) {
+	free(m);
 	return sam_error_optype(s);
     }
     ma.stack = TRUE;
@@ -1832,6 +1837,7 @@ sam_op_storeoff(sam_execution_state *s)
 	return sam_error_stack_underflow();
     }
     if (cur->optype != SAM_OP_TYPE_INT) {
+	free(m);
 	return sam_error_optype(s);
     }
     ma.stack = TRUE;
