@@ -3,7 +3,7 @@
  *
  * part of samiam - the fast sam interpreter
  *
- * Copyright (c) 2006 Trevor Caira, Jimmy Hartzell
+ * Copyright (c) 2006 Trevor Caira, Jimmy Hartzell, Daniel Perelman
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -26,9 +26,15 @@
  * SOFTWARE.
  *
  * $Log$
- * Revision 1.4  2006/12/12 23:31:35  trevor
- * Added the $Id$ and $Log$ tags and copyright notice where they were missing.
+ * Revision 1.5  2006/12/19 10:41:26  anyoneeb
+ * Last splint warnings fix for now.
  *
+ * Revision 1.4  2006/12/12 23:31:35  trevor
+ * Added the $Id$ and $Log$
+ * Added the $Id$ and Revision 1.5  2006/12/19 10:41:26  anyoneeb
+ * Added the $Id$ and Last splint warnings fix for now.
+ * Added the $Id$ and tags and copyright notice where they were missing.
+#ifndef SAM_H
 #define SAM_H
 
 /** Global program behavior defaults configurable by command line
@@ -41,10 +47,10 @@ typedef enum {
 /** Exit codes for main() in case of error. */
 typedef enum {
     SAM_EMPTY_STACK = -1,   /**< The stack was empty after program
-typedef int (*sam_read_int_func)(int *n);
-typedef int (*sam_read_float_func)(double *f);
-typedef int (*sam_read_char_func)(char *c);
-typedef int (*sam_read_str_func)(char **s);
+typedef int (*sam_read_str_func)(/*@out@*/ char **s);
+typedef int (*sam_write_int_func)(int n);
+typedef int (*sam_write_float_func)(double f);
+typedef int (*sam_write_char_func)(char c);
 typedef int (*sam_write_str_func)(char *s);
 
 /**

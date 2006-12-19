@@ -27,6 +27,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.18  2006/12/19 10:41:26  anyoneeb
+ * Last splint warnings fix for now.
+ *
  * Revision 1.17  2006/12/19 09:47:39  trevor
  * Should be the rest of the fallthroughs.
  *
@@ -236,7 +239,7 @@ sam_ml_new(sam_ml_value   v,
 }
 
 /*@null@*/ static sam_ml *
-sam_pop(sam_execution_state *s)
+sam_pop(/*@in@*/ sam_execution_state *s)
 {
     return sam_array_rem(&s->stack);
 }
@@ -385,7 +388,7 @@ sam_print_op_value(sam_op_value v,
 
 /* Execution errors. */
 static sam_error
-sam_error_optype(sam_execution_state *s)
+sam_error_optype(/*@in@*/ sam_execution_state *s)
 {
     if ((options & quiet) == 0) {
 	sam_instruction *cur = s->program->arr[s->pc];
@@ -485,7 +488,7 @@ sam_error_final_stack_state(void)
 }
 
 static void
-sam_error_uninitialized(sam_execution_state *s)
+sam_error_uninitialized(/*@in@*/ sam_execution_state *s)
 {
     if ((options & quiet) == 0) {
 	fprintf(stderr,
@@ -495,7 +498,7 @@ sam_error_uninitialized(sam_execution_state *s)
 }
 
 static void
-sam_check_for_leaks(sam_execution_state *s)
+sam_check_for_leaks(/*@in@*/ sam_execution_state *s)
 {
     if ((options & quiet) == 0) {
 	unsigned long	  block_count = 0;
@@ -537,7 +540,7 @@ sam_error_forgot_stop(void)
  *  @param s The current state of execution.
  */
 static void
-sam_error_retval_type(sam_execution_state *s)
+sam_error_retval_type(/*@in@*/ sam_execution_state *s)
 {
     if ((options & quiet) == 0) {
 	sam_ml *m = s->stack.arr[0];
@@ -569,7 +572,7 @@ sam_error_unknown_identifier(const char *name)
 }
 
 static sam_error
-sam_error_stack_input(sam_execution_state *s,
+sam_error_stack_input(/*@in@*/ sam_execution_state *s,
 		      sam_bool		   first,
 		      sam_ml_type	   found,
 		      sam_ml_type	   expected)
@@ -592,7 +595,7 @@ sam_error_stack_input(sam_execution_state *s,
 }
 
 static sam_error
-sam_error_stack_input1(sam_execution_state *s,
+sam_error_stack_input1(/*@in@*/ sam_execution_state *s,
 		       sam_ml_type	   found,
 		       sam_ml_type	   expected)
 {
@@ -600,7 +603,7 @@ sam_error_stack_input1(sam_execution_state *s,
 }
 
 static sam_error
-sam_error_stack_input2(sam_execution_state *s,
+sam_error_stack_input2(/*@in@*/ sam_execution_state *s,
 		       sam_ml_type	   found,
 		       sam_ml_type	   expected)
 {
@@ -718,7 +721,7 @@ sam_heap_pointer_update(/*@null@*/ sam_heap_pointer *p,
  *	    overflow.
  */
 static sam_ha
-sam_heap_alloc(sam_execution_state *s,
+sam_heap_alloc(/*@in@*/ sam_execution_state *s,
 	       size_t		    size)
 {
     sam_heap_pointer *f = s->heap.free_list;
@@ -843,7 +846,7 @@ sam_heap_free(sam_heap *heap)
 }
 
 static sam_error
-sam_sp_shift(sam_execution_state *s,
+sam_sp_shift(/*@in@*/ sam_execution_state *s,
 	     size_t		  sp)
 {
     while (sp < s->stack.len) {
@@ -864,7 +867,7 @@ sam_sp_shift(sam_execution_state *s,
 }
 
 static sam_error
-sam_pushabs(sam_execution_state *s,
+sam_pushabs(/*@in@*/ sam_execution_state *s,
 	    sam_ma		 ma)
 {
     sam_ml *m;
@@ -889,7 +892,7 @@ sam_pushabs(sam_execution_state *s,
 }
 
 static sam_error
-sam_storeabs(sam_execution_state *s,
+sam_storeabs(/*@in@*/ sam_execution_state *s,
 	     /*@only@*/ sam_ml	 *m,
 	     sam_ma		  ma)
 {
@@ -913,7 +916,7 @@ sam_storeabs(sam_execution_state *s,
 }
 
 static sam_error
-sam_addition(sam_execution_state *s,
+sam_addition(/*@in@*/ sam_execution_state *s,
 	     sam_bool		  add)
 {
     sam_ml *m1, *m2;
@@ -1219,7 +1222,7 @@ sam_unary_arithmetic(sam_execution_state	   *s,
 }
 
 static sam_error
-sam_bitshift(sam_execution_state *s,
+sam_bitshift(/*@in@*/ sam_execution_state *s,
 	     sam_bool		  left)
 {
     sam_ml *m;
@@ -1248,7 +1251,7 @@ sam_bitshift(sam_execution_state *s,
     return SAM_OK;
 }
 static sam_error
-sam_bitshiftind(sam_execution_state *s,
+sam_bitshiftind(/*@in@*/ sam_execution_state *s,
 		sam_bool		  left)
 {
     sam_ml *m1, *m2;
@@ -1285,8 +1288,8 @@ sam_bitshiftind(sam_execution_state *s,
 }
 
 static sam_error 
-sam_get_jump_target(sam_execution_state *s,
-		    sam_pa *p)
+sam_get_jump_target(/*@in@*/ sam_execution_state *s,
+		    /*@out@*/ sam_pa		 *p)
 {
     sam_instruction *cur = s->program->arr[s->pc];
 
@@ -1299,9 +1302,11 @@ sam_get_jump_target(sam_execution_state *s,
 	    /* as above */
 	    --*p;
 	} else {
+	    *p = 0;
 	    return sam_error_unknown_identifier(cur->operand.s);
 	}
     } else {
+	*p = 0;
 	return sam_error_optype(s);
     }
 
@@ -1309,7 +1314,7 @@ sam_get_jump_target(sam_execution_state *s,
 }
 
 static sam_error
-sam_read_number(sam_execution_state *s,
+sam_read_number(/*@in@*/ sam_execution_state *s,
 		sam_ml_type	     t)
 {
     sam_ml_value  v;
@@ -1345,7 +1350,7 @@ sam_putchar(sam_char c)
 
 /* Opcode implementations. */
 static sam_error
-sam_op_ftoi(sam_execution_state *s)
+sam_op_ftoi(/*@in@*/ sam_execution_state *s)
 {
     sam_ml *m;
 
@@ -1368,7 +1373,7 @@ sam_op_ftoi(sam_execution_state *s)
 }
 
 static sam_error
-sam_op_ftoir(sam_execution_state *s)
+sam_op_ftoir(/*@in@*/ sam_execution_state *s)
 {
     sam_ml *m;
 
@@ -1391,7 +1396,7 @@ sam_op_ftoir(sam_execution_state *s)
 }
 
 static sam_error
-sam_op_itof(sam_execution_state *s)
+sam_op_itof(/*@in@*/ sam_execution_state *s)
 {
     sam_ml *m;
 
@@ -1414,7 +1419,7 @@ sam_op_itof(sam_execution_state *s)
 }
 
 static sam_error
-sam_op_pushimm(sam_execution_state *s)
+sam_op_pushimm(/*@in@*/ sam_execution_state *s)
 {
     sam_instruction	*cur = s->program->arr[s->pc];
     sam_ml *m;
@@ -1433,7 +1438,7 @@ sam_op_pushimm(sam_execution_state *s)
 }
 
 static sam_error
-sam_op_pushimmf(sam_execution_state *s)
+sam_op_pushimmf(/*@in@*/ sam_execution_state *s)
 {
     sam_instruction	*cur = s->program->arr[s->pc];
     sam_ml *m;
@@ -1452,7 +1457,7 @@ sam_op_pushimmf(sam_execution_state *s)
 }
 
 static sam_error
-sam_op_pushimmch(sam_execution_state *s)
+sam_op_pushimmch(/*@in@*/ sam_execution_state *s)
 {
     sam_instruction	*cur = s->program->arr[s->pc];
     sam_ml_value v;
@@ -1469,7 +1474,7 @@ sam_op_pushimmch(sam_execution_state *s)
 }
 
 static sam_error
-sam_op_pushimmma(sam_execution_state *s)
+sam_op_pushimmma(/*@in@*/ sam_execution_state *s)
 {
     sam_instruction	*cur = s->program->arr[s->pc];
     sam_ml_value	 v;
@@ -1487,7 +1492,7 @@ sam_op_pushimmma(sam_execution_state *s)
 }
 
 static sam_error
-sam_op_pushimmpa(sam_execution_state *s)
+sam_op_pushimmpa(/*@in@*/ sam_execution_state *s)
 {
     sam_instruction *cur = s->program->arr[s->pc];
     sam_ml_value v;
@@ -1513,7 +1518,7 @@ sam_op_pushimmpa(sam_execution_state *s)
 }
 
 static sam_error
-sam_op_pushimmstr(sam_execution_state *s)
+sam_op_pushimmstr(/*@in@*/ sam_execution_state *s)
 {
     sam_instruction *cur = s->program->arr[s->pc];
     sam_ml *m;
@@ -1544,7 +1549,7 @@ sam_op_pushimmstr(sam_execution_state *s)
 }
 
 static sam_error
-sam_op_pushsp(sam_execution_state *s)
+sam_op_pushsp(/*@in@*/ sam_execution_state *s)
 {
     sam_ml_value v;
 
@@ -1557,7 +1562,7 @@ sam_op_pushsp(sam_execution_state *s)
 }
 
 static sam_error
-sam_op_pushfbr(sam_execution_state *s)
+sam_op_pushfbr(/*@in@*/ sam_execution_state *s)
 {
     sam_ml_value v;
     v.sa = s->fbr;
@@ -1566,7 +1571,7 @@ sam_op_pushfbr(sam_execution_state *s)
 }
 
 static sam_error
-sam_op_popsp(sam_execution_state *s)
+sam_op_popsp(/*@in@*/ sam_execution_state *s)
 {
     sam_ml *m;
     size_t  index;
@@ -1586,7 +1591,7 @@ sam_op_popsp(sam_execution_state *s)
 }
 
 static sam_error
-sam_op_popfbr(sam_execution_state *s)
+sam_op_popfbr(/*@in@*/ sam_execution_state *s)
 {
     sam_ml *m;
 
@@ -1604,7 +1609,7 @@ sam_op_popfbr(sam_execution_state *s)
 }
 
 static sam_error
-sam_op_dup(sam_execution_state *s)
+sam_op_dup(/*@in@*/ sam_execution_state *s)
 {
     sam_ml *m1, *m2;
 
@@ -1625,7 +1630,7 @@ sam_op_dup(sam_execution_state *s)
 }
 
 static sam_error
-sam_op_swap(sam_execution_state *s)
+sam_op_swap(/*@in@*/ sam_execution_state *s)
 {
     sam_ml *m1, *m2;
 
@@ -1648,7 +1653,7 @@ sam_op_swap(sam_execution_state *s)
 }
 
 static sam_error
-sam_op_addsp(sam_execution_state *s)
+sam_op_addsp(/*@in@*/ sam_execution_state *s)
 {
     sam_instruction *cur = s->program->arr[s->pc];
 
@@ -1662,7 +1667,7 @@ sam_op_addsp(sam_execution_state *s)
 }
 
 static sam_error
-sam_op_malloc(sam_execution_state *s)
+sam_op_malloc(/*@in@*/ sam_execution_state *s)
 {
     sam_ml *m;
     sam_ml_value v;
@@ -1697,7 +1702,7 @@ sam_op_malloc(sam_execution_state *s)
 }
 
 static sam_error
-sam_op_free(sam_execution_state *s)
+sam_op_free(/*@in@*/ sam_execution_state *s)
 {
     sam_ml *m;
     sam_ha  ha;
@@ -1719,7 +1724,7 @@ sam_op_free(sam_execution_state *s)
 }
 
 static sam_error
-sam_op_pushind(sam_execution_state *s)
+sam_op_pushind(/*@in@*/ sam_execution_state *s)
 {
     sam_ml  *m;
     sam_ma   ma;
@@ -1746,7 +1751,7 @@ sam_op_pushind(sam_execution_state *s)
 }
 
 static sam_error
-sam_op_storeind(sam_execution_state *s)
+sam_op_storeind(/*@in@*/ sam_execution_state *s)
 {
     /*@null@*/ sam_ml *m1, *m2;
     sam_ma   ma;
@@ -1779,7 +1784,7 @@ sam_op_storeind(sam_execution_state *s)
 
 /* cannot be used to push from the heap. */
 static sam_error
-sam_op_pushabs(sam_execution_state *s)
+sam_op_pushabs(/*@in@*/ sam_execution_state *s)
 {
     sam_ma	     ma;
     sam_instruction *cur = s->program->arr[s->pc];
@@ -1795,7 +1800,7 @@ sam_op_pushabs(sam_execution_state *s)
 
 /* cannot be used to store onto the heap. */
 static sam_error
-sam_op_storeabs(sam_execution_state *s)
+sam_op_storeabs(/*@in@*/ sam_execution_state *s)
 {
     sam_ma		 ma;
     sam_instruction	*cur = s->program->arr[s->pc];
@@ -1815,7 +1820,7 @@ sam_op_storeabs(sam_execution_state *s)
 }
 
 static sam_error
-sam_op_pushoff(sam_execution_state *s)
+sam_op_pushoff(/*@in@*/ sam_execution_state *s)
 {
     sam_ma	     ma;
     sam_instruction *cur = s->program->arr[s->pc];
@@ -1830,7 +1835,7 @@ sam_op_pushoff(sam_execution_state *s)
 }
 
 static sam_error
-sam_op_storeoff(sam_execution_state *s)
+sam_op_storeoff(/*@in@*/ sam_execution_state *s)
 {
     sam_ma	     ma;
     sam_instruction *cur = s->program->arr[s->pc];
@@ -1850,181 +1855,181 @@ sam_op_storeoff(sam_execution_state *s)
 }
 
 static sam_error
-sam_op_add(sam_execution_state *s)
+sam_op_add(/*@in@*/ sam_execution_state *s)
 {
     return sam_addition(s, TRUE);
 }
 
 static sam_error
-sam_op_sub(sam_execution_state *s)
+sam_op_sub(/*@in@*/ sam_execution_state *s)
 {
     return sam_addition(s, FALSE);
 }
 
 static sam_error
-sam_op_times(sam_execution_state *s)
+sam_op_times(/*@in@*/ sam_execution_state *s)
 {
     return sam_integer_arithmetic(s, SAM_OP_TIMES);
 }
 
 static sam_error
-sam_op_div(sam_execution_state *s)
+sam_op_div(/*@in@*/ sam_execution_state *s)
 {
     return sam_integer_arithmetic(s, SAM_OP_DIV);
 }
 
 static sam_error
-sam_op_mod(sam_execution_state *s)
+sam_op_mod(/*@in@*/ sam_execution_state *s)
 {
     return sam_integer_arithmetic(s, SAM_OP_MOD);
 }
 
 static sam_error
-sam_op_addf(sam_execution_state *s)
+sam_op_addf(/*@in@*/ sam_execution_state *s)
 {
     return sam_float_arithmetic(s, SAM_OP_ADDF);
 }
 
 static sam_error
-sam_op_subf(sam_execution_state *s)
+sam_op_subf(/*@in@*/ sam_execution_state *s)
 {
     return sam_float_arithmetic(s, SAM_OP_SUBF);
 }
 
 static sam_error
-sam_op_timesf(sam_execution_state *s)
+sam_op_timesf(/*@in@*/ sam_execution_state *s)
 {
     return sam_float_arithmetic(s, SAM_OP_TIMESF);
 }
 
 static sam_error
-sam_op_divf(sam_execution_state *s)
+sam_op_divf(/*@in@*/ sam_execution_state *s)
 {
     return sam_float_arithmetic(s, SAM_OP_DIVF);
 }
 
 static sam_error
-sam_op_lshift(sam_execution_state *s)
+sam_op_lshift(/*@in@*/ sam_execution_state *s)
 {
     return sam_bitshift(s, TRUE);
 }
 
 static sam_error
-sam_op_lshiftind(sam_execution_state *s)
+sam_op_lshiftind(/*@in@*/ sam_execution_state *s)
 {
     return sam_bitshiftind(s, TRUE);
 }
 
 static sam_error
-sam_op_rshift(sam_execution_state *s)
+sam_op_rshift(/*@in@*/ sam_execution_state *s)
 {
     return sam_bitshift(s, FALSE);
 }
 
 static sam_error
-sam_op_rshiftind(sam_execution_state *s)
+sam_op_rshiftind(/*@in@*/ sam_execution_state *s)
 {
     return sam_bitshiftind(s, FALSE);
 }
 
 static sam_error
-sam_op_and(sam_execution_state *s)
+sam_op_and(/*@in@*/ sam_execution_state *s)
 {
     return sam_integer_arithmetic(s, SAM_OP_AND);
 }
 
 static sam_error
-sam_op_or(sam_execution_state *s)
+sam_op_or(/*@in@*/ sam_execution_state *s)
 {
     return sam_integer_arithmetic(s, SAM_OP_OR);
 }
 
 static sam_error
-sam_op_nand(sam_execution_state *s)
+sam_op_nand(/*@in@*/ sam_execution_state *s)
 {
     return sam_integer_arithmetic(s, SAM_OP_NAND);
 }
 
 static sam_error
-sam_op_nor(sam_execution_state *s)
+sam_op_nor(/*@in@*/ sam_execution_state *s)
 {
     return sam_integer_arithmetic(s, SAM_OP_NOR);
 }
 
 static sam_error
-sam_op_xor(sam_execution_state *s)
+sam_op_xor(/*@in@*/ sam_execution_state *s)
 {
     return sam_integer_arithmetic(s, SAM_OP_XOR);
 }
 
 static sam_error
-sam_op_not(sam_execution_state *s)
+sam_op_not(/*@in@*/ sam_execution_state *s)
 {   
     return sam_unary_arithmetic(s, SAM_OP_NOT);
 }
 
 static sam_error
-sam_op_bitand(sam_execution_state *s)
+sam_op_bitand(/*@in@*/ sam_execution_state *s)
 {
     return sam_integer_arithmetic(s, SAM_OP_BITAND);
 }
 
 static sam_error
-sam_op_bitor(sam_execution_state *s)
+sam_op_bitor(/*@in@*/ sam_execution_state *s)
 {
     return sam_integer_arithmetic(s, SAM_OP_BITOR);
 }
 
 static sam_error
-sam_op_bitnand(sam_execution_state *s)
+sam_op_bitnand(/*@in@*/ sam_execution_state *s)
 {
     return sam_integer_arithmetic(s, SAM_OP_BITNAND);
 }
 
 static sam_error
-sam_op_bitnor(sam_execution_state *s)
+sam_op_bitnor(/*@in@*/ sam_execution_state *s)
 {
     return sam_integer_arithmetic(s, SAM_OP_BITNOR);
 }
 
 static sam_error
-sam_op_bitxor(sam_execution_state *s)
+sam_op_bitxor(/*@in@*/ sam_execution_state *s)
 {
     return sam_integer_arithmetic(s, SAM_OP_BITXOR);
 }
 
 static sam_error
-sam_op_bitnot(sam_execution_state *s)
+sam_op_bitnot(/*@in@*/ sam_execution_state *s)
 {
     return sam_unary_arithmetic(s, SAM_OP_BITNOT);
 }
 
 static sam_error
-sam_op_cmp(sam_execution_state *s)
+sam_op_cmp(/*@in@*/ sam_execution_state *s)
 {
     return sam_integer_arithmetic(s, SAM_OP_CMP);
 }
 
 static sam_error
-sam_op_cmpf(sam_execution_state *s)
+sam_op_cmpf(/*@in@*/ sam_execution_state *s)
 {
     return sam_float_arithmetic(s, SAM_OP_CMPF);
 }
 
 static sam_error
-sam_op_greater(sam_execution_state *s)
+sam_op_greater(/*@in@*/ sam_execution_state *s)
 {
     return sam_integer_arithmetic(s, SAM_OP_GREATER);
 }
 
 static sam_error
-sam_op_less(sam_execution_state *s)
+sam_op_less(/*@in@*/ sam_execution_state *s)
 {
     return sam_integer_arithmetic(s, SAM_OP_LESS);
 }
 
 static sam_error
-sam_op_equal(sam_execution_state *s)
+sam_op_equal(/*@in@*/ sam_execution_state *s)
 {
     sam_ml *m1, *m2;
 
@@ -2087,25 +2092,25 @@ sam_op_equal(sam_execution_state *s)
 }
 
 static sam_error
-sam_op_isnil(sam_execution_state *s)
+sam_op_isnil(/*@in@*/ sam_execution_state *s)
 {
     return sam_unary_arithmetic(s, SAM_OP_ISNIL);
 }
 
 static sam_error
-sam_op_ispos(sam_execution_state *s)
+sam_op_ispos(/*@in@*/ sam_execution_state *s)
 {
     return sam_unary_arithmetic(s, SAM_OP_ISPOS);
 }
 
 static sam_error
-sam_op_isneg(sam_execution_state *s)
+sam_op_isneg(/*@in@*/ sam_execution_state *s)
 {
     return sam_unary_arithmetic(s, SAM_OP_ISNEG);
 }
 
 static sam_error
-sam_op_jump(sam_execution_state *s)
+sam_op_jump(/*@in@*/ sam_execution_state *s)
 {
     sam_pa	target;
     sam_error		err;
@@ -2119,7 +2124,7 @@ sam_op_jump(sam_execution_state *s)
 }
 
 static sam_error
-sam_op_jumpc(sam_execution_state *s)
+sam_op_jumpc(/*@in@*/ sam_execution_state *s)
 {
     sam_pa target;
     sam_error		err;
@@ -2148,7 +2153,7 @@ sam_op_jumpc(sam_execution_state *s)
 }
 
 static sam_error
-sam_op_jumpind(sam_execution_state *s)
+sam_op_jumpind(/*@in@*/ sam_execution_state *s)
 {
     sam_ml *m;
 
@@ -2167,13 +2172,13 @@ sam_op_jumpind(sam_execution_state *s)
 }
 
 static sam_error
-sam_op_rst(sam_execution_state *s)
+sam_op_rst(/*@in@*/ sam_execution_state *s)
 {
     return sam_op_jumpind(s);
 }
 
 static sam_error
-sam_op_jsr(sam_execution_state *s)
+sam_op_jsr(/*@in@*/ sam_execution_state *s)
 {
     sam_ml_value	v;
     sam_pa	target;
@@ -2192,7 +2197,7 @@ sam_op_jsr(sam_execution_state *s)
 }
 
 static sam_error
-sam_op_jsrind(sam_execution_state *s)
+sam_op_jsrind(/*@in@*/ sam_execution_state *s)
 {
     sam_ml *m;
     sam_ml_value	 v;
@@ -2208,15 +2213,17 @@ sam_op_jsrind(sam_execution_state *s)
 
     v.pa = s->pc + 1;
     if (!sam_push(s, sam_ml_new(v, SAM_ML_TYPE_PA))) {
+	free(m);
 	return sam_error_stack_overflow();
     }
     s->pc = m->value.pa - 1;
 
+    free(m);
     return SAM_OK;
 }
 
 static sam_error
-sam_op_skip(sam_execution_state *s)
+sam_op_skip(/*@in@*/ sam_execution_state *s)
 {
     sam_ml *m;
 
@@ -2230,7 +2237,7 @@ sam_op_skip(sam_execution_state *s)
 }
 
 static sam_error
-sam_op_link(sam_execution_state *s)
+sam_op_link(/*@in@*/ sam_execution_state *s)
 {
     sam_ml_value v;
 
@@ -2244,13 +2251,13 @@ sam_op_link(sam_execution_state *s)
 }
 
 static sam_error
-sam_op_unlink(sam_execution_state *s)
+sam_op_unlink(/*@in@*/ sam_execution_state *s)
 {
     return sam_op_popfbr(s);
 }
 
 static sam_error
-sam_op_read(sam_execution_state *s)
+sam_op_read(/*@in@*/ sam_execution_state *s)
 {
     sam_ml_value v;
     int	      err;
@@ -2271,7 +2278,7 @@ sam_op_read(sam_execution_state *s)
 }
 
 static sam_error
-sam_op_readf(sam_execution_state *s)
+sam_op_readf(/*@in@*/ sam_execution_state *s)
 {
     sam_ml_value v;
     int	      err;
@@ -2292,7 +2299,7 @@ sam_op_readf(sam_execution_state *s)
 }
 
 static sam_error
-sam_op_readch(sam_execution_state *s)
+sam_op_readch(/*@in@*/ sam_execution_state *s)
 {
     sam_ml_value v;
     char      buf;
@@ -2317,7 +2324,7 @@ sam_op_readch(sam_execution_state *s)
 }
 
 static sam_error
-sam_op_readstr(sam_execution_state *s)
+sam_op_readstr(/*@in@*/ sam_execution_state *s)
 {
     sam_ml *m;
     char		*str;
@@ -2357,7 +2364,7 @@ sam_op_readstr(sam_execution_state *s)
 }
 
 static sam_error
-sam_op_write(sam_execution_state *s)
+sam_op_write(/*@in@*/ sam_execution_state *s)
 {
     sam_ml *m;
     sam_int i;
@@ -2381,7 +2388,7 @@ sam_op_write(sam_execution_state *s)
 }
 
 static sam_error
-sam_op_writef(sam_execution_state *s)
+sam_op_writef(/*@in@*/ sam_execution_state *s)
 {
     sam_ml *m;
     sam_float		 f;
@@ -2405,7 +2412,7 @@ sam_op_writef(sam_execution_state *s)
 }
 
 static sam_error
-sam_op_writech(sam_execution_state *s)
+sam_op_writech(/*@in@*/ sam_execution_state *s)
 {
     sam_ml *m;
     sam_char		 c;
@@ -2428,7 +2435,7 @@ sam_op_writech(sam_execution_state *s)
 }
 
 static sam_error
-sam_op_writestr(sam_execution_state *s)
+sam_op_writestr(/*@in@*/ sam_execution_state *s)
 {
     sam_ml *m;
     sam_ha  ha, i;
@@ -2507,7 +2514,7 @@ sam_op_writestr(sam_execution_state *s)
 }
 
 static sam_error
-sam_op_stop(sam_execution_state *s)
+sam_op_stop(/*@in@*/ sam_execution_state *s)
 {
     if (s->stack.len > 1) {
 	return sam_error_final_stack_state();
@@ -2517,7 +2524,7 @@ sam_op_stop(sam_execution_state *s)
 }
 
 static sam_error
-sam_op_patoi(sam_execution_state *s)
+sam_op_patoi(/*@in@*/ sam_execution_state *s)
 {
     sam_ml *m;
 
@@ -2625,7 +2632,7 @@ const sam_instruction sam_instructions[] = {
 };
 
 static void
-sam_heap_init(sam_heap *heap)
+sam_heap_init(/*@out@*/ sam_heap *heap)
 {
     heap->free_list = NULL;
     heap->used_list = NULL;
@@ -2642,7 +2649,7 @@ sam_execution_state_init(/*@out@*/ sam_execution_state *s)
 }
 
 static void
-sam_execution_state_free(sam_execution_state *s)
+sam_execution_state_free(/*@in@*/ sam_execution_state *s)
 {
     sam_array_free(s->program);
     sam_array_free(s->labels);
