@@ -27,6 +27,9 @@
 # SOFTWARE.
 #
 # $Log$
+# Revision 1.6  2006/12/19 05:37:08  trevor
+# Swallow stdout from commands for future use.
+#
 # Revision 1.5  2006/12/17 15:29:36  trevor
 # Typo.
 #
@@ -60,7 +63,7 @@ while (<DB>) {
     if ($pid == 0) {
 	/\S/ or next;
 	my ($test, $rv) = split /\s+/;
-	system ($app, "-q", $test);
+	my $output = `$app -q $test`;
 	if ($? == -1) {
 	    print "couldn't execute $app: $!.\n";
 	} elsif ($? & 127) {
