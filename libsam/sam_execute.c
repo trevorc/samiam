@@ -27,6 +27,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.20  2006/12/19 18:36:25  trevor
+ * Misc fixes (docs, inappropriate use of size_t).
+ *
  * Revision 1.19  2006/12/19 18:17:53  trevor
  * Moved parts of sam_util.h which were library-generic into libsam.h.
  *
@@ -136,12 +139,14 @@ typedef struct {
     sam_ml_value value;
 } sam_ml;
 
+/** A pointer to an element on the heap or the stack. */
 typedef struct {
-    sam_bool stack;
+    sam_bool stack; /**< Flag indicating whether the pointer is on the
+		     *	 stack or heap. */
     union {
 	sam_ha ha;
 	sam_sa sa;
-    } index;
+    } index;	    /**< The value of the pointer. */
 } sam_ma;
 
 /** The parsed instructions and labels along with the current state
@@ -485,7 +490,8 @@ static sam_error
 sam_error_final_stack_state(void)
 {
     if ((options & quiet) == 0) {
-	fputs("warning: more than one element left on stack.\n", stderr);
+	fputs("warning: more than one element left on stack.\n",
+	      stderr);
 	stack_trace = TRUE;
     }
     return SAM_EFINAL_STACK;
@@ -550,7 +556,8 @@ sam_error_retval_type(/*@in@*/ sam_execution_state *s)
 	sam_ml *m = s->stack.arr[0];
 
 	fprintf(stderr,
-		"warning: expected bottom of stack to contain an integer (found: %s).\n",
+		"warning: expected bottom of stack to contain an "
+		"integer (found: %s).\n",
 		sam_ml_type_to_string(m->type));
 	stack_trace = TRUE;
     }
@@ -560,7 +567,8 @@ static void
 sam_error_empty_stack(void)
 {
     if ((options & quiet) == 0) {
-	fputs("warning: program terminated with an empty stack.\n", stderr);
+	fputs("warning: program terminated with an empty stack.\n",
+	      stderr);
 	stack_trace = TRUE;
     }
 }
@@ -726,7 +734,7 @@ sam_heap_pointer_update(/*@null@*/ sam_heap_pointer *p,
  */
 static sam_ha
 sam_heap_alloc(/*@in@*/ sam_execution_state *s,
-	       size_t		    size)
+	       size_t			     size)
 {
     sam_heap_pointer *f = s->heap.free_list;
     /*@null@*/ sam_heap_pointer *last = NULL;
@@ -776,7 +784,7 @@ sam_heap_alloc(/*@in@*/ sam_execution_state *s,
 
 static sam_error
 sam_heap_dealloc(sam_heap *heap,
-		 size_t	   index)
+		 sam_ha	   index)
 {
     sam_heap_pointer *u = heap->used_list;
     sam_heap_pointer *last = NULL;
@@ -851,7 +859,7 @@ sam_heap_free(sam_heap *heap)
 
 static sam_error
 sam_sp_shift(/*@in@*/ sam_execution_state *s,
-	     size_t		  sp)
+	     sam_ha			   sp)
 {
     while (sp < s->stack.len) {
 	sam_ml *m;
@@ -872,7 +880,7 @@ sam_sp_shift(/*@in@*/ sam_execution_state *s,
 
 static sam_error
 sam_pushabs(/*@in@*/ sam_execution_state *s,
-	    sam_ma		 ma)
+	    sam_ma			  ma)
 {
     sam_ml *m;
 
@@ -897,8 +905,8 @@ sam_pushabs(/*@in@*/ sam_execution_state *s,
 
 static sam_error
 sam_storeabs(/*@in@*/ sam_execution_state *s,
-	     /*@only@*/ sam_ml	 *m,
-	     sam_ma		  ma)
+	     /*@only@*/ sam_ml		  *m,
+	     sam_ma			   ma)
 {
     if (ma.stack) {
 	if (ma.index.sa >= s->stack.len) {
