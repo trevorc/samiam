@@ -47,7 +47,7 @@ mod3.sam	0
 addf.sam	1
 subf.sam	3
 timesf.sam	4
-timesf2.sam	0
+timesf2.sam	inf
 divf.sam	8
 equal1.sam	1
 equal2.sam	0

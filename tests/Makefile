@@ -3,7 +3,10 @@
 RM=rm -f
 TMPDIR=/tmp
 
-all: equal1.sam
+all: equal1.sam inf
+
+inf: inf.c
+	$(CC) -o $@ $^
 
 check: equal1.sam
 	@LD_PRELOAD=../libsam/libsam.so.1.0.0 perl tester.pl

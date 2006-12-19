@@ -27,6 +27,10 @@
 # SOFTWARE.
 #
 # $Log$
+# Revision 1.7  2006/12/19 23:41:45  trevor
+# return values of infinity are handled by invoking a helper C program to get
+# the system value of infinity cast to int.
+#
 # Revision 1.6  2006/12/19 05:37:08  trevor
 # Swallow stdout from commands for future use.
 #
@@ -45,12 +49,19 @@ use warnings;
 
 my $app = "../samiam/samiam";
 my $filename = "tests.db";
+my $sysinf = 0;
 my @tests = ();
 my @pids = ();
 
 if (@ARGV > 0) {
     $filename = $ARGV[0];
 }
+
+system './inf';
+if ($? == -1) {
+    print "couldn't execute ./inf: $!.\n";
+}
+$sysinf = $? >> 8;
 
 print "failed test cases:\n";
 print "actual\texpected\ttest case\n";
@@ -63,6 +74,7 @@ while (<DB>) {
     if ($pid == 0) {
 	/\S/ or next;
 	my ($test, $rv) = split /\s+/;
+	$rv =~ /inf/ and $rv = $sysinf;
 	my $output = `$app -q $test`;
 	if ($? == -1) {
 	    print "couldn't execute $app: $!.\n";
