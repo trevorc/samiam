@@ -27,6 +27,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.6  2006/12/19 05:41:15  anyoneeb
+ * Sepated operand types from memory types.
+ *
  * Revision 1.5  2006/12/17 00:44:15  trevor
  * Remove dynamic loading #includes. Rename sam_program_address to sam_pa.
  *
@@ -156,7 +159,7 @@ sam_instruction_new(/*@in@*/ /*@dependent@*/ const char *name)
 static sam_bool
 sam_try_parse_identifier(char **input,
 			 /*@out@*/ char **identifier,
-			 /*@null@*/ sam_type *optype)
+			 /*@null@*/ sam_op_type *optype)
 {
     char *start = *input;
 
@@ -169,7 +172,7 @@ sam_try_parse_identifier(char **input,
 	    *identifier = *input;
 	    *input = start;
 	    if (optype != NULL) {
-		*optype = TYPE_LABEL;
+		*optype = SAM_OP_TYPE_LABEL;
 	    }
 	    return TRUE;
 	}
@@ -180,7 +183,7 @@ sam_try_parse_identifier(char **input,
 static sam_bool
 sam_try_parse_string(/*@in@*/  char **input,
 		     /*@out@*/ char **string,
-		     /*@null@*/ sam_type *optype)
+		     /*@null@*/ sam_op_type *optype)
 {
     char *start = *input + 1;
 
@@ -200,10 +203,10 @@ sam_try_parse_string(/*@in@*/  char **input,
 	    *string = *input;
 	    *input = start;
 	    if (optype != NULL) {
-		if ((*optype & TYPE_LABEL) != 0) {
-		    *optype = TYPE_LABEL;
+		if ((*optype & SAM_OP_TYPE_LABEL) != 0) {
+		    *optype = SAM_OP_TYPE_LABEL;
 		} else {
-		    *optype = TYPE_STR;
+		    *optype = SAM_OP_TYPE_STR;
 		}
 	    }
 	    return TRUE;
@@ -214,25 +217,25 @@ sam_try_parse_string(/*@in@*/  char **input,
 
 static sam_bool
 sam_try_parse_number(/*@in@*/ char     **input,
-		     sam_value  *operand,
-		     sam_type	*optype)
+		     sam_value   *operand,
+		     sam_op_type *optype)
 {
     char *endptr;
 
-    if ((*optype & TYPE_INT) != 0) {
+    if ((*optype & SAM_OP_TYPE_INT) != 0) {
 	operand->i = strtol(*input, &endptr, 0);
 	if (*input != endptr &&
 	    (*endptr == '"' || isspace(*endptr) || *endptr == '\0')) {
-	    *optype = TYPE_INT;
+	    *optype = SAM_OP_TYPE_INT;
 	    *input = endptr;
 	    return TRUE;
 	}
     }
-    if ((*optype & TYPE_FLOAT) != 0) {
+    if ((*optype & SAM_OP_TYPE_FLOAT) != 0) {
 	operand->f = (sam_float)strtod(*input, &endptr);
 	if (*input != endptr &&
 	    (*endptr == '"' || isspace(*endptr) || *endptr == '\0')) {
-	    *optype = TYPE_FLOAT;
+	    *optype = SAM_OP_TYPE_FLOAT;
 	    *input = endptr;
 	    return TRUE;
 	}
@@ -307,7 +310,7 @@ sam_try_parse_escape_sequence(char **input,
 static sam_bool
 sam_try_parse_char(/*@in@*/ char **input,
 		   int  *c,
-		   sam_type *optype)
+		   sam_op_type *optype)
 {
     char *start = *input;
 
@@ -331,7 +334,7 @@ sam_try_parse_char(/*@in@*/ char **input,
 	return FALSE;
     }
     *input = start;
-    *optype = TYPE_CHAR;
+    *optype = SAM_OP_TYPE_CHAR;
     return TRUE;
 }
 
@@ -353,15 +356,15 @@ sam_try_parse_char(/*@in@*/ char **input,
 static sam_bool
 sam_try_parse_operand(/*@in@*/ char	 **input,
 		      /*@in@*/ sam_value  *operand,
-		      sam_type	 *optype)
+		      sam_op_type	 *optype)
 {
-    return ((*optype & (TYPE_INT | TYPE_FLOAT)) != 0 &&
+    return ((*optype & (SAM_OP_TYPE_INT | SAM_OP_TYPE_FLOAT)) != 0 &&
 	    sam_try_parse_number(input, operand, optype)) ||
-	((*optype & TYPE_CHAR) != 0 &&
+	((*optype & SAM_OP_TYPE_CHAR) != 0 &&
 	 sam_try_parse_char(input, &operand->c, optype)) ||
-	((*optype & TYPE_STR) != 0 &&
+	((*optype & SAM_OP_TYPE_STR) != 0 &&
 	 (sam_try_parse_string(input, &operand->s, optype))) ||
-	((*optype & TYPE_LABEL) != 0 &&
+	((*optype & SAM_OP_TYPE_LABEL) != 0 &&
 	 (sam_try_parse_string(input, &operand->s, optype) ||
 	  sam_try_parse_identifier(input, &operand->s, optype)));
 }
@@ -382,7 +385,7 @@ sam_parse_instruction(char **input)
 	sam_error_opcode(start);
 	return NULL;
     }
-    if (i->optype != TYPE_NONE) {
+    if (i->optype != SAM_OP_TYPE_NONE) {
 	if (!sam_try_parse_operand(&start, &i->operand, &i->optype)) {
 	    sam_error_operand(i->name, start);
 	    free(i);

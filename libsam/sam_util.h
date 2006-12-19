@@ -3,7 +3,7 @@
  *
  * part of samiam - the fast sam interpreter
  *
- * Copyright (c) 2006 Trevor Caira, Jimmy Hartzell
+ * Copyright (c) 2006 Trevor Caira, Jimmy Hartzell, Daniel Perelman
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -26,6 +26,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.6  2006/12/19 05:41:15  anyoneeb
+ * Sepated operand types from memory types.
+ *
  * Revision 1.5  2006/12/19 03:19:19  trevor
  * fixed doc for TYPE_STR
  *
@@ -68,26 +71,19 @@ typedef struct {
 } sam_string;
 
 /**
- *  The various types allowed in sam operand positions or in sam memory
- *  locations.
+ *  The various types allowed in sam operand positions.
  */
 typedef enum {
-    TYPE_NONE,		/**< A null operand. */
-    TYPE_INT   = 1 << 0, /**< An integer type. */
-    TYPE_FLOAT = 1 << 1, /**< An IEEE 754 floating point number. */
-    TYPE_CHAR  = 1 << 2, /**< A single ASCII character. */
-    TYPE_LABEL = 1 << 3, /**< A double-quote delimited string or bare
+    SAM_OP_TYPE_NONE,		/**< A null operand. */
+    SAM_OP_TYPE_INT   = 1 << 0, /**< An integer type. */
+    SAM_OP_TYPE_FLOAT = 1 << 1, /**< An IEEE 754 floating point number. */
+    SAM_OP_TYPE_CHAR  = 1 << 2, /**< A single ASCII character. */
+    SAM_OP_TYPE_LABEL = 1 << 3, /**< A double-quote delimited string or bare
 			  *   label stored as a C string pointing to a
 			  *   program address. */
-    TYPE_STR   = 1 << 4, /**< A list of characters to be allocated on the
+    SAM_OP_TYPE_STR   = 1 << 4  /**< A list of characters to be allocated on the
 			  *   heap and represented as a heap address. */
-    TYPE_SA    = 1 << 5, /**< A memory address pointing to a location on
-			  *   the stack. */
-    TYPE_HA    = 1 << 6, /**< A memory address pointing to a location on
-			  *   the heap. */
-    TYPE_PA    = 1 << 7	 /**< A program address pointing to an
-			  *   instruction in the source file. */
-} sam_type;
+} sam_op_type;
 
 /** An integer, stored by the interpreter as a long to maximize
  * portability */
@@ -160,7 +156,7 @@ typedef sam_error (*sam_handler)(struct _sam_execution_state *s);
 typedef struct _sam_instruction {
     /*@observer@*/ const char *name;	/**< The character string
 					 *   representing this opcode. */
-    sam_type    optype;			/**< The OR of types allowed
+    sam_op_type optype;			/**< The OR of types allowed
 					 *   to be in the operand
 					 *   position of this opcode. */
     sam_value	operand;		/**< The value of this
