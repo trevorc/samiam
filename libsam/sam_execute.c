@@ -27,6 +27,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.17  2006/12/19 09:47:39  trevor
+ * Should be the rest of the fallthroughs.
+ *
  * Revision 1.16  2006/12/19 09:36:47  anyoneeb
  * More splint warning fixes.
  *
@@ -259,7 +262,7 @@ sam_ml_type_to_string(sam_ml_type t)
 	case SAM_ML_TYPE_HA:	return "heap address";
 	case SAM_ML_TYPE_SA:	return "stack address";
 	case SAM_ML_TYPE_PA:	return "program address";
-	case SAM_ML_TYPE_NONE:
+	case SAM_ML_TYPE_NONE: /*@fallthrough@*/
 	default:		return "nonetype";
     }
 }
@@ -273,7 +276,7 @@ sam_op_type_to_string(sam_op_type t)
 	case SAM_OP_TYPE_CHAR:	return "character";
 	case SAM_OP_TYPE_LABEL:	return "label";
 	case SAM_OP_TYPE_STR:	return "string";
-	case SAM_OP_TYPE_NONE:
+	case SAM_OP_TYPE_NONE: /*@fallthrough@*/
 	default:		return "nonetype";
     }
 }
@@ -369,7 +372,7 @@ sam_print_op_value(sam_op_value v,
 	case SAM_OP_TYPE_CHAR:
 	    sam_print_char(v.c);
 	    break;
-	case SAM_OP_TYPE_STR:
+	case SAM_OP_TYPE_STR: /*@fallthrough@*/
 	case SAM_OP_TYPE_LABEL:
 	    fprintf(stderr, "\"%s\"", v.s);
 	    break;
@@ -2068,7 +2071,7 @@ sam_op_equal(sam_execution_state *s)
 		m1->value.i = FALSE;
 	    }
 	    break;
-	case SAM_ML_TYPE_NONE:
+	case SAM_ML_TYPE_NONE: /*@fallthrough@*/
 	default:
 	    m1->value.i = FALSE;
 	    break;
@@ -2723,7 +2726,7 @@ sam_convert_to_int(/*@in@*/ sam_ml *m)
 	    return m->value.ha;
 	case SAM_ML_TYPE_SA:
 	    return m->value.sa;
-	case SAM_ML_TYPE_NONE:
+	case SAM_ML_TYPE_NONE: /*@fallthrough@*/
 	default:
 	    return 0;
     }
