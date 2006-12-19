@@ -4,7 +4,7 @@
  *
  * part of samiam - the fast sam interpreter
  *
- * Copyright (c) 2006 Trevor Caira, Jimmy Hartzell
+ * Copyright (c) 2006 Trevor Caira, Jimmy Hartzell, Daniel Perelman
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -27,6 +27,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.7  2006/12/19 05:43:40  anyoneeb
+ * Added self to copyright.
+ *
  * Revision 1.6  2006/12/19 05:41:15  anyoneeb
  * Sepated operand types from memory types.
  *
