@@ -27,6 +27,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.10  2006/12/19 09:50:02  trevor
+ * fixed a cast
+ *
  * Revision 1.9  2006/12/19 09:29:34  trevor
  * Removed implicit casts.
  *
@@ -482,7 +485,7 @@ sam_input_read(/*@observer@*/ const char *path,
     }
     size = sb.st_size;
     p = mmap(0, size, PROT_READ|PROT_WRITE, MAP_PRIVATE, fd, 0);
-    if (p == -1) {
+    if (p == (void *)-1) {
 	perror("mmap");
 	if (close(fd) < 0) {
 	    perror("close");
