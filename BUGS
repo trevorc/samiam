@@ -35,6 +35,6 @@ T    ---  #20  the stack doesn't notice when it's overflowed
      LOW  #25  build fails on cygwin due to library linking issues
      HI   #26  searching for labels is O(n)
      LOW  #27  clean up sam_op_writestr and sam_op_printstr
-     MED  #28  we need to split operands from memory locations. (they
+D    ---  #28  we need to split operands from memory locations. (they
 	       shouldn't use the same sam_value type). it's (a)
 	       confusing and (b) wasteful.
