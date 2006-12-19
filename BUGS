@@ -38,4 +38,4 @@ T    ---  #20  the stack doesn't notice when it's overflowed
 D    ---  #28  we need to split operands from memory locations. (they
 	       shouldn't use the same sam_value type). it's (a)
 	       confusing and (b) wasteful.
-     MED  #29  tester needs to understand the return value of 'inf'
+T    ---  #29  tester needs to understand the return value of 'inf'
