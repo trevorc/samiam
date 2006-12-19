@@ -26,6 +26,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.5  2006/12/19 03:19:19  trevor
+ * fixed doc for TYPE_STR
+ *
  * Revision 1.4  2006/12/17 00:15:42  trevor
  * Added two new types: TYPE_HA and TYPE_SA. Removed TYPE_MA. Shifted values
  * of types down. Removed dynamic loading defs.
@@ -77,7 +80,7 @@ typedef enum {
 			  *   label stored as a C string pointing to a
 			  *   program address. */
     TYPE_STR   = 1 << 4, /**< A list of characters to be allocated on the
-			  *   heap and represented as a memory address. */
+			  *   heap and represented as a heap address. */
     TYPE_SA    = 1 << 5, /**< A memory address pointing to a location on
 			  *   the stack. */
     TYPE_HA    = 1 << 6, /**< A memory address pointing to a location on
