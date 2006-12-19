@@ -26,6 +26,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.8  2006/12/19 18:01:22  trevor
+ * Moved sam_exit_code to sam.h.
+ *
  * Revision 1.7  2006/12/19 07:28:09  anyoneeb
  * Split sam_value into sam_op_value and sam_ml_value.
  *
@@ -178,15 +181,6 @@ typedef struct {
 				 *   following instruction from the
 				 *   source. */
 } sam_label;
-
-/** Exit codes for main() */
-typedef enum {
-    SAM_EMPTY_STACK = -1,   /**< The stack was empty after program
-			     *	 execution. */
-    SAM_PARSE_ERROR = -2,   /**< There was a problem parsing input. */
-    SAM_USAGE	    = -3    /**< Usage was printed, there was a problem
-			     *	 parsing the command line args. */
-} sam_exit_code;
 
 /*@out@*/ /*@only@*/ /*@notnull@*/ extern void *sam_malloc(size_t size);
 extern void free(/*@only@*/ /*@out@*/ /*@null@*/ void *p);
