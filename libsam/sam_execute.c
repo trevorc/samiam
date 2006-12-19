@@ -27,6 +27,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.13  2006/12/19 07:28:09  anyoneeb
+ * Split sam_value into sam_op_value and sam_ml_value.
+ *
  * Revision 1.12  2006/12/19 05:52:06  trevor
  * Added some *@fallthrough@*s.
  *
@@ -79,6 +82,15 @@ typedef enum {
 			 *   instruction in the source file. */
 } sam_ml_type;
 
+/** A value on the stack or heap. */
+typedef union {
+    sam_int   i;
+    sam_float f;
+    sam_pa    pa;
+    sam_ha    ha;
+    sam_sa    sa;
+} sam_ml_value;
+
 typedef struct _sam_heap_pointer {
     size_t start;
     size_t size;
@@ -102,7 +114,7 @@ typedef struct {
 /** An element on the stack or on the heap. */
 typedef struct {
     unsigned  type: 8;
-    sam_value value;
+    sam_ml_value value;
 } sam_ml;
 
 typedef struct {
@@ -198,7 +210,7 @@ sam_round(sam_float f)
 }
 
 static sam_ml *
-sam_ml_new(sam_value   v,
+sam_ml_new(sam_ml_value   v,
 	   sam_ml_type t)
 {
     sam_ml *m = sam_malloc(sizeof (sam_ml));
@@ -271,20 +283,6 @@ sam_ml_type_to_char(sam_ml_type t)
     }
 }
 
-static char
-sam_op_type_to_char(sam_op_type t)
-{
-    switch (t) {
-	case SAM_OP_TYPE_INT:	return 'I';
-	case SAM_OP_TYPE_FLOAT:	return 'F';
-	case SAM_OP_TYPE_CHAR:	return 'C';
-	case SAM_OP_TYPE_LABEL:	return 'L';
-	case SAM_OP_TYPE_STR:	return 'S';
-	case SAM_OP_TYPE_NONE:	/*@fallthrough@*/
-	default:		return '?';
-    }
-}
-
 static void
 sam_print_char(sam_char c)
 {
@@ -322,8 +320,8 @@ sam_print_char(sam_char c)
 }
 
 static void
-sam_print_ml_value(sam_value v,
-		sam_ml_type  t)
+sam_print_ml_value(sam_ml_value v,
+		   sam_ml_type  t)
 {
     switch (t) {
 	case SAM_ML_TYPE_INT:
@@ -349,8 +347,8 @@ sam_print_ml_value(sam_value v,
 }
 
 static void
-sam_print_op_value(sam_value v,
-		sam_op_type  t)
+sam_print_op_value(sam_op_value v,
+		   sam_op_type  t)
 {
     switch (t) {
 	case SAM_OP_TYPE_INT:
@@ -723,7 +721,7 @@ sam_heap_alloc(sam_execution_state *s,
 	    size_t i, start = s->heap.a.len;
 
 	    for (i = start; i < start + size; ++i) {
-		sam_value v = { 0 };
+		sam_ml_value v = { 0 };
 		sam_array_ins(&s->heap.a,
 			      sam_ml_new(v, SAM_ML_TYPE_NONE));
 	    }
@@ -844,7 +842,7 @@ sam_sp_shift(sam_execution_state *s,
 	free(m);
     }
     while (sp > s->stack.len) {
-	sam_value v = { 0 };
+	sam_ml_value v = { 0 };
 	if (!sam_push(s, sam_ml_new(v, SAM_ML_TYPE_NONE))) {
 	    return sam_error_stack_overflow();
 	}
@@ -1285,11 +1283,9 @@ sam_get_jump_target(sam_execution_state *s,
 	 * incremented by the loop in sam_execute */
 	*p = cur->operand.pa - 1;
     } else if (cur->optype == SAM_OP_TYPE_LABEL) {
-	sam_value v;
-
-	if (sam_label_lookup(s, &v.pa, cur->operand.s)) {
+	if (sam_label_lookup(s, p, cur->operand.s)) {
 	    /* as above */
-	    *p = v.pa - 1;
+	    --*p;
 	} else {
 	    return sam_error_unknown_identifier(cur->operand.s);
 	}
@@ -1304,7 +1300,7 @@ static sam_error
 sam_read_number(sam_execution_state *s,
 		sam_ml_type	     t)
 {
-    sam_value  v;
+    sam_ml_value  v;
     char       buf[36];
     char      *endptr;
 
@@ -1410,11 +1406,13 @@ sam_op_pushimm(sam_execution_state *s)
 {
     sam_instruction	*cur = s->program->arr[s->pc];
     sam_ml *m;
+    sam_ml_value v;
 
     if (cur->optype != SAM_OP_TYPE_INT) {
 	return sam_error_optype(s);
     }
-    m = sam_ml_new(cur->operand, SAM_ML_TYPE_INT);
+    v.i = cur->operand.i;
+    m = sam_ml_new(v, SAM_ML_TYPE_INT);
     if (!sam_push(s, m)) {
 	return sam_error_stack_overflow();
     }
@@ -1427,11 +1425,13 @@ sam_op_pushimmf(sam_execution_state *s)
 {
     sam_instruction	*cur = s->program->arr[s->pc];
     sam_ml *m;
+    sam_ml_value v;
 
     if (cur->optype != SAM_OP_TYPE_FLOAT) {
 	return sam_error_optype(s);
     }
-    m = sam_ml_new(cur->operand, SAM_ML_TYPE_FLOAT);
+    v.f = cur->operand.f;
+    m = sam_ml_new(v, SAM_ML_TYPE_FLOAT);
     if (!sam_push(s, m)) {
 	return sam_error_stack_overflow();
     }
@@ -1443,11 +1443,13 @@ static sam_error
 sam_op_pushimmch(sam_execution_state *s)
 {
     sam_instruction	*cur = s->program->arr[s->pc];
+    sam_ml_value v;
 
     if (cur->optype != SAM_OP_TYPE_CHAR) {
 	return sam_error_optype(s);
     }
-    if (!sam_push(s, sam_ml_new(cur->operand, SAM_ML_TYPE_INT))) {
+    v.i = cur->operand.c;
+    if (!sam_push(s, sam_ml_new(v, SAM_ML_TYPE_INT))) {
 	return sam_error_stack_overflow();
     }
 
@@ -1458,7 +1460,7 @@ static sam_error
 sam_op_pushimmma(sam_execution_state *s)
 {
     sam_instruction	*cur = s->program->arr[s->pc];
-    sam_value		 v;
+    sam_ml_value	 v;
 
     if (cur->optype != SAM_OP_TYPE_INT) {
 	return sam_error_optype(s);
@@ -1476,14 +1478,14 @@ static sam_error
 sam_op_pushimmpa(sam_execution_state *s)
 {
     sam_instruction *cur = s->program->arr[s->pc];
+    sam_ml_value v;
 
     if (cur->optype == SAM_OP_TYPE_INT) {
-	if (!sam_push(s, sam_ml_new(cur->operand, SAM_ML_TYPE_PA))) {
+	v.pa = cur->operand.i;
+	if (!sam_push(s, sam_ml_new(v, SAM_ML_TYPE_PA))) {
 	    return sam_error_stack_overflow();
 	}
     } else if (cur->optype == SAM_OP_TYPE_LABEL) {
-	sam_value v;
-
 	if (sam_label_lookup(s, &v.pa, cur->operand.s)) {
 	    if (!sam_push(s, sam_ml_new(v, SAM_ML_TYPE_PA))) {
 		return sam_error_stack_overflow();
@@ -1503,7 +1505,7 @@ sam_op_pushimmstr(sam_execution_state *s)
 {
     sam_instruction *cur = s->program->arr[s->pc];
     sam_ml *m;
-    sam_value v;
+    sam_ml_value v;
     size_t len, i;
 
     if (cur->optype != SAM_OP_TYPE_STR) {
@@ -1515,11 +1517,11 @@ sam_op_pushimmstr(sam_execution_state *s)
     }
     for (i = 0; i < len; ++i) {
 	m = s->heap.a.arr[i + v.ha];
-	m->value.c = cur->operand.s[i];
+	m->value.i = cur->operand.s[i];
 	m->type = SAM_ML_TYPE_INT;
     }
     m = s->heap.a.arr[i + v.ha];
-    m->value.c = '\0';
+    m->value.i = '\0';
     m->type = SAM_ML_TYPE_INT;
 
     if (!sam_push(s, sam_ml_new(v, SAM_ML_TYPE_HA))) {
@@ -1532,7 +1534,7 @@ sam_op_pushimmstr(sam_execution_state *s)
 static sam_error
 sam_op_pushsp(sam_execution_state *s)
 {
-    sam_value v;
+    sam_ml_value v;
 
     v.sa = s->stack.len;
     if (!sam_push(s, sam_ml_new(v, SAM_ML_TYPE_SA))) {
@@ -1545,7 +1547,7 @@ sam_op_pushsp(sam_execution_state *s)
 static sam_error
 sam_op_pushfbr(sam_execution_state *s)
 {
-    sam_value v;
+    sam_ml_value v;
     v.sa = s->fbr;
     return sam_push(s, sam_ml_new(v, SAM_ML_TYPE_SA))?
 	SAM_OK: sam_error_stack_overflow();
@@ -1652,7 +1654,7 @@ static sam_error
 sam_op_malloc(sam_execution_state *s)
 {
     sam_ml *m;
-    sam_value v;
+    sam_ml_value v;
     size_t i;
 
     if ((m = sam_pop(s)) == NULL) {
@@ -2160,7 +2162,7 @@ sam_op_rst(sam_execution_state *s)
 static sam_error
 sam_op_jsr(sam_execution_state *s)
 {
-    sam_value		v;
+    sam_ml_value	v;
     sam_pa	target;
     sam_error		err;
 
@@ -2180,7 +2182,7 @@ static sam_error
 sam_op_jsrind(sam_execution_state *s)
 {
     sam_ml *m;
-    sam_value		 v;
+    sam_ml_value	 v;
 
     if ((m = sam_pop(s)) == NULL) {
 	return sam_error_stack_underflow();
@@ -2217,7 +2219,7 @@ sam_op_skip(sam_execution_state *s)
 static sam_error
 sam_op_link(sam_execution_state *s)
 {
-    sam_value v;
+    sam_ml_value v;
 
     v.sa = s->fbr;
     if (!sam_push(s, sam_ml_new(v, SAM_ML_TYPE_SA))) {
@@ -2237,7 +2239,7 @@ sam_op_unlink(sam_execution_state *s)
 static sam_error
 sam_op_read(sam_execution_state *s)
 {
-    sam_value v;
+    sam_ml_value v;
     int	      err;
     int	      buf;
 
@@ -2258,7 +2260,7 @@ sam_op_read(sam_execution_state *s)
 static sam_error
 sam_op_readf(sam_execution_state *s)
 {
-    sam_value v;
+    sam_ml_value v;
     int	      err;
     double    buf;
 
@@ -2279,14 +2281,14 @@ sam_op_readf(sam_execution_state *s)
 static sam_error
 sam_op_readch(sam_execution_state *s)
 {
-    sam_value v;
+    sam_ml_value v;
     char      buf;
 
     if (s->io_funcs->read_char_func == NULL) {
 	errno = 0;
-	v.c = getchar();
+	v.i = getchar();
 
-	if (v.c == EOF && ferror(stdin) != 0) {
+	if (v.i == EOF && ferror(stdin) != 0) {
 	    clearerr(stdin);
 	    return sam_error_io();
 	}
@@ -2294,7 +2296,7 @@ sam_op_readch(sam_execution_state *s)
 	return SAM_EIO;
     }
 
-    v.c = buf;
+    v.i = buf;
     if (!sam_push(s, sam_ml_new(v, SAM_ML_TYPE_INT))) {
 	return sam_error_stack_overflow();
     }
@@ -2306,7 +2308,7 @@ sam_op_readstr(sam_execution_state *s)
 {
     sam_ml *m;
     char		*str;
-    sam_value		 v;
+    sam_ml_value	 v;
     size_t		 len, i;
 
     if (s->io_funcs->read_str_func == NULL) {
@@ -2330,7 +2332,7 @@ sam_op_readstr(sam_execution_state *s)
     }
     for (i = 0; i <= len; ++i) {
 	m = s->heap.a.arr[i + v.ha];
-	m->value.c = str[i];
+	m->value.i = str[i];
 	m->type = SAM_ML_TYPE_INT;
     }
     free(s);
@@ -2403,7 +2405,7 @@ sam_op_writech(sam_execution_state *s)
 	free(m);
 	return sam_error_stack_input1(s, t, SAM_ML_TYPE_INT);
     }
-    c = m->value.c;
+    c = m->value.i;
     free(m);
 
     if (s->io_funcs->write_char_func == NULL) {
@@ -2443,10 +2445,10 @@ sam_op_writestr(sam_execution_state *s)
 	    int c;
 	    m = s->heap.a.arr[i];
 
-	    if (m == NULL || m->value.c == '\0') {
+	    if (m == NULL || m->value.i == '\0') {
 		break;
 	    }
-	    if ((c = sam_putchar(m->value.c)) != SAM_OK) {
+	    if ((c = sam_putchar(m->value.i)) != SAM_OK) {
 		return c;
 	    }
 	    if (++i == s->heap.a.len) {
@@ -2468,7 +2470,7 @@ sam_op_writestr(sam_execution_state *s)
 	    return sam_error_segmentation_fault(ma);
 	}
 	m = s->heap.a.arr[i];
-	if(m == NULL || m->value.c == '\0') {
+	if(m == NULL || m->value.i == '\0') {
 	    break;
 	}
     }
@@ -2478,11 +2480,11 @@ sam_op_writestr(sam_execution_state *s)
 
 	for (i = 0; i <= len; ++i) {
 	    m = s->heap.a.arr[i + ha];
-	    if (m == NULL || m->value.c == '\0') {
+	    if (m == NULL || m->value.i == '\0') {
 		str[i] = '\0';
 		break;
 	    }
-	    str[i] = m->value.c;
+	    str[i] = m->value.i;
 	}
 
 	rv = s->io_funcs->write_str_func(str) == 0? SAM_OK: sam_error_io();

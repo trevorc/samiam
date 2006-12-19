@@ -27,6 +27,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.8  2006/12/19 07:28:09  anyoneeb
+ * Split sam_value into sam_op_value and sam_ml_value.
+ *
  * Revision 1.7  2006/12/19 05:43:40  anyoneeb
  * Added self to copyright.
  *
@@ -220,8 +223,8 @@ sam_try_parse_string(/*@in@*/  char **input,
 
 static sam_bool
 sam_try_parse_number(/*@in@*/ char     **input,
-		     sam_value   *operand,
-		     sam_op_type *optype)
+		     sam_op_value *operand,
+		     sam_op_type  *optype)
 {
     char *endptr;
 
@@ -348,7 +351,7 @@ sam_try_parse_char(/*@in@*/ char **input,
  *  @param input A pointer to the string which should be tested for
  *		 containing an operand. Update to the point after the
  *		 operand if it's found, otherwise print an error.
- *  @param operand A pointer to a #sam_value where the result of the
+ *  @param operand A pointer to a #sam_op_value where the result of the
  *		   parse should be stored if successful.
  *  @param optype A pointer to the union of the possible types the
  *		  operand could be; updated to what is found.
@@ -358,8 +361,8 @@ sam_try_parse_char(/*@in@*/ char **input,
  */
 static sam_bool
 sam_try_parse_operand(/*@in@*/ char	 **input,
-		      /*@in@*/ sam_value  *operand,
-		      sam_op_type	 *optype)
+		      /*@in@*/ sam_op_value  *operand,
+		      sam_op_type	     *optype)
 {
     return ((*optype & (SAM_OP_TYPE_INT | SAM_OP_TYPE_FLOAT)) != 0 &&
 	    sam_try_parse_number(input, operand, optype)) ||

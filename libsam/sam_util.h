@@ -26,6 +26,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.7  2006/12/19 07:28:09  anyoneeb
+ * Split sam_value into sam_op_value and sam_ml_value.
+ *
  * Revision 1.6  2006/12/19 05:41:15  anyoneeb
  * Sepated operand types from memory types.
  *
@@ -108,9 +111,7 @@ typedef union {
     sam_char  c;
     char     *s;
     sam_pa    pa;
-    sam_ha    ha;
-    sam_sa    sa;
-} sam_value;
+} sam_op_value;
 
 struct _sam_instruction;
 struct _sam_execution_state;
@@ -159,7 +160,7 @@ typedef struct _sam_instruction {
     sam_op_type optype;			/**< The OR of types allowed
 					 *   to be in the operand
 					 *   position of this opcode. */
-    sam_value	operand;		/**< The value of this
+    sam_op_value operand;		/**< The value of this
 					 *   instruction's operand,
 					 *   assigned on parsing. */
     /*@null@*/ /*@observer@*/
