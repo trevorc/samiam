@@ -27,6 +27,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.21  2006/12/19 23:42:28  trevor
+ * Pretty-print floating points with %g.
+ *
  * Revision 1.20  2006/12/19 18:36:25  trevor
  * Misc fixes (docs, inappropriate use of size_t).
  *
@@ -352,7 +355,7 @@ sam_print_ml_value(sam_ml_value v,
 	    fprintf(stderr, "%ld", v.i);
 	    break;
 	case SAM_ML_TYPE_FLOAT:
-	    fprintf(stderr, "%.3f", v.f);
+	    fprintf(stderr, "%.5g", v.f);
 	    break;
 	case SAM_ML_TYPE_HA:
 	    fprintf(stderr, "%luH", (unsigned long)v.ha);
@@ -379,7 +382,7 @@ sam_print_op_value(sam_op_value v,
 	    fprintf(stderr, "%ld", v.i);
 	    break;
 	case SAM_OP_TYPE_FLOAT:
-	    fprintf(stderr, "%.3f", v.f);
+	    fprintf(stderr, "%.5g", v.f);
 	    break;
 	case SAM_OP_TYPE_CHAR:
 	    sam_print_char(v.c);
@@ -2417,7 +2420,7 @@ sam_op_writef(/*@in@*/ sam_execution_state *s)
     free(m);
 
     if (s->io_funcs->write_float_func == NULL) {
-	printf("%f", f);
+	printf("%g", f);
 	return errno == 0? SAM_OK: sam_error_io();
     }
     return s->io_funcs->write_float_func(f) == 0? SAM_OK: sam_error_io();
