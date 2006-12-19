@@ -27,6 +27,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.19  2006/12/19 18:17:53  trevor
+ * Moved parts of sam_util.h which were library-generic into libsam.h.
+ *
  * Revision 1.18  2006/12/19 10:41:26  anyoneeb
  * Last splint warnings fix for now.
  *
@@ -75,6 +78,7 @@
 #include <string.h>
 #include <math.h>
 
+#include "libsam.h"
 #include "sam_util.h"
 #include "sam_main.h"
 #include "sam_execute.h"

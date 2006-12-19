@@ -1,5 +1,5 @@
 /*
- * sam_util.c       arrays, strings, and value types
+ * sam_util.c       arrays, strings, and a safe malloc(3).
  * $Id$
  *
  * part of samiam - the fast sam interpreter
@@ -27,6 +27,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.5  2006/12/19 18:17:53  trevor
+ * Moved parts of sam_util.h which were library-generic into libsam.h.
+ *
  * Revision 1.4  2006/12/19 09:29:34  trevor
  * Removed implicit casts.
  *

@@ -27,6 +27,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.11  2006/12/19 18:17:53  trevor
+ * Moved parts of sam_util.h which were library-generic into libsam.h.
+ *
  * Revision 1.10  2006/12/19 09:50:02  trevor
  * fixed a cast
  *
@@ -67,6 +70,7 @@
 # include <unistd.h>
 #endif /* HAVE_UNISTD_H || HAVE_MMAN_H */
 
+#include "libsam.h"
 #include "sam_util.h"
 #include "sam_main.h"
 #include "sam_execute.h"

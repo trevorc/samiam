@@ -27,6 +27,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.4  2006/12/19 18:17:53  trevor
+ * Moved parts of sam_util.h which were library-generic into libsam.h.
+ *
  * Revision 1.3  2006/12/19 09:29:34  trevor
  * Removed implicit casts.
  *
@@ -41,6 +44,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "libsam.h"
 #include "sam_util.h"
 #include "sam_main.h"
 #include "sam_execute.h"
