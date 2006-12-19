@@ -12,6 +12,9 @@ INSTALL=install
 all:
 clean:
 
+doc:
+	$(MAKE) -Cdoc
+
 install:
 	$(INSTALL) -vd $(DESTDIR)$(LIBDIR)
 	$(INSTALL) -vd $(DESTDIR)$(BINDIR)
@@ -32,12 +35,11 @@ uninstall:
 	$(RM) $(MANDIR)/man1/samiam.1
 
 check: all
-	$(MAKE) -C tests $@
+	$(MAKE) -Ctests $@
 
 %:
-	$(MAKE) -C libsam $@
-	$(MAKE) -C samiam $@
-	$(MAKE) -C spawn $@
-	$(MAKE) -C jbc_test $@
-	$(MAKE) -C tests $@
-	$(MAKE) -C doc $@
+	$(MAKE) -Clibsam $@
+	$(MAKE) -Csamiam $@
+	$(MAKE) -Cspawn $@
+	$(MAKE) -Cjbc_test $@
+	$(MAKE) -Ctests $@
