@@ -27,6 +27,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.12  2006/12/19 05:52:06  trevor
+ * Added some *@fallthrough@*s.
+ *
  * Revision 1.11  2006/12/19 05:41:15  anyoneeb
  * Sepated operand types from memory types.
  *
@@ -65,15 +68,15 @@ static sam_bool stack_trace;
  *  The various types allowed in sam memory locations.
  */
 typedef enum {
-    SAM_ML_TYPE_NONE,		/**< A null operand. */
-    SAM_ML_TYPE_INT,            /**< An integer type. */
-    SAM_ML_TYPE_FLOAT,          /**< An IEEE 754 floating point number. */
-    SAM_ML_TYPE_SA,             /**< A memory address pointing to a location on
-			  *   the stack. */
-    SAM_ML_TYPE_HA,             /**< A memory address pointing to a location on
-			  *   the heap. */
-    SAM_ML_TYPE_PA              /**< A program address pointing to an
-			  *   instruction in the source file. */
+    SAM_ML_TYPE_NONE,	/**< A null operand. */
+    SAM_ML_TYPE_INT,	/**< An integer type. */
+    SAM_ML_TYPE_FLOAT,	/**< An IEEE 754 floating point number. */
+    SAM_ML_TYPE_SA,	/**< A memory address pointing to a location on
+			 *   the stack. */
+    SAM_ML_TYPE_HA,	/**< A memory address pointing to a location on
+			 *   the heap. */
+    SAM_ML_TYPE_PA	/**< A program address pointing to an
+			 *   instruction in the source file. */
 } sam_ml_type;
 
 typedef struct _sam_heap_pointer {
@@ -263,7 +266,7 @@ sam_ml_type_to_char(sam_ml_type t)
 	case SAM_ML_TYPE_HA:	/*@fallthrough@*/
 	case SAM_ML_TYPE_SA:	return 'M';
 	case SAM_ML_TYPE_PA:	return 'P';
-	case SAM_ML_TYPE_NONE:
+	case SAM_ML_TYPE_NONE:	/*@fallthrough@*/
 	default:		return '?';
     }
 }
@@ -277,7 +280,7 @@ sam_op_type_to_char(sam_op_type t)
 	case SAM_OP_TYPE_CHAR:	return 'C';
 	case SAM_OP_TYPE_LABEL:	return 'L';
 	case SAM_OP_TYPE_STR:	return 'S';
-	case SAM_OP_TYPE_NONE:
+	case SAM_OP_TYPE_NONE:	/*@fallthrough@*/
 	default:		return '?';
     }
 }
@@ -338,8 +341,8 @@ sam_print_ml_value(sam_value v,
 	case SAM_ML_TYPE_PA:
 	    fprintf(stderr, "%u", (unsigned)v.pa);
 	    break;
+	case SAM_ML_TYPE_NONE: /*@fallthrough@*/
 	default:
-	case SAM_ML_TYPE_NONE:
 	    fputc('?', stderr);
 	    break;
     }
@@ -363,8 +366,8 @@ sam_print_op_value(sam_value v,
 	case SAM_OP_TYPE_LABEL:
 	    fprintf(stderr, "\"%s\"", v.s);
 	    break;
+	case SAM_OP_TYPE_NONE: /*@fallthrough@*/
 	default:
-	case SAM_OP_TYPE_NONE:
 	    fputc('?', stderr);
 	    break;
     }
