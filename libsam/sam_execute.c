@@ -27,6 +27,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.15  2006/12/19 09:29:34  trevor
+ * Removed implicit casts.
+ *
  * Revision 1.14  2006/12/19 08:33:56  anyoneeb
  * Some splint warning fixes.
  *
@@ -194,20 +197,20 @@ static sam_int
 sam_round(sam_float f)
 {
     if (f < 0) {
-	sam_float fl = (sam_float) ceil(f);
+	sam_float fl = ceil(f);
 
 	if (fabs(f - fl) >= .5) {
-	    return (sam_int) floor(f);
+	    return floor(f);
 	} else {
-	    return (sam_int) fl;
+	    return fl;
 	}
     } else {
-	sam_float fl = (sam_float) floor(f);
+	sam_float fl = floor(f);
 
 	if (fabs(f - fl) >= .5) {
-	    return (sam_int) ceil(f);
+	    return ceil(f);
 	} else {
-	    return (sam_int) fl;
+	    return fl;
 	}
     }
 }
@@ -334,13 +337,13 @@ sam_print_ml_value(sam_ml_value v,
 	    fprintf(stderr, "%.3f", v.f);
 	    break;
 	case SAM_ML_TYPE_HA:
-	    fprintf(stderr, "%uH", (unsigned)v.ha);
+	    fprintf(stderr, "%luH", (unsigned long)v.ha);
 	    break;
 	case SAM_ML_TYPE_SA:
-	    fprintf(stderr, "%uS", (unsigned)v.sa);
+	    fprintf(stderr, "%luS", (unsigned long)v.sa);
 	    break;
 	case SAM_ML_TYPE_PA:
-	    fprintf(stderr, "%u", (unsigned)v.pa);
+	    fprintf(stderr, "%lu", (unsigned long)v.pa);
 	    break;
 	case SAM_ML_TYPE_NONE: /*@fallthrough@*/
 	default:
@@ -394,11 +397,11 @@ sam_error_segmentation_fault(sam_ma ma)
     if ((options & quiet) == 0) {
 	fprintf(stderr,
 		"error: segmentation fault. attempt to access illegal "
-		"memory at %s address %u.\n",
-		(sam_bool)ma.stack? "stack": "heap",
-		(sam_bool)ma.stack?
-		    (unsigned)ma.index.sa:
-		    (unsigned)ma.index.ha);
+		"memory at %s address %lu.\n",
+		ma.stack? "stack": "heap",
+		ma.stack?
+		    (unsigned long)ma.index.sa:
+		    (unsigned long)ma.index.ha);
 	stack_trace = TRUE;
     }
     return SAM_ESEGFAULT;
@@ -410,8 +413,8 @@ sam_error_free(sam_ha index)
     if ((options & quiet) == 0) {
 	fprintf(stderr,
 		"error: attempt to free nonexistant or unused heap "
-		"address %uH\n",
-		(unsigned)index);
+		"address %luH\n",
+		(unsigned long)index);
 	stack_trace = TRUE;
     }
     return SAM_EFREE;
@@ -481,7 +484,7 @@ sam_error_uninitialized(sam_execution_state *s)
     if ((options & quiet) == 0) {
 	fprintf(stderr,
 		"warning: use of uninitialized memory at program address "
-		"%d.\n", (int) s->pc);
+		"%lu.\n", (unsigned long)s->pc);
     }
 }
 
@@ -489,8 +492,8 @@ static void
 sam_check_for_leaks(sam_execution_state *s)
 {
     if ((options & quiet) == 0) {
-	unsigned	  block_count = 0;
-	size_t		  leak_size = 0;
+	unsigned long	  block_count = 0;
+	unsigned long	  leak_size = 0;
 	sam_heap_pointer *h = s->heap.used_list;
 
 	for (; h != NULL; h = h->next) {
@@ -500,9 +503,9 @@ sam_check_for_leaks(sam_execution_state *s)
 
 	if (leak_size > 0) {
 	    fprintf(stderr,
-		    "warning: your program leaks %u byte%s in %u "
+		    "warning: your program leaks %lu byte%s in %lu "
 		    "block%s.\n",
-		    (unsigned)leak_size, leak_size == 1? "": "s",
+		    leak_size, leak_size == 1? "": "s",
 		    block_count, block_count == 1? "": "s");
 	}
     }
@@ -658,7 +661,7 @@ sam_heap_pointer_new(size_t start,
 		     size_t size,
 		     /*@only@*/ /*@null@*/ sam_heap_pointer *next)
 {
-    sam_heap_pointer *p = sam_malloc(sizeof(sam_heap_pointer));
+    sam_heap_pointer *p = sam_malloc(sizeof (sam_heap_pointer));
     p->start = start;
     p->size = size;
     p->next = next;
@@ -736,7 +739,7 @@ sam_heap_alloc(sam_execution_state *s,
 	    size_t i, start = f->start;
 
 	    for (i = start; i < size + start; ++i) {
-		s->heap.a.arr[i] = sam_malloc(sizeof(sam_ml));
+		s->heap.a.arr[i] = sam_malloc(sizeof (sam_ml));
 	    }
 	    s->heap.used_list = sam_heap_pointer_update(s->heap.used_list,
 							start, size);
@@ -881,10 +884,10 @@ sam_pushabs(sam_execution_state *s,
 
 static sam_error
 sam_storeabs(sam_execution_state *s,
-	     sam_ml *m,
-	     sam_ma  ma)
+	     /*@only@*/ sam_ml	 *m,
+	     sam_ma		  ma)
 {
-    if ((sam_bool)ma.stack) {
+    if (ma.stack) {
 	if (ma.index.sa >= s->stack.len) {
 	    return sam_error_segmentation_fault(ma);
 	}
@@ -906,7 +909,7 @@ sam_addition(sam_execution_state *s,
 	     sam_bool		  add)
 {
     sam_ml *m1, *m2;
-    int addfactor = add? 1: -1;
+    int sign = add? 1: -1;
     sam_ml_type t;
 
     if ((m2 = sam_pop(s)) == NULL) {
@@ -930,7 +933,7 @@ sam_addition(sam_execution_state *s,
 	case SAM_ML_TYPE_PA:
 	    if (m2->type == SAM_ML_TYPE_INT) {
 		/* user could set an illegal index here */
-		m1->value.pa = m1->value.pa + addfactor * (sam_pa)m2->value.i;
+		m1->value.pa = m1->value.pa + sign * m2->value.i;
 		free(m2);
 		if (!sam_push(s, m1)) {
 		    return sam_error_stack_overflow();
@@ -942,8 +945,7 @@ sam_addition(sam_execution_state *s,
 	    if (m2->type == SAM_ML_TYPE_INT) {
 		/* user could set an illegal index here or could
 		 * overflow the address */
-		m1->value.ha =
-		    (size_t)((int)m1->value.ha + addfactor * m2->value.i);
+		m1->value.ha = m1->value.ha + sign * m2->value.i;
 		free(m2);
 		if (!sam_push(s, m1)) {
 		    return sam_error_stack_overflow();
@@ -955,8 +957,7 @@ sam_addition(sam_execution_state *s,
 	    if (m2->type == SAM_ML_TYPE_INT) {
 		/* user could set an illegal index here or could
 		 * overflow the address */
-		m1->value.sa =
-		    (size_t)((int)m1->value.sa + addfactor * m2->value.i);
+		m1->value.sa = m1->value.sa + sign * m2->value.i;
 		free(m2);
 		if (!sam_push(s, m1)) {
 		    return sam_error_stack_overflow();
@@ -966,7 +967,7 @@ sam_addition(sam_execution_state *s,
 	    break;
 	case SAM_ML_TYPE_INT:
 	    if (m2->type == SAM_ML_TYPE_INT) {
-		m1->value.i += addfactor * m2->value.i;
+		m1->value.i += sign * m2->value.i;
 		free(m2);
 		if (!sam_push(s, m1)) {
 		    return sam_error_stack_overflow();
@@ -975,7 +976,7 @@ sam_addition(sam_execution_state *s,
 	    }
 	    if (m2->type == SAM_ML_TYPE_PA) {
 		/* user could set an illegal index here */
-		m1->value.pa = (sam_pa)m1->value.i + addfactor * m2->value.pa;
+		m1->value.pa = m1->value.i + sign * m2->value.pa;
 		m1->type = SAM_ML_TYPE_PA;
 		free(m2);
 		if (!sam_push(s, m1)) {
@@ -985,7 +986,7 @@ sam_addition(sam_execution_state *s,
 	    }
 	    if (m2->type == SAM_ML_TYPE_HA) {
 		/* user could set an illegal index here or overflow */
-		m1->value.ha = m1->value.i + addfactor * m2->value.ha;
+		m1->value.ha = m1->value.i + sign * m2->value.ha;
 		m1->type = SAM_ML_TYPE_HA;
 		free(m2);
 		if (!sam_push(s, m1)) {
@@ -995,7 +996,7 @@ sam_addition(sam_execution_state *s,
 	    }
 	    if (m2->type == SAM_ML_TYPE_SA) {
 		/* user could set an illegal index here or overflow */
-		m1->value.sa = m1->value.i + addfactor * m2->value.sa;
+		m1->value.sa = m1->value.i + sign * m2->value.sa;
 		m1->type = SAM_ML_TYPE_SA;
 		free(m2);
 		if (!sam_push(s, m1)) {
@@ -1062,7 +1063,7 @@ sam_integer_arithmetic(sam_execution_state		*s,
 	    m1->value.i = !(m1->value.i && m2->value.i);
 	    break;
 	case SAM_OP_DIV:
-	    if(m2->value.i == 0) {
+	    if (m2->value.i == 0) {
 		free(m1);
 		free(m2);
 		return sam_error_division_by_zero();
@@ -1190,7 +1191,7 @@ sam_unary_arithmetic(sam_execution_state	   *s,
     switch(op) {
 	case SAM_OP_NOT: /*@fallthrough@*/
 	case SAM_OP_ISNIL:
-	    m1->value.i = !m1->value.i;
+	    m1->value.i = !(sam_bool)m1->value.i;
 	    break;
 	case SAM_OP_BITNOT:
 	    m1->value.i = ~m1->value.i;
@@ -1800,7 +1801,7 @@ sam_op_storeabs(sam_execution_state *s)
 	return sam_error_optype(s);
     }
     ma.stack = TRUE;
-    ma.index.sa = (sam_sa)cur->operand.i;
+    ma.index.sa = cur->operand.i;
 
     return sam_storeabs(s, m, ma);
 }
@@ -1815,7 +1816,7 @@ sam_op_pushoff(sam_execution_state *s)
 	return sam_error_optype(s);
     }
     ma.stack = TRUE;
-    ma.index.sa = s->fbr + (sam_sa)cur->operand.i;
+    ma.index.sa = s->fbr + cur->operand.i;
 
     return sam_pushabs(s, ma);
 }
@@ -1834,7 +1835,7 @@ sam_op_storeoff(sam_execution_state *s)
 	return sam_error_optype(s);
     }
     ma.stack = TRUE;
-    ma.index.sa = s->fbr + (sam_sa)cur->operand.i;
+    ma.index.sa = s->fbr + cur->operand.i;
 
     return sam_storeabs(s, m, ma);
 }
@@ -2273,7 +2274,7 @@ sam_op_readf(sam_execution_state *s)
     if ((err = s->io_funcs->read_float_func(&buf)) < 0) {
 	return SAM_EIO;
     }
-    v.f = (sam_float)buf;
+    v.f = buf;
     if (!sam_push(s, sam_ml_new(v, SAM_ML_TYPE_FLOAT))) {
 	return sam_error_stack_overflow();
     }
@@ -2350,7 +2351,7 @@ static sam_error
 sam_op_write(sam_execution_state *s)
 {
     sam_ml *m;
-    int			 i;
+    sam_int i;
 
     if ((m = sam_pop(s)) == NULL) {
 	return sam_error_stack_underflow();
@@ -2364,7 +2365,7 @@ sam_op_write(sam_execution_state *s)
     free(m);
 
     if (s->io_funcs->write_int_func == NULL) {
-	printf("%d", i);
+	printf("%ld", i);
 	return errno == 0? SAM_OK: sam_error_io();
     }
     return s->io_funcs->write_int_func(i) == 0?  SAM_OK: sam_error_io();
@@ -2519,7 +2520,7 @@ sam_op_patoi(sam_execution_state *s)
 	free(m);
 	return sam_error_type_conversion(SAM_ML_TYPE_INT, t, SAM_ML_TYPE_PA);
     }
-    m->value.i = (int)m->value.pa;
+    m->value.i = m->value.pa;
     m->type = SAM_ML_TYPE_INT;
     if (!sam_push(s, m)) {
 	return sam_error_stack_overflow();
@@ -2648,10 +2649,12 @@ sam_stack_trace(const sam_execution_state *s)
 
     fprintf(stderr,
 	    "\nstate of execution:\n"
-	    "PC:\t%u\n"
-	    "FBR:\t%u\n"
-	    "SP:\t%u\n\n",
-	    (unsigned)s->pc, (unsigned)s->fbr, (unsigned)s->stack.len);
+	    "PC:\t%lu\n"
+	    "FBR:\t%lu\n"
+	    "SP:\t%lu\n\n",
+	    (unsigned long)s->pc,
+	    (unsigned long)s->fbr,
+	    (unsigned long)s->stack.len);
 
     fputs("Heap\t    Stack\t    Program\n", stderr);
     for (i = 0; i <= s->program->len || i <= s->stack.len ||
@@ -2682,7 +2685,7 @@ sam_stack_trace(const sam_execution_state *s)
 	    fputs("    \t\t", stderr);
 	}
 	if (i <= s->program->len) {
-	    if (i == (size_t)s->pc) {
+	    if (i == s->pc) {
 		fputs("==> ", stderr);
 	    } else {
 		fputs("    ", stderr);
@@ -2700,20 +2703,20 @@ sam_stack_trace(const sam_execution_state *s)
     fputc('\n', stderr);
 }
 
-static sam_int
+static int
 sam_convert_to_int(/*@in@*/ sam_ml *m)
 {
     switch (m->type) {
 	case SAM_ML_TYPE_INT:
 	    return m->value.i;
 	case SAM_ML_TYPE_FLOAT:
-	    return (sam_int)m->value.f;
+	    return m->value.f;
 	case SAM_ML_TYPE_PA:
-	    return (sam_int)m->value.pa;
+	    return m->value.pa;
 	case SAM_ML_TYPE_HA:
-	    return (sam_int)m->value.ha;
+	    return m->value.ha;
 	case SAM_ML_TYPE_SA:
-	    return (sam_int)m->value.sa;
+	    return m->value.sa;
 	case SAM_ML_TYPE_NONE:
 	default:
 	    return 0;

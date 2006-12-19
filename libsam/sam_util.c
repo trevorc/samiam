@@ -27,6 +27,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.4  2006/12/19 09:29:34  trevor
+ * Removed implicit casts.
+ *
  * Revision 1.3  2006/12/12 23:31:36  trevor
  * Added the Id and Log tags and copyright notice where they were missing.
  *
@@ -171,10 +174,10 @@ sam_string_read(/*@in@*/  FILE *in,
 
     for (;;) {
 	char buf[16];
-	size_t n = fread(buf, sizeof(char), 16, in);
+	size_t n = fread(buf, sizeof (char), 16, in);
 
 	if (n == 0) {
-	    if ((sam_bool)ferror(in)) {
+	    if (ferror(in)) {
 		perror("fread");
 		sam_string_free(s);
 		return NULL;

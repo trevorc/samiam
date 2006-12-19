@@ -26,6 +26,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.5  2006/12/19 09:29:34  trevor
+ * Removed implicit casts.
+ *
  * Revision 1.4  2006/12/19 08:33:56  anyoneeb
  * Some splint warning fixes.
  *
@@ -40,8 +43,8 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-#include <limits.h>
 #include <float.h>
+#include <limits.h>
 #include <stdint.h>
 
 #define HAVE_MMAN_H	1

@@ -27,6 +27,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.9  2006/12/19 09:29:34  trevor
+ * Removed implicit casts.
+ *
  * Revision 1.8  2006/12/19 07:28:09  anyoneeb
  * Split sam_value into sam_op_value and sam_ml_value.
  *
@@ -238,7 +241,7 @@ sam_try_parse_number(/*@in@*/ char     **input,
 	}
     }
     if ((*optype & SAM_OP_TYPE_FLOAT) != 0) {
-	operand->f = (sam_float)strtod(*input, &endptr);
+	operand->f = strtod(*input, &endptr);
 	if (*input != endptr &&
 	    (*endptr == '"' || isspace(*endptr) || *endptr == '\0')) {
 	    *optype = SAM_OP_TYPE_FLOAT;
@@ -263,28 +266,28 @@ sam_try_parse_escape_sequence(char **input,
 	case '"':  /*@fallthrough@*/
 	case '\'': /*@fallthrough@*/
 	case '\\':
-	    *c = (int)*prev;
+	    *c = *prev;
 	    break;
 	case 'a':
-	    *c = (int)'\a';
+	    *c = '\a';
 	    break;
 	case 'b':
-	    *c = (int)'\b';
+	    *c = '\b';
 	    break;
 	case 'f':
-	    *c = (int)'\f';
+	    *c = '\f';
 	    break;
 	case 'n':
-	    *c = (int)'\n';
+	    *c = '\n';
 	    break;
 	case 'r':
-	    *c = (int)'\r';
+	    *c = '\r';
 	    break;
 	case 't':
-	    *c = (int)'\t';
+	    *c = '\t';
 	    break;
 	case 'v':
-	    *c = (int)'\v';
+	    *c = '\v';
 	    break;
 	case '\0':
 	    return FALSE;
@@ -303,7 +306,7 @@ sam_try_parse_escape_sequence(char **input,
 	case '8': /*@fallthrough@*/
 	case '9':
 	    n = strtol(prev, &start, base);
-	    *c = (int)n;
+	    *c = n;
 	    break;
 	default:
 	    return FALSE;
@@ -329,8 +332,8 @@ sam_try_parse_char(/*@in@*/ char **input,
 	    return FALSE;
 	}
     } else if (*start != '\0') {
-	*c = (int)*start++;
-	if (*c == (int)'\0') {
+	*c = *start++;
+	if (*c == '\0') {
 	    return FALSE;
 	}
     } else {
@@ -477,9 +480,9 @@ sam_input_read(/*@observer@*/ const char *path,
 	}
 	return NULL;
     }
-    size = (size_t)sb.st_size;
-    p = mmap((void *)0, size, PROT_READ|PROT_WRITE, MAP_PRIVATE, fd, (off_t)0);
-    if (p == (void *)-1) {
+    size = sb.st_size;
+    p = mmap(0, size, PROT_READ|PROT_WRITE, MAP_PRIVATE, fd, 0);
+    if (p == -1) {
 	perror("mmap");
 	if (close(fd) < 0) {
 	    perror("close");

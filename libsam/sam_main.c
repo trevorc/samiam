@@ -27,6 +27,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.3  2006/12/19 09:29:34  trevor
+ * Removed implicit casts.
+ *
  * Revision 1.2  2006/12/12 23:31:36  trevor
  * Added the Id and Log tags and copyright notice where they were missing.
  *
@@ -79,5 +82,5 @@ sam_main(sam_options user_options,
 	sam_file_free(&input);
     }
 
-    return (int)retval;
+    return retval;
 }
