@@ -34,7 +34,9 @@ uninstall:
 	$(RM) $(BINDIR)/samiam
 	$(RM) $(MANDIR)/man1/samiam.1
 
-check: all
+check:
+	$(MAKE) -Clibsam
+	$(MAKE) -Csamiam
 	$(MAKE) -Ctests $@
 
 %:
