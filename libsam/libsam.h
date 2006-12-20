@@ -110,6 +110,7 @@ typedef enum {
 			 *   wrong type. */
     SAM_EIO,		/**< There was an input/output error. */
     SAM_EDIVISION,	/**< Attempt to divide by zero. */
+    SAM_ESHIFT,		/**< Attempt to shift by a negative value. */
     SAM_ENOSYS		/**< This opcode is not supported on this
 			 *   system because support for it was not
 			 *   compiled in. */

@@ -27,6 +27,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.22  2006/12/20 05:30:00  trevor
+ * Reject bit shifts by negative values.
+ *
  * Revision 1.21  2006/12/19 23:42:28  trevor
  * Pretty-print floating points with %g.
  *
@@ -607,6 +610,23 @@ sam_error_stack_input(/*@in@*/ sam_execution_state *s,
     }
 
     return SAM_ESTACK_INPUT;
+}
+
+static sam_error
+sam_error_negative_shift(/*@in@*/ sam_execution_state *s,
+			 sam_int i)
+{
+    if ((options & quiet) == 0) {
+	sam_instruction *cur = s->program->arr[s->pc];
+
+	fprintf(stderr,
+		"error: attempt to shift %ld by illegal negative value "
+		"%ld.\n",
+		i,
+		cur->operand.i);
+    }
+
+    return SAM_ESHIFT;
 }
 
 static sam_error
@@ -1253,6 +1273,11 @@ sam_bitshift(/*@in@*/ sam_execution_state *s,
 	sam_ml_type t = m->type;
 	free(m);
 	return sam_error_stack_input1(s, t, SAM_ML_TYPE_INT);
+    }
+    if (cur->operand.i < 0) {
+	sam_int i = m->value.i;
+	free(m);
+	return sam_error_negative_shift(s, i);
     }
     if (left) {
 	m->value.i <<= cur->operand.i;
