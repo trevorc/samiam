@@ -26,10 +26,18 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.3  2006/12/20 05:00:27  trevor
+ * Splint annotations.
+ *
  * Revision 1.2  2006/12/12 23:31:36  trevor
- * Added the $Id$ and $Log$ tags and copyright notice where they were missing.
+ * Added the $Id$ and $Log$
+ * Added the $Id$ and Revision 1.3  2006/12/20 05:00:27  trevor
+ * Added the $Id$ and Splint annotations.
+ * Added the $Id$ and tags and copyright notice where they were missing.
  *
  */
+
+#define _ISOC99_SOURCE
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -62,15 +70,15 @@ int main() {
     acc = arr[0];
     while (--i >= 1) {
 	switch (rand() % 7) {
-	    case 0:
+	    case 0: /*@fallthrough@*/
 	    case 1:
 		acc += arr[i];
 		break;
-	    case 2:
+	    case 2: /*@fallthrough@*/
 	    case 3:
 		acc *= arr[i];
 		break;
-	    case 4:
+	    case 4: /*@fallthrough@*/
 	    case 5:
 		acc -= arr[i];
 		break;
