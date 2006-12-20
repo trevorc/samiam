@@ -22,3 +22,7 @@ if you're getting the error "error while loading shared libraries:
 libsam.so: cannot open shared object file: No such file or directory" or
 similar, try installing the library to a system-wide location or adding
 the directory that the library is in to the LD_LIBRARY_PATH.
+
+if all else fails, try:
+
+    $ cc -o samiam/samiam -lm -Linclude samiam/samiam.c libsam/sam_*.c
