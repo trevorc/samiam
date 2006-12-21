@@ -26,6 +26,10 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.6  2006/12/21 04:07:12  trevor
+ * Even though sam_ha and sam_sa's are size_t, they're not allowed to hold more
+ * than a long can store.
+ *
  * Revision 1.5  2006/12/19 09:29:34  trevor
  * Removed implicit casts.
  *
@@ -45,7 +49,6 @@
 
 #include <float.h>
 #include <limits.h>
-#include <stdint.h>
 
 #define HAVE_MMAN_H	1
 #define HAVE_UNISTD_H	1
@@ -66,9 +69,9 @@ typedef float sam_float;
 #endif /* __WORDSIZE == 64 */
 
 /** Greatest value a sam_heap_address can hold. */
-#define SAM_HEAP_PTR_MAX SIZE_MAX
+#define SAM_HEAP_PTR_MAX LONG_MAX
 
 /** Greatest value a sam_stack_address can hold. */
-#define SAM_STACK_PTR_MAX SIZE_MAX
+#define SAM_STACK_PTR_MAX LONG_MAX
 
 #endif /* CONFIG_H */
