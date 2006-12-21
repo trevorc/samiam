@@ -8,7 +8,7 @@ all: equal1.sam inf
 
 inf: inf.c
 
-check: equal1.sam
+check: all
 	@LD_PRELOAD=../libsam/libsam.so.1.0.0 perl tester.pl
 
 equal1.sam: gen_equal.pl
