@@ -31,7 +31,7 @@ T    ---  #20  the stack doesn't notice when it's overflowed
      MED  #21  labels are not printed in sam_stack_trace
      MED  #22  the allocator is slow and inefficient
      MED  #23  the makefiles are broken on bsd make
-     LOW  #24  make install assumes the suffixes .so and .gz
+     LOW  #24  make install assumes the suffixes .so
      LOW  #25  build fails on cygwin due to library linking issues
      HI   #26  searching for labels is O(n)
      LOW  #27  clean up sam_op_writestr and sam_op_printstr
