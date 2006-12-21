@@ -27,6 +27,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.24  2006/12/21 04:05:59  trevor
+ * You can't add pointer types.
+ *
  * Revision 1.23  2006/12/21 01:45:55  trevor
  * Allow addition and subtraction of like-type memory addresses.
  *
@@ -991,13 +994,18 @@ sam_addition(/*@in@*/ sam_execution_state *s,
 	    }
 	    break;
 	case SAM_ML_TYPE_HA:
-	    if (m2->type == SAM_ML_TYPE_INT ||
-		m2->type == SAM_ML_TYPE_HA) {
-		/* user could set an illegal index here or could
-		 * overflow the address */
-		m1->value.ha = m1->value.ha + sign *
-		    m2->type == SAM_ML_TYPE_INT?
-		    m2->value.i: (sam_int)m2->value.ha;
+	    /* user could set an illegal index here or could overflow
+	     * the address */
+	    if (m2->type == SAM_ML_TYPE_INT) {
+		m1->value.ha = m1->value.ha + sign * m2->value.i;
+		free(m2);
+		if (!sam_push(s, m1)) {
+		    return sam_error_stack_overflow();
+		}
+		return SAM_OK;
+	    } else if (m2->type == SAM_ML_TYPE_HA && sign == -1) {
+		m1->value.i = m1->value.ha - m2->value.ha;
+		m1->type = SAM_ML_TYPE_INT;
 		free(m2);
 		if (!sam_push(s, m1)) {
 		    return sam_error_stack_overflow();
@@ -1006,13 +1014,18 @@ sam_addition(/*@in@*/ sam_execution_state *s,
 	    }
 	    break;
 	case SAM_ML_TYPE_SA:
-	    if (m2->type == SAM_ML_TYPE_INT ||
-		m2->type == SAM_ML_TYPE_SA) {
+	    if (m2->type == SAM_ML_TYPE_INT) {
 		/* user could set an illegal index here or could
 		 * overflow the address */
-		m1->value.sa = m1->value.sa + sign *
-		    m2->type == SAM_ML_TYPE_INT?
-		    m2->value.i: (sam_int)m2->value.sa;
+		m1->value.sa = m1->value.sa + sign * m2->value.i;
+		free(m2);
+		if (!sam_push(s, m1)) {
+		    return sam_error_stack_overflow();
+		}
+		return SAM_OK;
+	    } else if (m2->type == SAM_ML_TYPE_SA) {
+		m1->value.i = m1->value.sa - m2->value.sa;
+		m1->type = SAM_ML_TYPE_INT;
 		free(m2);
 		if (!sam_push(s, m1)) {
 		    return sam_error_stack_overflow();
