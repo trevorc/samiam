@@ -27,6 +27,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.23  2006/12/21 01:45:55  trevor
+ * Allow addition and subtraction of like-type memory addresses.
+ *
  * Revision 1.22  2006/12/20 05:30:00  trevor
  * Reject bit shifts by negative values.
  *
@@ -988,10 +991,13 @@ sam_addition(/*@in@*/ sam_execution_state *s,
 	    }
 	    break;
 	case SAM_ML_TYPE_HA:
-	    if (m2->type == SAM_ML_TYPE_INT) {
+	    if (m2->type == SAM_ML_TYPE_INT ||
+		m2->type == SAM_ML_TYPE_HA) {
 		/* user could set an illegal index here or could
 		 * overflow the address */
-		m1->value.ha = m1->value.ha + sign * m2->value.i;
+		m1->value.ha = m1->value.ha + sign *
+		    m2->type == SAM_ML_TYPE_INT?
+		    m2->value.i: (sam_int)m2->value.ha;
 		free(m2);
 		if (!sam_push(s, m1)) {
 		    return sam_error_stack_overflow();
@@ -1000,10 +1006,13 @@ sam_addition(/*@in@*/ sam_execution_state *s,
 	    }
 	    break;
 	case SAM_ML_TYPE_SA:
-	    if (m2->type == SAM_ML_TYPE_INT) {
+	    if (m2->type == SAM_ML_TYPE_INT ||
+		m2->type == SAM_ML_TYPE_SA) {
 		/* user could set an illegal index here or could
 		 * overflow the address */
-		m1->value.sa = m1->value.sa + sign * m2->value.i;
+		m1->value.sa = m1->value.sa + sign *
+		    m2->type == SAM_ML_TYPE_INT?
+		    m2->value.i: (sam_int)m2->value.sa;
 		free(m2);
 		if (!sam_push(s, m1)) {
 		    return sam_error_stack_overflow();
