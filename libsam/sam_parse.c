@@ -27,6 +27,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.12  2006/12/22 04:45:25  trevor
+ * 7-keystroke fix. (two labels can now point to the sam line)
+ *
  * Revision 1.11  2006/12/19 18:17:53  trevor
  * Moved parts of sam_util.h which were library-generic into libsam.h.
  *
@@ -587,8 +590,8 @@ sam_parse(sam_string *s,
 	sam_eat_whitespace(&input);
 	while ((label = sam_parse_label(&input))) {
 	    sam_array_ins(labels, sam_label_new(label, cur_line));
+	    sam_eat_whitespace(&input);
 	}
-	sam_eat_whitespace(&input);
 	if ((i = sam_parse_instruction(&input)) == NULL) {
 	    sam_array_free(instructions);
 	    sam_array_free(labels);
