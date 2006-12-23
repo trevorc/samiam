@@ -27,6 +27,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.26  2006/12/23 02:12:58  trevor
+ * comparing unlike-type things now prints a sensible error message.
+ *
  * Revision 1.25  2006/12/23 01:32:42  anyoneeb
  * All tests pass (except shortStruct and shortArray pass half the time on ia32). samiam's LESS, GREATER, and CMP instruction now require both operands of the same type instead of both operands integers.
  *
@@ -1103,14 +1106,13 @@ sam_integer_arithmetic(sam_execution_state		*s,
     }
     if (op == SAM_OP_CMP || op == SAM_OP_LESS || op == SAM_OP_GREATER) {
 	if(m1->type != m2->type) {
-	    sam_ml_type t = m1->type;
+	    sam_ml_type expected = m1->type;
+	    sam_ml_type found    = m2->type;
 	    free(m1);
 	    free(m2);
-	    /* TODO proper error message? */
-	    return sam_error_stack_input1(s, t, SAM_ML_TYPE_INT);
+	    return sam_error_stack_input2(s, found, expected);
 	}
-    }
-    else {
+    } else {
 	if (m1->type != SAM_ML_TYPE_INT) {
 	    sam_ml_type t = m1->type;
 	    free(m1);
