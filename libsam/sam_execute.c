@@ -27,6 +27,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.25  2006/12/23 01:32:42  anyoneeb
+ * All tests pass (except shortStruct and shortArray pass half the time on ia32). samiam's LESS, GREATER, and CMP instruction now require both operands of the same type instead of both operands integers.
+ *
  * Revision 1.24  2006/12/21 04:05:59  trevor
  * You can't add pointer types.
  *
@@ -1098,17 +1101,28 @@ sam_integer_arithmetic(sam_execution_state		*s,
 	free(m2);
 	return sam_error_stack_underflow();
     }
-    if (m1->type != SAM_ML_TYPE_INT) {
-	sam_ml_type t = m1->type;
-	free(m1);
-	free(m2);
-	return sam_error_stack_input1(s, t, SAM_ML_TYPE_INT);
+    if (op == SAM_OP_CMP || op == SAM_OP_LESS || op == SAM_OP_GREATER) {
+	if(m1->type != m2->type) {
+	    sam_ml_type t = m1->type;
+	    free(m1);
+	    free(m2);
+	    /* TODO proper error message? */
+	    return sam_error_stack_input1(s, t, SAM_ML_TYPE_INT);
+	}
     }
-    if (m2->type != SAM_ML_TYPE_INT) {
-	sam_ml_type t = m2->type;
-	free(m1);
-	free(m2);
-	return sam_error_stack_input2(s, t, SAM_ML_TYPE_INT);
+    else {
+	if (m1->type != SAM_ML_TYPE_INT) {
+	    sam_ml_type t = m1->type;
+	    free(m1);
+	    free(m2);
+	    return sam_error_stack_input1(s, t, SAM_ML_TYPE_INT);
+	}
+	if (m2->type != SAM_ML_TYPE_INT) {
+	    sam_ml_type t = m2->type;
+	    free(m1);
+	    free(m2);
+	    return sam_error_stack_input2(s, t, SAM_ML_TYPE_INT);
+	}
     }
 
     switch(op) {
@@ -1164,12 +1178,15 @@ sam_integer_arithmetic(sam_execution_state		*s,
 	case SAM_OP_CMP:
 	    m1->value.i = m1->value.i < m2->value.i?
 		-1: m2->value.i == m1->value.i? 0: 1;
+	    m1->type = SAM_ML_TYPE_INT;
 	    break;
 	case SAM_OP_GREATER:
 	    m1->value.i = m1->value.i > m2->value.i;
+	    m1->type = SAM_ML_TYPE_INT;
 	    break;
 	case SAM_OP_LESS:
 	    m1->value.i = m1->value.i < m2->value.i;
+	    m1->type = SAM_ML_TYPE_INT;
 	    break;
     }
     free(m2);
