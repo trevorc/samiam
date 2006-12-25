@@ -26,15 +26,13 @@
  * SOFTWARE.
  *
  * $Log$
- * Revision 1.2  2006/12/12 23:31:36  trevor
- * Added the Id and Log tags and copyright notice where they were missing.
+ * Revision 1.3  2006/12/25 00:29:20  trevor
+ * Remove <sam.h> include.
  *
  */
 
 #ifndef SAM_MAIN_H
 #define SAM_MAIN_H
-
-#include <sam.h>
 
 extern sam_options options;
 
