@@ -1,0 +1,6 @@
+PUSHIMM 12
+PUSHIMM 1
+JUMP add
+end: STOP
+add: ADD
+JUMP end
