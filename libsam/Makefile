@@ -3,7 +3,7 @@
 include ../rul.mk
 
 CFLAGS+=-fPIC
-LDFLAGS+=-lc -shared -Wl,-soname,libsam.so
+LDFLAGS+=-lc -shared -Wl,-soname,libsam.so -ldl -rdynamic
 NAME=libsam
 OBJS=sam_main.o sam_execute.o sam_parse.o sam_util.o
 
