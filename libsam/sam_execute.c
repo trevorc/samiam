@@ -27,6 +27,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.28  2006/12/25 18:56:43  trevor
+ * fix #27
+ *
  * Revision 1.27  2006/12/25 00:27:16  trevor
  * Use new SDK headers. Add dynamic loading. Export necessary functions for SDK. Update for new label hash table.
  *
@@ -2369,7 +2372,6 @@ sam_op_readstr(/*@in@*/ sam_execution_state *s)
 	m->value.i = str[i];
 	m->type = SAM_ML_TYPE_INT;
     }
-    free(s);
     if (!sam_push(s, sam_ml_new(v, SAM_ML_TYPE_HA))) {
 	return sam_error_stack_overflow();
     }
@@ -2453,7 +2455,6 @@ sam_op_writestr(/*@in@*/ sam_execution_state *s)
 {
     sam_ml *m;
     sam_ha  ha, i;
-    size_t  len = 0;
 
     if ((m = sam_pop(s)) == NULL) {
 	return sam_error_stack_underflow();
@@ -2495,32 +2496,13 @@ sam_op_writestr(/*@in@*/ sam_execution_state *s)
 
 	/* XXX only until string parsing is fixed */
 	return sam_putchar('\n');
-    }
-    for (len = 0, i = ha; ; ++i, ++len) {
-	if (i == s->heap.a.len) {
-	    sam_ma ma;
-	    ma.stack = FALSE;
-	    ma.index.ha = len;
-	    return sam_error_segmentation_fault(ma);
-	}
-	m = s->heap.a.arr[i];
-	if(m == NULL || m->value.i == '\0') {
-	    break;
-	}
-    }
-    {
+    } /* else */ {
 	sam_error  rv;
-	char	  *str = sam_malloc(len + 1);
+	char	  *str;
 
-	for (i = 0; i <= len; ++i) {
-	    m = s->heap.a.arr[i + ha];
-	    if (m == NULL || m->value.i == '\0') {
-		str[i] = '\0';
-		break;
-	    }
-	    str[i] = m->value.i;
+	if ((rv = sam_string_to_char_array(s, &str, ha)) != SAM_OK) {
+	    return rv;
 	}
-
 	rv = s->io_funcs->write_str_func(str) == 0? SAM_OK: sam_error_io();
 	free(str);
 	return rv;
@@ -2615,12 +2597,12 @@ const sam_instruction sam_instructions[] = {
     { "FTOIR",		SAM_OP_TYPE_NONE,  {0}, sam_op_ftoir	   },
     { "ITOF",		SAM_OP_TYPE_NONE,  {0}, sam_op_itof	   },
     { "PUSHIMM",	SAM_OP_TYPE_INT,   {0}, sam_op_pushimm	   },
-    { "PUSHIMMF",	SAM_OP_TYPE_FLOAT, {0}, sam_op_pushimmf   },
-    { "PUSHIMMCH",	SAM_OP_TYPE_CHAR,  {0}, sam_op_pushimmch  },
-    { "PUSHIMMMA",	SAM_OP_TYPE_INT,   {0}, sam_op_pushimmma  },
+    { "PUSHIMMF",	SAM_OP_TYPE_FLOAT, {0}, sam_op_pushimmf	   },
+    { "PUSHIMMCH",	SAM_OP_TYPE_CHAR,  {0}, sam_op_pushimmch   },
+    { "PUSHIMMMA",	SAM_OP_TYPE_INT,   {0}, sam_op_pushimmma   },
     { "PUSHIMMPA",	SAM_OP_TYPE_LABEL |
-			SAM_OP_TYPE_INT,   {0}, sam_op_pushimmpa  },
-    { "PUSHIMMSTR",	SAM_OP_TYPE_STR,   {0}, sam_op_pushimmstr },
+			SAM_OP_TYPE_INT,   {0}, sam_op_pushimmpa   },
+    { "PUSHIMMSTR",	SAM_OP_TYPE_STR,   {0}, sam_op_pushimmstr  },
     { "PUSHSP",		SAM_OP_TYPE_NONE,  {0}, sam_op_pushsp	   },
     { "PUSHFBR",	SAM_OP_TYPE_NONE,  {0}, sam_op_pushfbr	   },
     { "POPSP",		SAM_OP_TYPE_NONE,  {0}, sam_op_popsp	   },
@@ -2631,11 +2613,11 @@ const sam_instruction sam_instructions[] = {
     { "MALLOC",		SAM_OP_TYPE_NONE,  {0}, sam_op_malloc	   },
     { "FREE",		SAM_OP_TYPE_NONE,  {0}, sam_op_free	   },
     { "PUSHIND",	SAM_OP_TYPE_NONE,  {0}, sam_op_pushind	   },
-    { "STOREIND",	SAM_OP_TYPE_NONE,  {0}, sam_op_storeind   },
+    { "STOREIND",	SAM_OP_TYPE_NONE,  {0}, sam_op_storeind	   },
     { "PUSHABS",	SAM_OP_TYPE_INT,   {0}, sam_op_pushabs	   },
-    { "STOREABS",	SAM_OP_TYPE_INT,   {0}, sam_op_storeabs   },
+    { "STOREABS",	SAM_OP_TYPE_INT,   {0}, sam_op_storeabs	   },
     { "PUSHOFF",	SAM_OP_TYPE_INT,   {0}, sam_op_pushoff	   },
-    { "STOREOFF",	SAM_OP_TYPE_INT,   {0}, sam_op_storeoff   },
+    { "STOREOFF",	SAM_OP_TYPE_INT,   {0}, sam_op_storeoff	   },
     { "ADD",		SAM_OP_TYPE_NONE,  {0}, sam_op_add	   },
     { "SUB",		SAM_OP_TYPE_NONE,  {0}, sam_op_sub	   },
     { "TIMES",		SAM_OP_TYPE_NONE,  {0}, sam_op_times	   },
@@ -2646,9 +2628,9 @@ const sam_instruction sam_instructions[] = {
     { "TIMESF",		SAM_OP_TYPE_NONE,  {0}, sam_op_timesf	   },
     { "DIVF",		SAM_OP_TYPE_NONE,  {0}, sam_op_divf	   },
     { "LSHIFT",		SAM_OP_TYPE_INT,   {0}, sam_op_lshift	   },
-    { "LSHIFTIND",	SAM_OP_TYPE_NONE,  {0}, sam_op_lshiftind  },
+    { "LSHIFTIND",	SAM_OP_TYPE_NONE,  {0}, sam_op_lshiftind   },
     { "RSHIFT",		SAM_OP_TYPE_INT,   {0}, sam_op_rshift	   },
-    { "RSHIFTIND",	SAM_OP_TYPE_NONE,  {0}, sam_op_rshiftind  },
+    { "RSHIFTIND",	SAM_OP_TYPE_NONE,  {0}, sam_op_rshiftind   },
     { "AND",		SAM_OP_TYPE_NONE,  {0}, sam_op_and	   },
     { "OR",		SAM_OP_TYPE_NONE,  {0}, sam_op_or	   },
     { "NAND",		SAM_OP_TYPE_NONE,  {0}, sam_op_nand	   },
@@ -2808,6 +2790,40 @@ sam_convert_to_int(/*@in@*/ sam_ml *m)
 	default:
 	    return 0;
     }
+}
+
+sam_error
+sam_string_to_char_array(/*@in@*/ sam_execution_state *s,
+			 /*@out@*/ char **str,
+			 sam_ha ha)
+{
+    size_t i, len = 0;
+    sam_ml *m;
+
+    *str = NULL;
+    for (len = 0, i = ha; ; ++i, ++len) {
+	if (i == s->heap.a.len) {
+	    sam_ma ma;
+	    ma.stack = FALSE;
+	    ma.index.ha = len;
+	    return sam_error_segmentation_fault(ma);
+	}
+	m = s->heap.a.arr[i];
+	if(m == NULL || m->value.i == '\0') {
+	    break;
+	}
+    }
+    *str = sam_malloc(len + 1);
+    for (i = 0; i <= len; ++i) {
+	m = s->heap.a.arr[i + ha];
+	if (m == NULL || m->value.i == '\0') {
+	    (*str)[i] = '\0';
+	    break;
+	}
+	(*str)[i] = m->value.i;
+    }
+
+    return SAM_OK;
 }
 
 /*@null@*/ sam_ml *
