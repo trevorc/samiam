@@ -4,16 +4,20 @@ include ../rul.mk
 
 RM=rm -f
 TMPDIR=/tmp
+ALL=equal1.sam inf dltest.so dltest2.so dltest3.so dltest4.so
 
-all: equal1.sam inf dltest.so dltest2.so
+all:
 
 inf: inf.c
 	$(CC) -pipe -O3 -o $@ $<
 
-dltest.so: dltest.c
+%.so: %.c
 	$(CC) -o $@ -lc -shared -Wl,-soname,$@ -fPIC $(CFLAGS) $(LDFLAGS) $<
 
+dltest.so: dltest.c
 dltest2.so: dltest2.c
+dltest3.so: dltest3.c
+dltest4.so: dltest4.c
 	$(CC) -o $@ -lc -shared -Wl,-soname,$@ -fPIC $(CFLAGS) $(LDFLAGS) $<
 
 check: all
@@ -32,4 +36,4 @@ flop-bench: flop-bench.o
 	$(CC) -lm -o $@ $^
 
 clean:
-	$(RM) equal*.sam flop $(TMPDIR)/flop.sam flop-bench.o flop-bench inf
+	$(RM) equal*.sam flop $(TMPDIR)/flop.sam flop-bench.o flop-bench $(ALL)
