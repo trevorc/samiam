@@ -96,3 +96,6 @@ cmpf2.sam	-1
 cmpf3.sam	-1
 cmpf4.sam	1
 cmpf5.sam	1
+jump.sam	13
+dltest.sam	6
+dltest2.sam	64

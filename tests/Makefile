@@ -1,20 +1,29 @@
 # $Id$
 
+include ../rul.mk
+
 RM=rm -f
 TMPDIR=/tmp
-CFLAGS=-Wall -W -ansi -pedantic -pipe -O3
 
-all: equal1.sam inf
+all: equal1.sam inf dltest.so dltest2.so
 
 inf: inf.c
+	$(CC) -pipe -O3 -o $@ $<
+
+dltest.so: dltest.c
+	$(CC) -o $@ -lc -shared -Wl,-soname,$@ -fPIC $(CFLAGS) $(LDFLAGS) $<
+
+dltest2.so: dltest2.c
+	$(CC) -o $@ -lc -shared -Wl,-soname,$@ -fPIC $(CFLAGS) $(LDFLAGS) $<
 
 check: all
-	@LD_PRELOAD=../libsam/libsam.so.1.0.0 perl tester.pl
+	@LD_LIBRARY_PATH=../libsam:. perl tester.pl
 
 equal1.sam: gen_equal.pl
 	@perl gen_equal.pl
 
 flop: flop.c
+	$(CC) -pipe -O3 -o $@ $<
 
 flop.sam: flop
 	@./flop >$(TMPDIR)/$@
