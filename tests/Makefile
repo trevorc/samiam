@@ -6,7 +6,7 @@ RM=rm -f
 TMPDIR=/tmp
 ALL=equal1.sam inf dltest.so dltest2.so dltest3.so dltest4.so
 
-all:
+all: $(ALL)
 
 inf: inf.c
 	$(CC) -pipe -O3 -o $@ $<
