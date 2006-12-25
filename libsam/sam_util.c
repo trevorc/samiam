@@ -27,6 +27,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.6  2006/12/25 00:29:54  trevor
+ * Update for new hash table labels.
+ *
  * Revision 1.5  2006/12/19 18:17:53  trevor
  * Moved parts of sam_util.h which were library-generic into libsam.h.
  *
@@ -38,20 +41,28 @@
  *
  */
 
-#include "config.h"
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include <libsam/config.h>
+#include <libsam/util.h>
 
 #if defined(HAVE_UNISTD_H) || defined(HAVE_MMAN_H)
 # include <unistd.h>
 #endif /* HAVE_UNISTD_H || HAVE_MMAN_H */
 
-#include "sam_util.h"
-
 /** Initial size for array and string allocations. */
-static const size_t INIT_ALLOC = 4;
+static const size_t SAM_INIT_ALLOC = 4;
+
+/** Initial size for hash tables. */
+static const size_t SAM_INIT_HASH_ALLOC = 64;
+
+/** Big prime for computing hashes. */
+static const unsigned long SAM_BIG_PRIME = 6291469UL;
+
+/** Maximum load value for the hash table. */
+static const float SAM_MAX_LOAD = 0.5;
 
 /**
  * A wrapper around malloc(3) guaranteed to be safe. Calls abort()
@@ -79,9 +90,25 @@ sam_malloc(size_t size)
     return p;
 }
 
+void *
+sam_calloc(size_t nmemb,
+	   size_t size)
+{
+    void *p;
+
+    if ((p = calloc(nmemb, size)) == NULL) {
+#if defined(HAVE_UNISTD_H)
+	write(STDERR_FILENO, "no memory\n", 10);
+#endif
+	abort();
+    }
+
+    return p;
+}
+
 /*@only@*/ /*@notnull@*/ void *
 sam_realloc(/*@only@*/ void   *p,
-		       size_t  size)
+	    size_t  size)
 {
     if ((p = realloc(p, size)) == NULL) {
 	free(p);
@@ -96,9 +123,9 @@ sam_realloc(/*@only@*/ void   *p,
 void
 sam_array_init(sam_array *a)
 {
-    a->alloc = INIT_ALLOC;
+    a->alloc = SAM_INIT_ALLOC;
     a->len = 0;
-    a->arr = sam_malloc(sizeof(*a->arr) * INIT_ALLOC);
+    a->arr = sam_malloc(sizeof(*a->arr) * SAM_INIT_ALLOC);
 }
 
 void
@@ -142,8 +169,8 @@ sam_array_free(sam_array *a)
 void
 sam_string_init(/*@out@*/ sam_string *s)
 {
-    s->data = sam_malloc(INIT_ALLOC);
-    s->alloc = INIT_ALLOC;
+    s->data = sam_malloc(SAM_INIT_ALLOC);
+    s->alloc = SAM_INIT_ALLOC;
     s->len = 0;
 }
 
@@ -195,4 +222,108 @@ sam_string_read(/*@in@*/  FILE *in,
     }
 
     return s->data;
+}
+
+void
+sam_hash_table_init(sam_hash_table *h)
+{
+    h->alloc = SAM_INIT_HASH_ALLOC;
+    h->nmemb = 0;
+    h->arr = sam_calloc(sizeof (*h->arr), SAM_INIT_HASH_ALLOC);
+}
+
+static size_t
+sam_hash(const char *key,
+	 size_t      alloc)
+{
+    size_t hash = 0;
+
+    while (*key != '\0') {
+	hash += (hash << 5) + *key++;
+    }
+    hash *= SAM_BIG_PRIME;
+
+    return hash % alloc;
+}
+
+static void 
+sam_hash_table_double(sam_hash_table *h)
+{
+    sam_hash_table tmp;
+    size_t	   i;
+
+    tmp.alloc = h->alloc * 2;
+    tmp.nmemb = h->nmemb;
+    tmp.arr = sam_calloc(tmp.alloc, sizeof (*tmp.arr));
+
+    for (i = 0; i < h->alloc; ++i) {
+	if (h->arr[i].key != NULL) {
+	    sam_hash_table_ins(&tmp, h->arr[i].key, h->arr[i].value);
+	}
+    }
+
+    free(h->arr);
+    h->arr = tmp.arr;
+    h->alloc = tmp.alloc;
+}
+
+sam_bool
+sam_hash_table_ins(sam_hash_table *h,
+		   char		  *key,
+		   size_t	   value)
+{
+    size_t hash;
+
+    ++h->nmemb;
+    while (((float)h->nmemb) / h->alloc > SAM_MAX_LOAD) {
+	sam_hash_table_double(h);
+    }
+
+    hash = sam_hash(key, h->alloc);
+    for (;;) {
+	if (h->arr[hash].key == NULL) {
+	    h->arr[hash].key = key;
+	    h->arr[hash].value = value;
+	    return TRUE;
+	} else if (strcmp(key, h->arr[hash].key) == 0) {
+	    return FALSE;
+	} else if (hash == h->alloc - 1) {
+	    hash = 0;
+	} else {
+	    ++hash;
+	}
+    }
+}
+
+sam_bool
+sam_hash_table_get(sam_hash_table *h,
+		   const char	  *key,
+		   size_t	  *value)
+{
+    size_t hash = sam_hash(key, h->alloc);
+    size_t start = hash;
+    sam_bool just_started = TRUE;
+
+    *value = -1;
+    for (;;) {
+	if (h->arr[hash].key == NULL) {
+	    return FALSE;
+	} else if (start == hash && !just_started) {
+	    return FALSE;
+	} else if (strcmp(h->arr[hash].key, key) == 0) {
+	    *value = h->arr[hash].value;
+	    return TRUE;
+	} else if (hash == h->alloc - 1) {
+	    hash = 0;
+	} else {
+	    just_started = FALSE;
+	    ++hash;
+	}
+    }
+}
+
+void
+sam_hash_table_free(sam_hash_table *h)
+{
+    free(h->arr);
 }

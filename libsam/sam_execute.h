@@ -26,6 +26,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.3  2006/12/25 00:28:05  trevor
+ * Update for new hash table labels.
+ *
  * Revision 1.2  2006/12/12 23:31:36  trevor
  * Added the Id and Log tags and copyright notice where they were missing.
  *
@@ -35,8 +38,8 @@
 #define SAM_EXECUTE_H
 
 extern const sam_instruction sam_instructions[];
-extern sam_exit_code sam_execute(/*@in@*/ sam_array    *instructions,
-				 /*@in@*/ sam_array    *labels,
-				 /*@in@*/ sam_io_funcs *io_funcs);
+extern sam_exit_code sam_execute(/*@in@*/ sam_array      *instructions,
+				 /*@in@*/ sam_hash_table *labels,
+				 /*@in@*/ sam_io_funcs   *io_funcs);
 
 #endif /* SAM_EXECUTE_H */

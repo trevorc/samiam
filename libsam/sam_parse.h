@@ -26,6 +26,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.3  2006/12/25 00:29:54  trevor
+ * Update for new hash table labels.
+ *
  * Revision 1.2  2006/12/12 23:31:36  trevor
  * Added the Id and Log tags and copyright notice where they were missing.
  *
@@ -36,8 +39,8 @@
 
 /*@null@*/ extern sam_bool sam_parse(/*@out@*/ sam_string *s,
 				     /*@in@*/ /*@null@*/ const char *file,
-				     /*@out@*/ sam_array  *instructions,
-				     /*@out@*/ sam_array  *labels);
+				     /*@out@*/ sam_array *instructions,
+				     /*@out@*/ sam_hash_table *labels);
 extern void sam_file_free(sam_string *s);
 
 #endif /* SAM_PARSE_H */

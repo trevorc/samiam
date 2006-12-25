@@ -27,6 +27,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.5  2006/12/25 00:28:44  trevor
+ * Update for new hash table labels.
+ *
  * Revision 1.4  2006/12/19 18:17:53  trevor
  * Moved parts of sam_util.h which were library-generic into libsam.h.
  *
@@ -38,17 +41,18 @@
  *
  */
 
-#include "config.h"
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "libsam.h"
-#include "sam_util.h"
-#include "sam_main.h"
-#include "sam_execute.h"
+#include <sam.h>
+#include <libsam/config.h>
+#include <libsam/types.h>
+#include <libsam/util.h>
+#include <libsam/execute.h>
+
 #include "sam_parse.h"
+#include "sam_execute.h"
 
 #if defined(HAVE_LOCALE_H)
 # include <locale.h>
@@ -61,11 +65,11 @@ sam_main(sam_options user_options,
 	 /*@null@*/ const char *file,
 	 /*@null@*/ sam_io_funcs *user_io_funcs)
 {
-    sam_exit_code retval;
-    sam_string	  input;
-    sam_array	  instructions;
-    sam_array	  labels;
-    sam_io_funcs  io_funcs = { NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL };
+    sam_exit_code  retval;
+    sam_string	   input;
+    sam_array	   instructions;
+    sam_hash_table labels;
+    sam_io_funcs   io_funcs = { NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL };
 
     options = user_options;
     if (user_io_funcs != NULL) {

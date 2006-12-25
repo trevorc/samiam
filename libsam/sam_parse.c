@@ -27,6 +27,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.13  2006/12/25 00:29:54  trevor
+ * Update for new hash table labels.
+ *
  * Revision 1.12  2006/12/22 04:45:25  trevor
  * 7-keystroke fix. (two labels can now point to the sam line)
  *
@@ -56,12 +59,15 @@
  *
  */
 
-#include "config.h"
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+
+#include <sam.h>
+#include <libsam/config.h>
+#include <libsam/types.h>
+#include <libsam/util.h>
 
 #if defined(HAVE_MMAN_H)
 # include <sys/stat.h>
@@ -73,11 +79,9 @@
 # include <unistd.h>
 #endif /* HAVE_UNISTD_H || HAVE_MMAN_H */
 
-#include "libsam.h"
-#include "sam_util.h"
-#include "sam_main.h"
 #include "sam_execute.h"
 #include "sam_parse.h"
+#include "sam_main.h"
 
 static sam_bool mmapped = FALSE;
 
@@ -145,14 +149,18 @@ sam_error_operand(const char *opcode,
     }
 }
 
-static sam_label *
-sam_label_new(/*@observer@*/ char *name,
-	      sam_pa pa)
+/** The same label was found twice. */
+static void
+sam_error_duplicate_label(const char *label,
+			  sam_pa      pa)
 {
-    sam_label *l = sam_malloc(sizeof (sam_label));
-    l->name = name;
-    l->pa = pa;
-    return l;
+    if ((options & quiet) == 0) {
+	fprintf(stderr,
+		"error: duplicate label \"%s\" was found at program "
+		"address %lu.\n",
+		label,
+		(unsigned long)pa);
+    }
 }
 
 /*@null@*/ static sam_instruction *
@@ -553,10 +561,10 @@ sam_file_free(sam_string *s)
 }
 
 /*@null@*/ sam_bool
-sam_parse(sam_string *s,
-	  const char *file,
-	  sam_array  *instructions,
-	  sam_array  *labels)
+sam_parse(sam_string	 *s,
+	  const char	 *file,
+	  sam_array	 *instructions,
+	  sam_hash_table *labels)
 {
     sam_pa  cur_line = 0;
     char   *input;
@@ -581,25 +589,32 @@ sam_parse(sam_string *s,
 #endif
 
     sam_array_init(instructions);
-    sam_array_init(labels);
+    sam_hash_table_init(labels);
 
+    /* Parse as many labels as we find, then parse an instruction. */
     while (*input != '\0') {
-	char		*label;
 	sam_instruction *i;
+	char		*label;
 
 	sam_eat_whitespace(&input);
 	while ((label = sam_parse_label(&input))) {
-	    sam_array_ins(labels, sam_label_new(label, cur_line));
+	    if (!sam_hash_table_ins(labels, label, cur_line)) {
+		sam_error_duplicate_label(label, cur_line);
+		goto err;
+	    }
 	    sam_eat_whitespace(&input);
 	}
 	if ((i = sam_parse_instruction(&input)) == NULL) {
-	    sam_array_free(instructions);
-	    sam_array_free(labels);
-	    return FALSE;
+	    goto err;
 	}
 	sam_array_ins(instructions, i);
 	++cur_line;
     }
 
     return TRUE;
+
+err:
+    sam_array_free(instructions);
+    sam_hash_table_free(labels);
+    return FALSE;
 }
