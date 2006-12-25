@@ -1,0 +1,5 @@
+import "dltest4.so"
+PUSHIMM 1
+call iheartdis
+ADD
+STOP
