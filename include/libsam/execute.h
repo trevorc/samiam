@@ -2,6 +2,9 @@
  * $Id$
  *
  * $Log$
+ * Revision 1.2  2006/12/25 18:58:21  trevor
+ * fix #27.
+ *
  * Revision 1.1  2006/12/25 00:21:39  trevor
  * New SDK suite of headers.
  *
@@ -67,6 +70,7 @@ extern sam_error sam_error_io(void);
 extern void sam_error_uninitialized(/*@in@*/ sam_execution_state *s);
 extern void sam_error_number_format(const char *buf);
 
+sam_error sam_string_to_char_array(/*@in@*/ sam_execution_state *s, /*@out@*/ char **str, sam_ha ha);
 sam_ml *sam_ml_new(sam_ml_value v, sam_ml_type t);
 /*@null@*/ sam_ml *sam_pop(/*@in@*/ sam_execution_state *s);
 sam_bool sam_push(/*@in@*/ sam_execution_state *s, /*@only@*/ /*@out@*/ sam_ml *m);
