@@ -27,6 +27,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.8  2006/12/25 00:23:50  trevor
+ * Use the new SDK headers.
+ *
  * Revision 1.7  2006/12/17 14:00:33  trevor
  * cleaned up log message.
  *
@@ -38,7 +41,7 @@
  *
  */
 
-#include "../libsam/config.h"
+#include <libsam/config.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -95,7 +98,7 @@ readChar(char *c)
 }
 
 int
-readString(/*@unused@*/ char **s)
+readString(/*@unused@*/ __attribute__((unused)) char **s)
 {
     printf("Processor Input (enter string): ");
     return 0;
