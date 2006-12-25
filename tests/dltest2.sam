@@ -1,0 +1,10 @@
+import "dltest2.so"
+
+PUSHIMM 2
+PUSHIMM 3
+call power
+
+PUSHIMMF 2.0
+call power
+
+STOP

@@ -1,0 +1,8 @@
+import "dltest.so"
+PUSHIMM 1
+PUSHIMM 2
+PUSHIMM 3
+PUSHIMM 3
+call addemup
+STOP
+
