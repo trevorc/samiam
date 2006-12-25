@@ -9,18 +9,24 @@ HI	Release-critical bug.
 
 ASGN SEV  NUM  DESC
 T    LOW  #00  no argument parsing in samiam.
-     MED  #01  multiple labels
+T    ---  #01  duplicate labels
      HI   #02  shitty error messages for parsing
      LOW  #03  c string parsing "hello.\n"
      LOW  #04  character parsing PUSHIMMCH'a'STOP
 J    ---  #05  m1/m2 confusion in sam_op_add sam_integer_arithmetic
 T    ---  #06  ordering of sam_op_*()
+T    ---  #07  sam_op_equal just uses memcmp. this is a bad bug. should
+	       sam_op_equal do something smart?
+T    ---  #08  dashes in label names
      MED  #09  ieee 754 floating point exceptions not handled.
 T    ---  #10  floating point < and > might be wrong.
 T    ---  #11  sam_round IS wrong.
+J    ---  #12  non integer return values don't work. (when the bottom of
+	       the stack has non-int). make a sam_force_int_conversion()
+	       function.
      HI-C #13  remove items from this list
      ***  #14  instructions should manipulate the pc, not a for loop.
-     MED  #15  popsp should be able to cope with integer stack inputs
+     LOW  #15  popsp should be able to cope with integer stack inputs
      HI   #16  separate io functions from sam_*.c
      HI   #17  document everything!
 T    ---  #18  dynamic loading either needs to be removed entirely or fixed.
@@ -33,7 +39,7 @@ T    ---  #20  the stack doesn't notice when it's overflowed
      MED  #23  the makefiles are broken on bsd make
      LOW  #24  make install assumes the suffixes .so
      LOW  #25  build fails on cygwin due to library linking issues
-     HI   #26  searching for labels is O(n)
+T    ---  #26  searching for labels is O(n)
      LOW  #27  clean up sam_op_writestr and sam_op_printstr
 D    ---  #28  we need to split operands from memory locations. (they
 	       shouldn't use the same sam_value type). it's (a)
