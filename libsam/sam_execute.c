@@ -27,6 +27,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.27  2006/12/25 00:27:16  trevor
+ * Use new SDK headers. Add dynamic loading. Export necessary functions for SDK. Update for new label hash table.
+ *
  * Revision 1.26  2006/12/23 02:12:58  trevor
  * comparing unlike-type things now prints a sensible error message.
  *
@@ -90,8 +93,6 @@
  *
  */
 
-#include "config.h"
-
 #include <ctype.h>
 #include <errno.h>
 #include <stdio.h>
@@ -99,97 +100,21 @@
 #include <string.h>
 #include <math.h>
 
-#include "libsam.h"
-#include "sam_util.h"
+#include <sam.h>
+#include <libsam/config.h>
+#include <libsam/types.h>
+#include <libsam/util.h>
+#include <libsam/execute.h>
+
+#if defined(HAVE_DLFCN_H)
+# include <dlfcn.h>
+#endif /* HAVE_DLFCN_H */
+
 #include "sam_main.h"
 #include "sam_execute.h"
 
 /** Global indicating whether a stack trace is needed. */
 static sam_bool stack_trace;
-
-/**
- *  The various types allowed in sam memory locations.
- */
-typedef enum {
-    SAM_ML_TYPE_NONE,	/**< A null operand. */
-    SAM_ML_TYPE_INT,	/**< An integer type. */
-    SAM_ML_TYPE_FLOAT,	/**< An IEEE 754 floating point number. */
-    SAM_ML_TYPE_SA,	/**< A memory address pointing to a location on
-			 *   the stack. */
-    SAM_ML_TYPE_HA,	/**< A memory address pointing to a location on
-			 *   the heap. */
-    SAM_ML_TYPE_PA	/**< A program address pointing to an
-			 *   instruction in the source file. */
-} sam_ml_type;
-
-/** A value on the stack or heap. */
-typedef union {
-    sam_int   i;
-    sam_float f;
-    sam_pa    pa;
-    sam_ha    ha;
-    sam_sa    sa;
-} sam_ml_value;
-
-typedef struct _sam_heap_pointer {
-    size_t start;
-    size_t size;
-    /*@null@*/ /*@only@*/ struct _sam_heap_pointer *next;
-} sam_heap_pointer;
-
-/** The sam free store. */
-typedef struct {
-    /**	A linked list of pointers into the array of free locations on
-     * the heap.  */
-    /*@null@*/ sam_heap_pointer *free_list;
-
-    /**	A linked list of pointers into the array of used locations on
-     * the heap.  */
-    /*@null@*/ sam_heap_pointer *used_list;
-
-    /** The array of all locations on the heap. */
-    sam_array a;
-} sam_heap;
-
-/** An element on the stack or on the heap. */
-typedef struct {
-    unsigned  type: 8;
-    sam_ml_value value;
-} sam_ml;
-
-/** A pointer to an element on the heap or the stack. */
-typedef struct {
-    sam_bool stack; /**< Flag indicating whether the pointer is on the
-		     *	 stack or heap. */
-    union {
-	sam_ha ha;
-	sam_sa sa;
-    } index;	    /**< The value of the pointer. */
-} sam_ma;
-
-/** The parsed instructions and labels along with the current state
- *  of execution. */
-typedef struct _sam_execution_state {
-    sam_pa pc;	/**< The index into sam_execution_state# program
-		 *   pointing to the current instruction, aka the
-		 *   program counter. Incremented by #sam_execute, not
-		 *   by the individual instruction handlers. */
-    sam_sa fbr;	/**< The frame base register. */
-
-    /* stack pointer is stack->len */
-    sam_array  stack;	/**< The sam stack, an array of {@link sam_ml}s.
-			 *   The stack pointer register is simply the
-			 *   length of this array. */
-    sam_heap   heap;	/**< The sam heap, managed by the functions
-			 *   #sam_heap_alloc and #sam_heap_free. */
-    sam_array  *program;/**< A shallow copy of the instructions array
-			 *   allocated in main and initialized in
-			 *   sam_parse(). */
-    sam_array  *labels;	/**< A shallow copy of the labels array
-			 *   allocated in main and initialized in
-			 *   sam_parse(). */
-    sam_io_funcs *io_funcs;
-} sam_execution_state;
 
 typedef enum {
     SAM_OP_TIMES,
@@ -201,7 +126,8 @@ typedef enum {
     SAM_OP_NOR,
     SAM_OP_XOR,
     SAM_OP_BITAND,
-    SAM_OP_BITOR, SAM_OP_BITNAND,
+    SAM_OP_BITOR,
+    SAM_OP_BITNAND,
     SAM_OP_BITNOR,
     SAM_OP_BITXOR,
     SAM_OP_CMP,
@@ -224,6 +150,62 @@ typedef enum {
     SAM_OP_ISNEG,
     SAM_OP_ISNIL
 } sam_unary_arithmetic_operation;
+
+#if defined(SAM_EXTENSIONS) && defined(HAVE_DLFCN_H)
+typedef struct {
+    /*@dependent@*/ char *name;	    /**< Name of symbol loaded. */
+    /*@observer@*/  void *handle;   /**< Handle returned from dlopen(). */
+} sam_dlhandle;
+#endif /* SAM_EXTENSIONS && HAVE_DLFCN_H */
+
+typedef sam_int (*sam_library_fn)(sam_execution_state *s);
+
+typedef struct _sam_heap_pointer {
+    size_t start;
+    size_t size;
+    /*@null@*/ /*@only@*/ struct _sam_heap_pointer *next;
+} sam_heap_pointer;
+
+typedef struct {
+    /**	A linked list of pointers into the array of free locations on
+     * the heap.  */
+    /*@null@*/ sam_heap_pointer *free_list;
+
+    /**	A linked list of pointers into the array of used locations on
+     * the heap.  */
+    /*@null@*/ sam_heap_pointer *used_list;
+
+    /** The array of all locations on the heap. */
+    sam_array a;
+} sam_heap;
+
+/** The parsed instructions and labels along with the current state
+ *  of execution. */
+struct _sam_execution_state {
+    sam_pa pc;	/**< The index into sam_execution_state# program
+		 *   pointing to the current instruction, aka the
+		 *   program counter. Incremented by #sam_execute, not
+		 *   by the individual instruction handlers. */
+    sam_sa fbr;	/**< The frame base register. */
+
+    /* stack pointer is stack->len */
+    sam_array  stack;	    /**< The sam stack, an array of {@link
+			     *  sam_ml}s.  The stack pointer register is
+			     *  simply the length of this array. */
+    sam_heap   heap;	    /**< The sam heap, managed by the functions
+			     *   #sam_heap_alloc and #sam_heap_free. */
+    sam_array *program;     /**< A shallow copy of the instructions
+			     *   array allocated in main and initialized
+			     *   in sam_parse(). */
+    sam_hash_table *labels; /**< A shallow copy of the labels hash
+			     *   table allocated in main and initialized
+			     *   in sam_parse(). */
+    sam_io_funcs *io_funcs;
+#if defined(SAM_EXTENSIONS) && defined(HAVE_DLFCN_H)
+    sam_array dlhandles;    /**< Handles returned from dlopen(). */
+#endif /* SAM_EXTENSIONS && HAVE_DLFCN_H */
+
+};
 
 /*
  * Portable implementation of round(3) for non-C99 and non-POSIX.1-2001
@@ -249,38 +231,6 @@ sam_round(sam_float f)
 	    return fl;
 	}
     }
-}
-
-static sam_ml *
-sam_ml_new(sam_ml_value   v,
-	   sam_ml_type t)
-{
-    sam_ml *m = sam_malloc(sizeof (sam_ml));
-
-    /* entire width of m must be initialized */
-    memset(m, 0, sizeof (sam_ml));
-
-    m->type = t;
-    m->value = v;
-    return m;
-}
-
-/*@null@*/ static sam_ml *
-sam_pop(/*@in@*/ sam_execution_state *s)
-{
-    return sam_array_rem(&s->stack);
-}
-
-static sam_bool
-sam_push(/*@in@*/ sam_execution_state *s,
-	 /*@only@*/ /*@out@*/ sam_ml *m)
-{
-    if (s->stack.len == SAM_STACK_PTR_MAX) {
-	free(m);
-	return FALSE;
-    }
-    sam_array_ins(&s->stack, m);
-    return TRUE;
 }
 
 /*@observer@*/ static const char *
@@ -415,96 +365,6 @@ sam_print_op_value(sam_op_value v,
 
 /* Execution errors. */
 static sam_error
-sam_error_optype(/*@in@*/ sam_execution_state *s)
-{
-    if ((options & quiet) == 0) {
-	sam_instruction *cur = s->program->arr[s->pc];
-	fprintf(stderr,
-		"error: bad operand type given: %s.\n",
-		sam_op_type_to_string(cur->optype));
-	stack_trace = TRUE;
-    }
-    return SAM_EOPTYPE;
-}
-
-static sam_error
-sam_error_segmentation_fault(sam_ma ma)
-{
-    if ((options & quiet) == 0) {
-	fprintf(stderr,
-		"error: segmentation fault. attempt to access illegal "
-		"memory at %s address %lu.\n",
-		ma.stack? "stack": "heap",
-		ma.stack?
-		    (unsigned long)ma.index.sa:
-		    (unsigned long)ma.index.ha);
-	stack_trace = TRUE;
-    }
-    return SAM_ESEGFAULT;
-}
-
-static sam_error
-sam_error_free(sam_ha index)
-{
-    if ((options & quiet) == 0) {
-	fprintf(stderr,
-		"error: attempt to free nonexistant or unused heap "
-		"address %luH\n",
-		(unsigned long)index);
-	stack_trace = TRUE;
-    }
-    return SAM_EFREE;
-}
-
-static sam_error
-sam_error_stack_underflow(void)
-{
-    if ((options & quiet) == 0) {
-	fputs("error: stack underflow.\n", stderr);
-	stack_trace = TRUE;
-    }
-    return SAM_ESTACK_UNDRFLW;
-}
-
-static sam_error
-sam_error_stack_overflow(void)
-{
-    if ((options & quiet) == 0) {
-	fputs("error: stack overflow.\n", stderr);
-	stack_trace = TRUE;
-    }
-    return SAM_ESTACK_OVERFLW;
-}
-
-static sam_error
-sam_error_no_memory(void)
-{
-    if ((options & quiet) == 0) {
-	fputs("error: out of memory.\n", stderr);
-	stack_trace = TRUE;
-    }
-    return SAM_ENOMEM;
-}
-
-static sam_error
-sam_error_type_conversion(sam_ml_type to,
-			  sam_ml_type found,
-			  sam_ml_type expected)
-{
-    if ((options & quiet) == 0) {
-	fprintf(stderr,
-		"warning: invalid type conversion to %s.\n"
-		"\texpected: %s.\n"
-		"\tfound: %s.\n",
-		sam_ml_type_to_string(to),
-		sam_ml_type_to_string(found),
-		sam_ml_type_to_string(expected));
-	stack_trace = TRUE;
-    }
-    return SAM_ETYPE_CONVERT;
-}
-
-static sam_error
 sam_error_final_stack_state(void)
 {
     if ((options & quiet) == 0) {
@@ -513,16 +373,6 @@ sam_error_final_stack_state(void)
 	stack_trace = TRUE;
     }
     return SAM_EFINAL_STACK;
-}
-
-static void
-sam_error_uninitialized(/*@in@*/ sam_execution_state *s)
-{
-    if ((options & quiet) == 0) {
-	fprintf(stderr,
-		"warning: use of uninitialized memory at program address "
-		"%lu.\n", (unsigned long)s->pc);
-    }
 }
 
 static void
@@ -592,6 +442,112 @@ sam_error_empty_stack(void)
 }
 
 static sam_error
+sam_error_stack_input1(/*@in@*/ sam_execution_state *s,
+		       sam_ml_type	   found,
+		       sam_ml_type	   expected)
+{
+    return sam_error_stack_input(s, "first", found, expected);
+}
+
+static sam_error
+sam_error_stack_input2(/*@in@*/ sam_execution_state *s,
+		       sam_ml_type	   found,
+		       sam_ml_type	   expected)
+{
+    return sam_error_stack_input(s, "second", found, expected);
+}
+
+sam_error
+sam_error_optype(/*@in@*/ sam_execution_state *s)
+{
+    if ((options & quiet) == 0) {
+	sam_instruction *cur = s->program->arr[s->pc];
+	fprintf(stderr,
+		"error: bad operand type given: %s.\n",
+		sam_op_type_to_string(cur->optype));
+	stack_trace = TRUE;
+    }
+    return SAM_EOPTYPE;
+}
+
+sam_error
+sam_error_segmentation_fault(sam_ma ma)
+{
+    if ((options & quiet) == 0) {
+	fprintf(stderr,
+		"error: segmentation fault. attempt to access illegal "
+		"memory at %s address %lu.\n",
+		ma.stack? "stack": "heap",
+		ma.stack?
+		    (unsigned long)ma.index.sa:
+		    (unsigned long)ma.index.ha);
+	stack_trace = TRUE;
+    }
+    return SAM_ESEGFAULT;
+}
+
+sam_error
+sam_error_free(sam_ha index)
+{
+    if ((options & quiet) == 0) {
+	fprintf(stderr,
+		"error: attempt to free nonexistant or unused heap "
+		"address %luH\n",
+		(unsigned long)index);
+	stack_trace = TRUE;
+    }
+    return SAM_EFREE;
+}
+
+sam_error
+sam_error_stack_underflow(void)
+{
+    if ((options & quiet) == 0) {
+	fputs("error: stack underflow.\n", stderr);
+	stack_trace = TRUE;
+    }
+    return SAM_ESTACK_UNDRFLW;
+}
+
+sam_error
+sam_error_stack_overflow(void)
+{
+    if ((options & quiet) == 0) {
+	fputs("error: stack overflow.\n", stderr);
+	stack_trace = TRUE;
+    }
+    return SAM_ESTACK_OVERFLW;
+}
+
+sam_error
+sam_error_no_memory(void)
+{
+    if ((options & quiet) == 0) {
+	fputs("error: out of memory.\n", stderr);
+	stack_trace = TRUE;
+    }
+    return SAM_ENOMEM;
+}
+
+sam_error
+sam_error_type_conversion(sam_ml_type to,
+			  sam_ml_type found,
+			  sam_ml_type expected)
+{
+    if ((options & quiet) == 0) {
+	fprintf(stderr,
+		"warning: invalid type conversion to %s.\n"
+		"\texpected: %s.\n"
+		"\tfound: %s.\n",
+		sam_ml_type_to_string(to),
+		sam_ml_type_to_string(found),
+		sam_ml_type_to_string(expected));
+	stack_trace = TRUE;
+    }
+    return SAM_ETYPE_CONVERT;
+}
+
+sam_error
 sam_error_unknown_identifier(const char *name)
 {
     if ((options & quiet) == 0) {
@@ -601,11 +557,11 @@ sam_error_unknown_identifier(const char *name)
     return SAM_EUNKNOWN_IDENT;
 }
 
-static sam_error
+sam_error
 sam_error_stack_input(/*@in@*/ sam_execution_state *s,
-		      sam_bool		   first,
-		      sam_ml_type	   found,
-		      sam_ml_type	   expected)
+		      const char  *which,
+		      sam_ml_type  found,
+		      sam_ml_type  expected)
 {
     if ((options & quiet) == 0) {
 	sam_instruction *cur = s->program->arr[s->pc];
@@ -614,7 +570,7 @@ sam_error_stack_input(/*@in@*/ sam_execution_state *s,
 		"error: invalid type of %s stack argument to %s.\n"
 		"found: %s\n"
 		"expected: %s\n",
-		first? "first": "second",
+		which,
 		cur->name,
 		sam_ml_type_to_string(found),
 		sam_ml_type_to_string(expected));
@@ -624,7 +580,7 @@ sam_error_stack_input(/*@in@*/ sam_execution_state *s,
     return SAM_ESTACK_INPUT;
 }
 
-static sam_error
+sam_error
 sam_error_negative_shift(/*@in@*/ sam_execution_state *s,
 			 sam_int i)
 {
@@ -641,23 +597,7 @@ sam_error_negative_shift(/*@in@*/ sam_execution_state *s,
     return SAM_ESHIFT;
 }
 
-static sam_error
-sam_error_stack_input1(/*@in@*/ sam_execution_state *s,
-		       sam_ml_type	   found,
-		       sam_ml_type	   expected)
-{
-    return sam_error_stack_input(s, TRUE, found, expected);
-}
-
-static sam_error
-sam_error_stack_input2(/*@in@*/ sam_execution_state *s,
-		       sam_ml_type	   found,
-		       sam_ml_type	   expected)
-{
-    return sam_error_stack_input(s, FALSE, found, expected);
-}
-
-static sam_error
+sam_error
 sam_error_division_by_zero(void)
 {
     if ((options & quiet) == 0) {
@@ -668,7 +608,7 @@ sam_error_division_by_zero(void)
     return SAM_EDIVISION;
 }
 
-static sam_error
+sam_error
 sam_error_io(void)
 {
     if ((options & quiet) == 0) {
@@ -680,7 +620,17 @@ sam_error_io(void)
     return SAM_EIO;
 }
 
-static void
+void
+sam_error_uninitialized(/*@in@*/ sam_execution_state *s)
+{
+    if ((options & quiet) == 0) {
+	fprintf(stderr,
+		"warning: use of uninitialized memory at program address "
+		"%lu.\n", (unsigned long)s->pc);
+    }
+}
+
+void
 sam_error_number_format(const char *buf)
 {
     if ((options & quiet) == 0) {
@@ -691,25 +641,110 @@ sam_error_number_format(const char *buf)
     }
 }
 
-/* Opcode utility functions. */
+#if defined(SAM_EXTENSIONS) && defined(HAVE_DLFCN_H)
+static sam_error
+sam_error_dlopen(const char *filename,
+		 char	    *reason)
+{
+    if ((options & quiet) == 0) {
+	fprintf(stderr,
+		"error: couldn't import library %s (%s).\n",
+		filename, reason);
+	stack_trace = TRUE;
+    }
+
+    return SAM_EDLOPEN;
+}
+
+static sam_error
+sam_error_dlsym(sam_execution_state *s)
+{
+    if ((options & quiet) == 0) {
+	sam_instruction *cur = s->program->arr[s->pc];
+
+	fprintf(stderr,
+		"error: couldn't call %s (not found).\n",
+		cur->operand.s);
+
+	stack_trace = TRUE;
+    }
+
+    return SAM_EDLSYM;
+}
+#endif /* SAM_EXTENSIONS && HAVE_DLFCN_H */
+
+#if defined(SAM_EXTENSIONS) && defined(HAVE_DLFCN_H)
+static sam_dlhandle *
+sam_dlhandle_new(/*@dependent@*/ char *name,
+		 /*@observer@*/  void *handle)
+{
+    sam_dlhandle *h = sam_malloc(sizeof (sam_dlhandle));
+    h->name = name;
+    h->handle = handle;
+    return h;
+}
+
 static sam_bool
-sam_label_lookup(/*@in@*/ sam_execution_state *s,
-		 /*@out@*/ sam_pa *pa,
-		 const char *name)
+sam_dllookup(/*@in@*/ sam_execution_state *s,
+	     const char *name)
 {
     size_t i;
 
-    for (i = 0; i < s->labels->len; ++i) {
-	sam_label *label = s->labels->arr[i];
-	if (strcmp(label->name, name) == 0) {
-	    *pa = label->pa;
-	    return TRUE;
+    for (i = 0; i < s->dlhandles.len; ++i) {
+	sam_dlhandle *handle = s->dlhandles.arr[i];
+	if (strcmp(handle->name, name) == 0) {
+	    return FALSE;
 	}
     }
 
-    *pa = 0;
-    return FALSE;
+    return TRUE;
 }
+
+static sam_error
+sam_dlopen(/*@in@*/  sam_execution_state *s,
+	   /*@observer@*/ /*@out@*/ char *filename)
+{
+    /*@observer@*/ void *handle;
+
+    if ((handle = dlopen(filename, RTLD_NOW)) == NULL) {
+	return sam_error_dlopen(filename, dlerror());
+    }
+    sam_array_ins(&s->dlhandles, sam_dlhandle_new(filename, handle));
+
+    return SAM_OK;
+}
+
+static void
+sam_dlhandles_free(sam_array *dlhandles)
+{
+    size_t i;
+
+    for (i = 0; i < dlhandles->len; ++i) {
+	dlclose(dlhandles->arr[i]);
+    }
+
+    free(dlhandles->arr);
+}
+
+/*@null@*/ /*@dependent@*/ static sam_library_fn
+sam_dlsym(sam_execution_state *s)
+{
+    sam_instruction *cur = s->program->arr[s->pc];
+    sam_library_fn   fn;
+    size_t	     i;
+
+    for (i = 0; i < s->dlhandles.len; ++i) {
+	sam_dlhandle *h = s->dlhandles.arr[i];
+	if ((*(void **)(&fn) =
+	     dlsym(h->handle, cur->operand.s)) != NULL) {
+	    return fn;
+	}
+    }
+    dlerror();
+
+    return fn;
+}
+#endif /* SAM_EXTENSIONS && HAVE_DLFCN_H */
 
 /* The sam allocator. */
 /*@only@*/ static sam_heap_pointer *
@@ -756,110 +791,9 @@ sam_heap_pointer_update(/*@null@*/ sam_heap_pointer *p,
     }
 }
 
-/**
- * Allocate space on the heap. Updates the current
- * #sam_execution_state's sam_heap#used_list
- * and sam_heap#free_list.
- *
- *  @param s The current execution state.
- *  @param size The number of memory locations to allocate.
- *
- *  @return An index into the sam_heap#a#arr, or #SAM_HEAP_PTR_MAX on
- *	    overflow.
- */
-static sam_ha
-sam_heap_alloc(/*@in@*/ sam_execution_state *s,
-	       size_t			     size)
-{
-    sam_heap_pointer *f = s->heap.free_list;
-    /*@null@*/ sam_heap_pointer *last = NULL;
-
-    if (SAM_HEAP_PTR_MAX - s->heap.a.len <= size) {
-	return SAM_HEAP_PTR_MAX;
-    }
-
-    for (;;) {
-	if (f == NULL) {
-	    size_t i, start = s->heap.a.len;
-
-	    for (i = start; i < start + size; ++i) {
-		sam_ml_value v = { 0 };
-		sam_array_ins(&s->heap.a,
-			      sam_ml_new(v, SAM_ML_TYPE_NONE));
-	    }
-	    s->heap.used_list = sam_heap_pointer_update(s->heap.used_list,
-							start, size);
-	    return start;
-	}
-	if (f->size >= size) {
-	    size_t i, start = f->start;
-
-	    for (i = start; i < size + start; ++i) {
-		s->heap.a.arr[i] = sam_malloc(sizeof (sam_ml));
-	    }
-	    s->heap.used_list = sam_heap_pointer_update(s->heap.used_list,
-							start, size);
-	    if (f->size == size) {
-		if (last == NULL) {
-		    s->heap.free_list = f->next;
-		} else {
-		    last->next = f->next;
-		}
-		free(f);
-	    } else {
-		f->start += size;
-		f->size -= size;
-	    }
-	    return start;
-	}
-	last = f;
-	f = f->next;
-    }
-}
-
-static sam_error
-sam_heap_dealloc(sam_heap *heap,
-		 sam_ha	   index)
-{
-    sam_heap_pointer *u = heap->used_list;
-    sam_heap_pointer *last = NULL;
-
-    if (heap->a.arr[index] == NULL) {
-	return SAM_OK;
-    }
-
-    for (;;) {
-	if (u == NULL) {
-	    return sam_error_free(index);
-	}
-	if (u->start == index) {
-	    size_t i;
-
-	    if (last == NULL) {
-		heap->used_list = u->next;
-	    } else {
-		last->next = u->next;
-	    } for (i = 0; i < u->size; ++i) {
-		sam_ml *m = heap->a.arr[index + i];
-		free(m);
-		heap->a.arr[index + i] = NULL;
-	    }
-	    heap->free_list = sam_heap_pointer_update(heap->free_list,
-						      u->start, u->size);
-	    free(u);
-	    return SAM_OK;
-	}
-	if (u->start > index) {
-	    return sam_error_free(index);
-	}
-	last = u;
-	u = u->next;
-    }
-}
-
 static void
-sam_heap_used_list_free(/*@in@*/   sam_heap	    *heap,
-			/*@null@*/ sam_heap_pointer *u)
+sam_heap_used_list_free(/*@in@*/ sam_execution_state *s,
+			/*@null@*/ sam_heap_pointer  *u)
 {
     sam_heap_pointer *next;
 
@@ -867,8 +801,8 @@ sam_heap_used_list_free(/*@in@*/   sam_heap	    *heap,
 	return;
     }
     next = u->next;
-    sam_heap_dealloc(heap, u->start);
-    sam_heap_used_list_free(heap, next);
+    sam_heap_dealloc(s, u->start);
+    sam_heap_used_list_free(s, next);
 }
 
 static void
@@ -885,11 +819,11 @@ sam_heap_free_list_free(/*@null@*/ sam_heap_pointer *p)
 }
 
 static void
-sam_heap_free(sam_heap *heap)
+sam_heap_free(sam_execution_state *s)
 {
-    sam_heap_used_list_free(heap, heap->used_list);
-    sam_heap_free_list_free(heap->free_list);
-    free(heap->a.arr);
+    sam_heap_used_list_free(s, s->heap.used_list);
+    sam_heap_free_list_free(s->heap.free_list);
+    free(s->heap.a.arr);
 }
 
 static sam_error
@@ -1379,7 +1313,7 @@ sam_get_jump_target(/*@in@*/ sam_execution_state *s,
 	 * incremented by the loop in sam_execute */
 	*p = cur->operand.pa - 1;
     } else if (cur->optype == SAM_OP_TYPE_LABEL) {
-	if (sam_label_lookup(s, p, cur->operand.s)) {
+	if (sam_label_get(s, p, cur->operand.s)) {
 	    /* as above */
 	    --*p;
 	} else {
@@ -1584,7 +1518,7 @@ sam_op_pushimmpa(/*@in@*/ sam_execution_state *s)
 	    return sam_error_stack_overflow();
 	}
     } else if (cur->optype == SAM_OP_TYPE_LABEL) {
-	if (sam_label_lookup(s, &v.pa, cur->operand.s)) {
+	if (sam_label_get(s, &v.pa, cur->operand.s)) {
 	    if (!sam_push(s, sam_ml_new(v, SAM_ML_TYPE_PA))) {
 		return sam_error_stack_overflow();
 	    }
@@ -1801,7 +1735,7 @@ sam_op_free(/*@in@*/ sam_execution_state *s)
     if (ha >= s->heap.a.len) {
 	return sam_error_free(ha);
     }
-    return sam_heap_dealloc(&s->heap, ha);
+    return sam_heap_dealloc(s, ha);
 }
 
 static sam_error
@@ -2261,9 +2195,9 @@ sam_op_rst(/*@in@*/ sam_execution_state *s)
 static sam_error
 sam_op_jsr(/*@in@*/ sam_execution_state *s)
 {
-    sam_ml_value	v;
-    sam_pa	target;
-    sam_error		err;
+    sam_ml_value v;
+    sam_pa	 target;
+    sam_error	 err;
 
     v.pa = s->pc + 1;
     if (!sam_push(s, sam_ml_new(v, SAM_ML_TYPE_PA))) {
@@ -2428,7 +2362,6 @@ sam_op_readstr(/*@in@*/ sam_execution_state *s)
 	len = strlen(str);
     }
     if ((v.ha = sam_heap_alloc(s, len + 1)) == SAM_HEAP_PTR_MAX) {
-	free(m);
 	return sam_error_no_memory();
     }
     for (i = 0; i <= len; ++i) {
@@ -2604,6 +2537,57 @@ sam_op_stop(/*@in@*/ sam_execution_state *s)
     return SAM_STOP;
 }
 
+#if defined(HAVE_DLFCN_H)
+static sam_error
+sam_op_import(sam_execution_state *s)
+{
+    sam_instruction *cur = s->program->arr[s->pc];
+
+    if (cur->optype != SAM_OP_TYPE_LABEL) {
+	return sam_error_optype(s);
+    }
+    if (sam_dllookup(s, cur->operand.s)) {
+	return sam_dlopen(s, cur->operand.s);
+    }
+
+    return SAM_OK;
+}
+
+static sam_error
+sam_op_call(sam_execution_state *s)
+{
+    sam_instruction *cur = s->program->arr[s->pc];
+    sam_library_fn   fn;
+
+    if (cur->optype != SAM_OP_TYPE_LABEL) {
+	return sam_error_optype(s);
+    }
+    if ((fn = sam_dlsym(s)) == NULL) {
+	return sam_error_dlsym(s);
+    }
+    return fn(s);
+}
+
+#else /* HAVE_DLFCN_H */
+
+static sam_error
+sam_op_import(__attribute__((unused)) sam_execution_state *s)
+{
+    fputs("error: samiam was not compiled with support for the import "
+	  "instruction.\n", stderr);
+    return SAM_ENOSYS;
+}
+
+static sam_error
+sam_op_call(__attribute__((unused)) sam_execution_state *s)
+{
+    fputs("error: samiam was not compiled with support for the open "
+	  "instruction.\n", stderr);
+    return SAM_ENOSYS;
+}
+
+#endif /* HAVE_DLFCN_H */
+
 static sam_error
 sam_op_patoi(/*@in@*/ sam_execution_state *s)
 {
@@ -2704,10 +2688,12 @@ const sam_instruction sam_instructions[] = {
     { "WRITE",		SAM_OP_TYPE_NONE,  {0}, sam_op_write	   },
     { "WRITEF",		SAM_OP_TYPE_NONE,  {0}, sam_op_writef	   },
     { "WRITECH",	SAM_OP_TYPE_NONE,  {0}, sam_op_writech	   },
-    { "WRITESTR",	SAM_OP_TYPE_NONE,  {0}, sam_op_writestr   },
+    { "WRITESTR",	SAM_OP_TYPE_NONE,  {0}, sam_op_writestr    },
     { "STOP",		SAM_OP_TYPE_NONE,  {0}, sam_op_stop	   },
 #if defined(SAM_EXTENSIONS)
     { "patoi",		SAM_OP_TYPE_NONE,  {0}, sam_op_patoi	   },
+    { "import",		SAM_OP_TYPE_LABEL, {0}, sam_op_import	   },
+    { "call",		SAM_OP_TYPE_LABEL, {0}, sam_op_call	   },
 #endif
     { "",		SAM_OP_TYPE_NONE,  {0}, NULL		   },
 };
@@ -2725,6 +2711,7 @@ sam_execution_state_init(/*@out@*/ sam_execution_state *s)
 {
     s->pc = 0;
     s->fbr = 0;
+    sam_array_init(&s->dlhandles);
     sam_array_init(&s->stack);
     sam_heap_init(&s->heap);
 }
@@ -2733,9 +2720,12 @@ static void
 sam_execution_state_free(/*@in@*/ sam_execution_state *s)
 {
     sam_array_free(s->program);
-    sam_array_free(s->labels);
+    sam_hash_table_free(s->labels);
     sam_array_free(&s->stack);
-    sam_heap_free(&s->heap);
+    sam_heap_free(s);
+#if defined(SAM_EXTENSIONS) && defined(HAVE_DLFCN_H)
+    sam_dlhandles_free(&s->dlhandles);
+#endif
 }
 
 /* Die... with style! */
@@ -2820,10 +2810,160 @@ sam_convert_to_int(/*@in@*/ sam_ml *m)
     }
 }
 
+/*@null@*/ sam_ml *
+sam_pop(/*@in@*/ sam_execution_state *s)
+{
+    return sam_array_rem(&s->stack);
+}
+
+sam_bool
+sam_push(/*@in@*/ sam_execution_state *s,
+	 /*@only@*/ /*@out@*/ sam_ml *m)
+{
+    if (s->stack.len == SAM_STACK_PTR_MAX) {
+	free(m);
+	return FALSE;
+    }
+    sam_array_ins(&s->stack, m);
+    return TRUE;
+}
+
+sam_bool
+sam_label_get(/*@in@*/ sam_execution_state *s,
+	      /*@out@*/ sam_pa *pa,
+	      const char *name)
+{
+    return sam_hash_table_get(s->labels, name, pa);
+}
+
+/*@null@*/ sam_instruction *
+sam_instruction_get(/*@in@*/ sam_execution_state *s,
+		    sam_pa pa)
+{
+    return pa < s->program->len? s->program->arr[pa]: NULL;
+}
+
+/**
+ * Allocate space on the heap. Updates the current
+ * #sam_execution_state's sam_heap#used_list
+ * and sam_heap#free_list.
+ *
+ *  @param s The current execution state.
+ *  @param size The number of memory locations to allocate.
+ *
+ *  @return An index into the sam_heap#a#arr, or #SAM_HEAP_PTR_MAX on
+ *	    overflow.
+ */
+sam_ha
+sam_heap_alloc(/*@in@*/ sam_execution_state *s,
+	       size_t			     size)
+{
+    sam_heap	     *heap = &s->heap;
+    sam_heap_pointer *f = heap->free_list;
+    /*@null@*/ sam_heap_pointer *last = NULL;
+
+    if (SAM_HEAP_PTR_MAX - heap->a.len <= size) {
+	return SAM_HEAP_PTR_MAX;
+    }
+
+    for (;;) {
+	if (f == NULL) {
+	    size_t i, start = heap->a.len;
+
+	    for (i = start; i < start + size; ++i) {
+		sam_ml_value v = { 0 };
+		sam_array_ins(&heap->a,
+			      sam_ml_new(v, SAM_ML_TYPE_NONE));
+	    }
+	    heap->used_list = sam_heap_pointer_update(heap->used_list,
+						      start, size);
+	    return start;
+	}
+	if (f->size >= size) {
+	    size_t i, start = f->start;
+
+	    for (i = start; i < size + start; ++i) {
+		heap->a.arr[i] = sam_malloc(sizeof (sam_ml));
+	    }
+	    heap->used_list = sam_heap_pointer_update(heap->used_list,
+						      start, size);
+	    if (f->size == size) {
+		if (last == NULL) {
+		    heap->free_list = f->next;
+		} else {
+		    last->next = f->next;
+		}
+		free(f);
+	    } else {
+		f->start += size;
+		f->size -= size;
+	    }
+	    return start;
+	}
+	last = f;
+	f = f->next;
+    }
+}
+
+sam_error
+sam_heap_dealloc(sam_execution_state *s,
+		 sam_ha		      index)
+{
+    sam_heap	     *heap = &s->heap;
+    sam_heap_pointer *u = heap->used_list;
+    sam_heap_pointer *last = NULL;
+
+    if (heap->a.arr[index] == NULL) {
+	return SAM_OK;
+    }
+
+    for (;;) {
+	if (u == NULL) {
+	    return sam_error_free(index);
+	}
+	if (u->start == index) {
+	    size_t i;
+
+	    if (last == NULL) {
+		heap->used_list = u->next;
+	    } else {
+		last->next = u->next;
+	    } for (i = 0; i < u->size; ++i) {
+		sam_ml *m = heap->a.arr[index + i];
+		free(m);
+		heap->a.arr[index + i] = NULL;
+	    }
+	    heap->free_list = sam_heap_pointer_update(heap->free_list,
+						      u->start, u->size);
+	    free(u);
+	    return SAM_OK;
+	}
+	if (u->start > index) {
+	    return sam_error_free(index);
+	}
+	last = u;
+	u = u->next;
+    }
+}
+
+sam_ml *
+sam_ml_new(sam_ml_value v,
+	   sam_ml_type  t)
+{
+    sam_ml *m = sam_malloc(sizeof (sam_ml));
+
+    /* entire width of m must be initialized */
+    memset(m, 0, sizeof (sam_ml));
+
+    m->type = t;
+    m->value = v;
+    return m;
+}
+
 sam_exit_code
-sam_execute(/*@in@*/ sam_array	  *instructions,
-	    /*@in@*/ sam_array	  *labels,
-	    /*@in@*/ sam_io_funcs *io_funcs)
+sam_execute(/*@in@*/ sam_array	    *instructions,
+	    /*@in@*/ sam_hash_table *labels,
+	    /*@in@*/ sam_io_funcs   *io_funcs)
 {
     int retval = SAM_EMPTY_STACK, err = 0;
     sam_execution_state s;
