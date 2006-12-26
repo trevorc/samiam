@@ -26,6 +26,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.2  2006/12/26 22:54:07  trevor
+ * Logical right shift added.
+ *
  * Revision 1.1  2006/12/25 00:21:39  trevor
  * New SDK suite of headers.
  *
@@ -54,6 +57,7 @@ typedef enum {
 /** An integer, stored by the interpreter as a long to maximize
  * portability */
 typedef long sam_int;
+typedef unsigned long sam_unsigned_int;
 
 /** Make sure our chars are wide enough to be suitable return values. */
 typedef int sam_char;

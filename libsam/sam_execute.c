@@ -27,6 +27,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.29  2006/12/26 22:54:07  trevor
+ * Logical right shift added.
+ *
  * Revision 1.28  2006/12/25 18:56:43  trevor
  * fix #27
  *
@@ -153,6 +156,12 @@ typedef enum {
     SAM_OP_ISNEG,
     SAM_OP_ISNIL
 } sam_unary_arithmetic_operation;
+
+typedef enum {
+    SAM_SHIFT_ARITH_LEFT,
+    SAM_SHIFT_ARITH_RIGHT,
+    SAM_SHIFT_LOGIC_RIGHT
+} sam_bitshift_type;
 
 #if defined(SAM_EXTENSIONS) && defined(HAVE_DLFCN_H)
 typedef struct {
@@ -1234,12 +1243,29 @@ sam_unary_arithmetic(sam_execution_state	   *s,
     return SAM_OK;
 }
 
+static sam_int
+sam_do_shift(sam_int	      i,
+	     sam_int	      j,
+	     sam_bitshift_type type)
+{
+    switch (type) {
+	case SAM_SHIFT_ARITH_LEFT:
+	    return i << j;
+	case SAM_SHIFT_ARITH_RIGHT:
+	    return i >> j;
+	case SAM_SHIFT_LOGIC_RIGHT:
+	    return ((sam_unsigned_int)i) >> j;
+	default: /*@notreached@*/
+	    return i;
+    }
+}
+
 static sam_error
 sam_bitshift(/*@in@*/ sam_execution_state *s,
-	     sam_bool		  left)
+	     sam_bitshift_type		   type)
 {
-    sam_ml *m;
-    sam_instruction	*cur = s->program->arr[s->pc];
+    sam_ml	    *m;
+    sam_instruction *cur = s->program->arr[s->pc];
 
     if (cur->optype != SAM_OP_TYPE_INT) {
 	return sam_error_optype(s);
@@ -1257,11 +1283,7 @@ sam_bitshift(/*@in@*/ sam_execution_state *s,
 	free(m);
 	return sam_error_negative_shift(s, i);
     }
-    if (left) {
-	m->value.i <<= cur->operand.i;
-    } else {
-	m->value.i >>= cur->operand.i;
-    }
+    m->value.i = sam_do_shift(m->value.i, cur->operand.i, type);
     if (!sam_push(s, m)) {
 	return sam_error_stack_overflow();
     }
@@ -1270,7 +1292,7 @@ sam_bitshift(/*@in@*/ sam_execution_state *s,
 }
 static sam_error
 sam_bitshiftind(/*@in@*/ sam_execution_state *s,
-		sam_bool		  left)
+		sam_bitshift_type type)
 {
     sam_ml *m1, *m2;
 
@@ -1292,11 +1314,7 @@ sam_bitshiftind(/*@in@*/ sam_execution_state *s,
 	free(m2);
 	return sam_error_stack_input2(s, t, SAM_ML_TYPE_INT);
     }
-    if (left) {
-	m1->value.i <<= m2->value.i;
-    } else {
-	m1->value.i >>= m2->value.i;
-    }
+    m1->value.i = sam_do_shift(m1->value.i, m2->value.i, type);
     free(m2);
     if (!sam_push(s, m1)) {
 	return sam_error_stack_overflow();
@@ -1929,25 +1947,37 @@ sam_op_divf(/*@in@*/ sam_execution_state *s)
 static sam_error
 sam_op_lshift(/*@in@*/ sam_execution_state *s)
 {
-    return sam_bitshift(s, TRUE);
+    return sam_bitshift(s, SAM_SHIFT_ARITH_LEFT);
 }
 
 static sam_error
 sam_op_lshiftind(/*@in@*/ sam_execution_state *s)
 {
-    return sam_bitshiftind(s, TRUE);
+    return sam_bitshiftind(s, SAM_SHIFT_ARITH_LEFT);
 }
 
 static sam_error
 sam_op_rshift(/*@in@*/ sam_execution_state *s)
 {
-    return sam_bitshift(s, FALSE);
+    return sam_bitshift(s, SAM_SHIFT_ARITH_RIGHT);
 }
 
 static sam_error
 sam_op_rshiftind(/*@in@*/ sam_execution_state *s)
 {
-    return sam_bitshiftind(s, FALSE);
+    return sam_bitshiftind(s, SAM_SHIFT_ARITH_RIGHT);
+}
+
+static sam_error
+sam_op_lrshift(/*@in@*/ sam_execution_state *s)
+{
+    return sam_bitshift(s, SAM_SHIFT_LOGIC_RIGHT);
+}
+
+static sam_error
+sam_op_lrshiftind(/*@in@*/ sam_execution_state *s)
+{
+    return sam_bitshiftind(s, SAM_SHIFT_LOGIC_RIGHT);
 }
 
 static sam_error
@@ -2631,6 +2661,10 @@ const sam_instruction sam_instructions[] = {
     { "LSHIFTIND",	SAM_OP_TYPE_NONE,  {0}, sam_op_lshiftind   },
     { "RSHIFT",		SAM_OP_TYPE_INT,   {0}, sam_op_rshift	   },
     { "RSHIFTIND",	SAM_OP_TYPE_NONE,  {0}, sam_op_rshiftind   },
+#if defined(SAM_EXTENSIONS)
+    { "LRSHIFT",	SAM_OP_TYPE_INT,   {0}, sam_op_lrshift	   },
+    { "LRSHIFTIND",	SAM_OP_TYPE_NONE,  {0}, sam_op_lrshiftind  },
+#endif
     { "AND",		SAM_OP_TYPE_NONE,  {0}, sam_op_and	   },
     { "OR",		SAM_OP_TYPE_NONE,  {0}, sam_op_or	   },
     { "NAND",		SAM_OP_TYPE_NONE,  {0}, sam_op_nand	   },
