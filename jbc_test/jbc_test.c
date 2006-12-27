@@ -27,13 +27,21 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.5  2006/12/27 21:17:50  trevor
+ * Add missing headers.
+ *
  * Revision 1.4  2006/12/12 23:31:35  trevor
- * Added the $Id$ and $Log$ tags and copyright notice where they were missing.
+ * Added the $Id$ and $Log$
+ * Added the $Id$ and Revision 1.5  2006/12/27 21:17:50  trevor
+ * Added the $Id$ and Add missing headers.
+ * Added the $Id$ and tags and copyright notice where they were missing.
  *
  */
 
 #include <stdio.h>
 #include <sam.h>
+#include <libsam/config.h>
+#include <libsam/types.h>
 
 #include "libjbr.h"
 
