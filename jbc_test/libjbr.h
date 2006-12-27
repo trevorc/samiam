@@ -26,6 +26,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.3  2006/12/27 18:47:21  trevor
+ * Fixed types.
+ *
  * Revision 1.2  2006/12/12 23:31:35  trevor
  * Added the Id and Log tags and copyright notice where they were missing.
  *
@@ -34,13 +37,13 @@
 #ifndef LIBJBR_H
 #define LIBJBR_H
 
-extern int readInt(int *n);
-extern int readFloat(double *f);
-extern int readChar(char *c);
+extern int readInt(sam_int *n);
+extern int readFloat(sam_float *f);
+extern int readChar(sam_int *c);
 extern int readString(char **s);
-extern int printInt(int n);
-extern int printFloat(double f);
-extern int printChar(char c);
+extern int printInt(sam_int n);
+extern int printFloat(sam_float f);
+extern int printChar(sam_int c);
 extern int printString(char *s);
 
 #endif /* LIBJBR_H */
