@@ -10,7 +10,7 @@ HI	Release-critical bug.
 ASGN SEV  NUM  DESC
 T    LOW  #00  no argument parsing in samiam.
 T    ---  #01  duplicate labels
-     HI   #02  shitty error messages for parsing
+T    ---  #02  shitty error messages for parsing
      LOW  #03  c string parsing "hello.\n"
      LOW  #04  character parsing PUSHIMMCH'a'STOP
 J    ---  #05  m1/m2 confusion in sam_op_add sam_integer_arithmetic
