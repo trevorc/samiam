@@ -27,6 +27,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.14  2006/12/27 21:18:03  trevor
+ * Fix #02. Accept non-newline terminated files.
+ *
  * Revision 1.13  2006/12/25 00:29:54  trevor
  * Update for new hash table labels.
  *
@@ -104,6 +107,23 @@ sam_eat_whitespace(char **s)
     } 
 }
 
+static void
+sam_truncate(char *s)
+{
+    static const size_t TRUNC_HEAD = 12, TRUNC_TAIL = 5;
+    size_t len = strlen(s);
+    char *tail = s + len - 1;
+
+    while (isspace(*tail)) {
+	*tail-- = '\0';
+	--len;
+    }
+
+    if (len > TRUNC_HEAD + 3 + TRUNC_TAIL) {
+	sprintf(s + TRUNC_HEAD, "...%s", s + len - TRUNC_TAIL);
+    }
+}
+
 /** The sourcefile provided contains no instructions or labels. */
 static void
 sam_error_empty_input(void)
@@ -127,7 +147,7 @@ static void
 sam_error_opcode(const char *s)
 {
     if ((options & quiet) == 0) {
-	fprintf(stderr, "error: unknown instruction found: %s.\n", s);
+	fprintf(stderr, "error: unknown opcode found: %s.\n", s);
     }
 }
 
@@ -137,11 +157,7 @@ sam_error_operand(const char *opcode,
 		  char	     *operand)
 {
     if ((options & quiet) == 0) {
-	char *start = operand;
-
-	if (*start == ':' || *start == '"' || *start == '\'') {
-	    *start = '\0';
-	}
+	sam_truncate(operand);
 
 	fprintf(stderr,
 		"error: couldn't parse operand for %s: %s.\n",
@@ -408,8 +424,7 @@ sam_parse_instruction(char **input)
     }
     sam_eat_whitespace(&start);
     if ((i = sam_instruction_new(opcode)) == NULL) {
-	puts(opcode);
-	sam_error_opcode(start);
+	sam_error_opcode(opcode);
 	return NULL;
     }
     if (i->optype != SAM_OP_TYPE_NONE) {
@@ -498,7 +513,7 @@ sam_input_read(/*@observer@*/ const char *path,
 	}
 	return NULL;
     }
-    size = sb.st_size;
+    size = sb.st_size + 1;
     p = mmap(0, size, PROT_READ|PROT_WRITE, MAP_PRIVATE, fd, 0);
     if (p == (void *)-1) {
 	perror("mmap");
@@ -511,12 +526,6 @@ sam_input_read(/*@observer@*/ const char *path,
     s->len = size;
     s->alloc = size;
     s->data = p;
-    if (s->data[s->len-1] != '\n' && s->data[s->len-1] != '\0') {
-	fprintf(stderr, "error: %s does not end with a newline.\n", path);
-	sam_file_free(s);
-	return NULL;
-    }
-    s->data[s->len-1] = '\0';
 
     return s->data;
 }
@@ -562,7 +571,7 @@ sam_file_free(sam_string *s)
 
 /*@null@*/ sam_bool
 sam_parse(sam_string	 *s,
-	  const char	 *file,
+	  /*@null@*/ const char *file,
 	  sam_array	 *instructions,
 	  sam_hash_table *labels)
 {
@@ -586,7 +595,7 @@ sam_parse(sam_string	 *s,
 	    ++input;
 	}
     }
-#endif
+#endif /* SAM_EXTENSIONS */
 
     sam_array_init(instructions);
     sam_hash_table_init(labels);
