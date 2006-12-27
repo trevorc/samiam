@@ -27,6 +27,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.9  2006/12/27 18:43:23  trevor
+ * Fixed types.
+ *
  * Revision 1.8  2006/12/25 00:23:50  trevor
  * Use the new SDK headers.
  *
@@ -42,6 +45,7 @@
  */
 
 #include <libsam/config.h>
+#include <libsam/types.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -51,7 +55,7 @@
 static char buffer[36];
 
 int
-readInt(int *n)
+readInt(sam_int *n)
 {
     long l;
     char *endptr;
@@ -67,7 +71,7 @@ readInt(int *n)
 }
 
 int
-readFloat(double *f)
+readFloat(sam_float *f)
 {
     char *endptr;
 
@@ -80,7 +84,7 @@ readFloat(double *f)
 }
 
 int
-readChar(char *c)
+readChar(sam_int *c)
 {
     int n;
 
@@ -88,9 +92,9 @@ readChar(char *c)
     if ((n = getchar()) == EOF) {
 	return -1;
     }
-    *c = (char)n;
+    *c = n;
     if ((n = getchar()) == EOF ||
-	(n != (int)'\n' && ungetc(n, stdin) == EOF)) {
+	(n != '\n' && ungetc(n, stdin) == EOF)) {
 	return -1;
     }
 
@@ -105,23 +109,23 @@ readString(/*@unused@*/ __attribute__((unused)) char **s)
 }
 
 int
-printChar(char c)
+printChar(sam_int c)
 {
-    printf("Processor Output: %c\n", c);
+    printf("Processor Output: %c\n", (int)c);
     return 0;
 }
 
 int
-printFloat(double f)
+printFloat(sam_float f)
 {
     printf("Processor Output: %f\n", f);
     return 0;
 }
 
 int
-printInt(int i)
+printInt(sam_int i)
 {
-    printf("Processor Output: %i\n", i);
+    printf("Processor Output: %li\n", i);
     return 0;
 }
 
