@@ -27,6 +27,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.10  2006/12/27 18:45:23  trevor
+ * Rearrange headers.
+ *
  * Revision 1.9  2006/12/27 18:43:23  trevor
  * Fixed types.
  *
@@ -44,11 +47,11 @@
  *
  */
 
-#include <libsam/config.h>
-#include <libsam/types.h>
-
 #include <stdio.h>
 #include <stdlib.h>
+
+#include <libsam/config.h>
+#include <libsam/types.h>
 
 #include "libjbr.h"
 
