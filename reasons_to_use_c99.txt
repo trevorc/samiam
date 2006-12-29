@@ -1,0 +1,18 @@
+$Id$
+
+* vsnprintf()
+* stdint.h
+* round()
+* isless()/isgreater()
+* restrict
+* inline
+* no implicit int return type
+* it's been the latest official C standard for 7 years
+
+of course, the convienences:
+* loop-scoped variables
+* union literals
+* _Boolean type and stdbool.h
+* trailing comma in enums
+
+why aren't we using C99 again?
