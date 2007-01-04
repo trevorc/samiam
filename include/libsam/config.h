@@ -26,12 +26,15 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.2  2007/01/04 05:37:02  trevor
+ * Reformat.
+ *
  * Revision 1.1  2006/12/25 00:21:39  trevor
  * New SDK suite of headers.
  *
  * Revision 1.6  2006/12/21 04:07:12  trevor
- * Even though sam_ha and sam_sa's are size_t, they're not allowed to hold more
- * than a long can store.
+ * Even though sam_ha and sam_sa's are size_t, they're not allowed to
+ * hold more than a long can store.
  *
  * Revision 1.5  2006/12/19 09:29:34  trevor
  * Removed implicit casts.
@@ -63,7 +66,6 @@
 # define __WORDSIZE 32
 #endif /* !__WORDSIZE */
 
-/* define to float on 32 bit architectures, double on 64 bit. */
 #if __WORDSIZE == 64
 typedef double sam_float;
 # define SAM_EPSILON DBL_EPSILON
