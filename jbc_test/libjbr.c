@@ -27,6 +27,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.12  2007/01/04 06:19:13  trevor
+ * Remove debugging statements.
+ *
  * Revision 1.11  2007/01/04 05:40:56  trevor
  * Use new io funcs.
  *
@@ -99,12 +102,10 @@ jbr_vfscanf(sam_io_stream ios,
     printf("Processor Input (enter %s): ", type);
     sam_string s;
     if (sam_string_read(sam_ios_to_file(ios), &s) == NULL) {
-	puts("dying badly");
 	return EOF;
     }
     rv = vsscanf(s.data, fmt, ap);
     sam_string_free(&s);
-    printf("%d items matched.\n", rv);
     return rv;
 }
 
