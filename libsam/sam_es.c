@@ -26,6 +26,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.3  2007/01/04 06:16:04  trevor
+ * Remove unused header dep.
+ *
  * Revision 1.2  2007/01/04 06:04:54  trevor
  * Make gcc happy about dynamic loading.
  *
@@ -40,7 +43,6 @@
 #include <string.h>
 
 #include <libsam/array.h>
-#include <libsam/assert.h>
 #include <libsam/hash_table.h>
 #include <libsam/es.h>
 #include <libsam/util.h>

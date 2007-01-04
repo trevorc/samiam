@@ -27,6 +27,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.31  2007/01/04 06:15:40  trevor
+ * Remove unused header dep.
+ *
  * Revision 1.30  2007/01/04 06:07:55  trevor
  * Trim down to sam_execute() and a minimal set of helper functions.
  *
@@ -109,7 +112,6 @@
 #include <errno.h>
 #include <math.h>
 
-#include <libsam/assert.h>
 #include <libsam/es.h>
 #include <libsam/io.h>
 
