@@ -26,6 +26,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.2  2007/01/04 06:04:54  trevor
+ * Make gcc happy about dynamic loading.
+ *
  * Revision 1.1  2007/01/04 05:42:58  trevor
  * Make es an opaque data structure and limit its access.
  *
@@ -600,19 +603,19 @@ sam_es_dlhandles_ins(/*@in@*/ sam_es *restrict es,
 }
 
 /*@null@*/ /*@dependent@*/ sam_library_fn
-sam_es_dlhandles_get(sam_es	*restrict es,
-		     const char *restrict sym)
+sam_es_dlhandles_get(sam_es *restrict es,
+		     const char *sym)
 {
     sam_library_fn fn;
     for (size_t i = 0; i < es->dlhandles.len; ++i) {
-	if ((*(void **)(&fn) =
-	     dlsym(((sam_dlhandle *)es->dlhandles.arr[i])->handle, sym)) != NULL) {
+	if ((fn = dlsym(((sam_dlhandle *)es->dlhandles.arr[i])->handle,
+			sym)) != NULL) {
 	    return fn;
 	}
     }
     dlerror();
 
-    return fn;
+    return NULL;
 }
 
 inline void
