@@ -27,6 +27,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.6  2007/01/04 06:09:05  trevor
+ * New sam_es architecture.
+ *
  * Revision 1.5  2006/12/25 00:28:44  trevor
  * Update for new hash table labels.
  *
@@ -45,36 +48,25 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <sam.h>
-#include <libsam/config.h>
-#include <libsam/types.h>
-#include <libsam/util.h>
-#include <libsam/execute.h>
+#include <libsam/es.h>
+#include <libsam/main.h>
+#include <libsam/string.h>
+#include <libsam/array.h>
+#include <libsam/hash_table.h>
 
-#include "sam_parse.h"
 #include "sam_execute.h"
+#include "sam_parse.h"
 
 #if defined(HAVE_LOCALE_H)
 # include <locale.h>
 #endif /* HAVE_LOCALE_H */
 
-sam_options options;
-
 int
-sam_main(sam_options user_options,
-	 /*@null@*/ const char *file,
-	 /*@null@*/ sam_io_funcs *user_io_funcs)
+sam_main(sam_options options,
+	 /*@null@*/ const char *restrict file,
+	 /*@null@*/ sam_io_funcs *restrict io_funcs)
 {
-    sam_exit_code  retval;
-    sam_string	   input;
-    sam_array	   instructions;
-    sam_hash_table labels;
-    sam_io_funcs   io_funcs = { NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL };
-
-    options = user_options;
-    if (user_io_funcs != NULL) {
-	io_funcs = *user_io_funcs;
-    }
+    sam_es *restrict es = sam_es_new(options, io_funcs);
 
 #ifdef HAVE_LOCALE_H
     if (setlocale(LC_ALL, "") == NULL ||
@@ -83,12 +75,16 @@ sam_main(sam_options user_options,
     }
 #endif /* HAVE_LOCALE_H */
 
-    if (!sam_parse(&input, file, &instructions, &labels)) {
-	retval = SAM_PARSE_ERROR;
-    } else {
-	retval = sam_execute(&instructions, &labels, &io_funcs);
-	sam_file_free(&input);
+    sam_string input;
+    sam_input_free_func free_func;
+    if (!sam_parse(es, &input, &free_func, file)) {
+	sam_es_free(es);
+	return SAM_PARSE_ERROR;
     }
+
+    sam_exit_code retval = sam_execute(es);
+    sam_es_free(es);
+    free_func(&input);
 
     return retval;
 }

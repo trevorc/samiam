@@ -27,6 +27,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.15  2007/01/04 06:09:25  trevor
+ * New sam_es architecture.
+ *
  * Revision 1.14  2006/12/27 21:18:03  trevor
  * Fix #02. Accept non-newline terminated files.
  *
@@ -62,15 +65,18 @@
  *
  */
 
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
 
-#include <sam.h>
-#include <libsam/config.h>
-#include <libsam/types.h>
-#include <libsam/util.h>
+#include <libsam/array.h>
+#include <libsam/es.h>
+#include <libsam/hash_table.h>
+#include <libsam/string.h>
+#include <libsam/opcode.h>
+#include <libsam/main.h>
 
 #if defined(HAVE_MMAN_H)
 # include <sys/stat.h>
@@ -82,14 +88,18 @@
 # include <unistd.h>
 #endif /* HAVE_UNISTD_H || HAVE_MMAN_H */
 
-#include "sam_execute.h"
 #include "sam_parse.h"
 #include "sam_main.h"
 
-static sam_bool mmapped = FALSE;
+#if defined(isspace)
+# undef isspace
+#endif
+#define isspace(c) ((c) == ' ' || (c) == '\n' || (c) == '\t')
+
+static bool mmapped = false;
 
 static void
-sam_eat_whitespace(char **s)
+sam_eat_whitespace(char *restrict *restrict s)
 {
     if (*s == NULL || **s == '\0') {
 	return;
@@ -114,9 +124,13 @@ sam_truncate(char *s)
     size_t len = strlen(s);
     char *tail = s + len - 1;
 
-    while (isspace(*tail)) {
+    for (; isspace(*tail); --len) {
 	*tail-- = '\0';
-	--len;
+    }
+    for (char *t = s; *t != '\0'; ++t) {
+	if (*t == '\n') {
+	    *t = ' ';
+	}
     }
 
     if (len > TRUNC_HEAD + 3 + TRUNC_TAIL) {
@@ -125,90 +139,85 @@ sam_truncate(char *s)
 }
 
 /** The sourcefile provided contains no instructions or labels. */
-static void
-sam_error_empty_input(void)
+static inline void
+sam_error_empty_input(const sam_es *restrict es)
 {
-    if ((options & quiet) == 0) {
-	fputs("error: empty source file.\n", stderr);
+    if (!sam_es_options_get(es, SAM_QUIET)) {
+	sam_io_fprintf(es, SAM_IOS_ERR, "error: empty source file.\n");
     }
 }
 
 /** There was a problem parsing an identifier. */
-static void
-sam_error_identifier(const char *s)
+static inline void
+sam_error_identifier(const sam_es *restrict es,
+		     char *s)
 {
-    if ((options & quiet) == 0) {
-	fprintf(stderr, "error: couldn't parse identifier \"%s\"\n", s);
+    if (!sam_es_options_get(es, SAM_QUIET)) {
+	sam_truncate(s);
+	sam_io_fprintf(es,
+		       SAM_IOS_ERR,
+		       "error: couldn't parse identifier: %s.\n",
+		       s);
     }
 }
 
 /** An unknown opcode was encountered. */
-static void
-sam_error_opcode(const char *s)
+static inline void
+sam_error_opcode(const sam_es *restrict es,
+		 char *s)
 {
-    if ((options & quiet) == 0) {
-	fprintf(stderr, "error: unknown opcode found: %s.\n", s);
+    if (!sam_es_options_get(es, SAM_QUIET)) {
+	sam_truncate(s);
+	sam_io_fprintf(es,
+		       SAM_IOS_ERR,
+		       "error: unknown opcode found: %s.\n",
+		       s);
     }
 }
 
 /** There was a problem parsing an operand. */
-static void
-sam_error_operand(const char *opcode,
-		  char	     *operand)
+static inline void
+sam_error_operand(const sam_es *restrict es,
+		  const char *restrict opcode,
+		  char *operand)
 {
-    if ((options & quiet) == 0) {
+    if (!sam_es_options_get(es, SAM_QUIET)) {
 	sam_truncate(operand);
 
-	fprintf(stderr,
-		"error: couldn't parse operand for %s: %s.\n",
-		opcode, operand);
+	sam_io_fprintf(es,
+		       SAM_IOS_ERR,
+		       "error: couldn't parse operand for %s: %s.\n",
+		       opcode,
+		       operand);
     }
 }
 
 /** The same label was found twice. */
-static void
-sam_error_duplicate_label(const char *label,
-			  sam_pa      pa)
+static inline void
+sam_error_duplicate_label(const sam_es *restrict es,
+			  const char *restrict label,
+			  sam_pa pa)
 {
-    if ((options & quiet) == 0) {
-	fprintf(stderr,
-		"error: duplicate label \"%s\" was found at program "
-		"address %lu.\n",
-		label,
-		(unsigned long)pa);
+    if (!sam_es_options_get(es, SAM_QUIET)) {
+	sam_io_fprintf(es,
+		       SAM_IOS_ERR,
+		       "error: duplicate label \"%s\" was found at program "
+		       "address %lu.\n",
+		       label,
+		       (unsigned long)pa);
     }
 }
 
-/*@null@*/ static sam_instruction *
-sam_instruction_new(/*@in@*/ /*@dependent@*/ const char *name)
-{
-    sam_instruction *i;
-    int j;
-
-    for (j = 0; sam_instructions[j].handler != NULL; ++j) {
-	if (strcmp(name, sam_instructions[j].name) == 0) {
-	    i = sam_malloc(sizeof (sam_instruction));
-	    i->name = name;
-	    i->optype = sam_instructions[j].optype;
-	    i->handler = sam_instructions[j].handler;
-	    i->operand.i = 0;
-	    return i;
-	}
-    }
-
-    return NULL;
-}
-
-static sam_bool
-sam_try_parse_identifier(char **input,
-			 /*@out@*/ char **identifier,
-			 /*@null@*/ sam_op_type *optype)
+static bool
+sam_try_parse_identifier(char **restrict input,
+			 /*@out@*/ char **restrict identifier,
+			 /*@null@*/ sam_op_type *restrict optype)
 {
     char *start = *input;
 
     if (!isalpha(*start)) {
 	*identifier = NULL;
-	return FALSE;
+	return false;
     }
     for (;;) {
 	if (!isalnum(*start) && *start != '_') {
@@ -217,28 +226,28 @@ sam_try_parse_identifier(char **input,
 	    if (optype != NULL) {
 		*optype = SAM_OP_TYPE_LABEL;
 	    }
-	    return TRUE;
+	    return true;
 	}
 	++start;
     }
 }
 
-static sam_bool
-sam_try_parse_string(/*@in@*/  char **input,
-		     /*@out@*/ char **string,
+static bool
+sam_try_parse_string(/*@in@*/  char **restrict input,
+		     /*@out@*/ char **restrict string,
 		     /*@null@*/ sam_op_type *optype)
 {
     char *start = *input + 1;
 
     if(**input != '"') {
 	*string = NULL;
-	return FALSE;
+	return false;
     }
 
     for (;;) {
 	if (*start == '\0') {
 	    *string = NULL;
-	    return FALSE;
+	    return false;
 	}
 	if (*start == '"') {
 	    *start++ = '\0';
@@ -252,16 +261,16 @@ sam_try_parse_string(/*@in@*/  char **input,
 		    *optype = SAM_OP_TYPE_STR;
 		}
 	    }
-	    return TRUE;
+	    return true;
 	}
 	++start;
     }
 }
 
-static sam_bool
-sam_try_parse_number(/*@in@*/ char     **input,
-		     sam_op_value *operand,
-		     sam_op_type  *optype)
+static inline bool
+sam_try_parse_number(/*@in@*/ char **restrict input,
+		     sam_op_value *restrict operand,
+		     sam_op_type *restrict optype)
 {
     char *endptr;
 
@@ -271,7 +280,7 @@ sam_try_parse_number(/*@in@*/ char     **input,
 	    (*endptr == '"' || isspace(*endptr) || *endptr == '\0')) {
 	    *optype = SAM_OP_TYPE_INT;
 	    *input = endptr;
-	    return TRUE;
+	    return true;
 	}
     }
     if ((*optype & SAM_OP_TYPE_FLOAT) != 0) {
@@ -280,16 +289,16 @@ sam_try_parse_number(/*@in@*/ char     **input,
 	    (*endptr == '"' || isspace(*endptr) || *endptr == '\0')) {
 	    *optype = SAM_OP_TYPE_FLOAT;
 	    *input = endptr;
-	    return TRUE;
+	    return true;
 	}
     }
 
-    return FALSE;
+    return false;
 }
 
-static sam_bool
-sam_try_parse_escape_sequence(char **input,
-			      int   *c)
+static inline bool
+sam_try_parse_escape_sequence(char **restrict input,
+			      int   *restrict c)
 {
     char *start = *input;
     char *prev;
@@ -324,7 +333,7 @@ sam_try_parse_escape_sequence(char **input,
 	    *c = '\v';
 	    break;
 	case '\0':
-	    return FALSE;
+	    return false;
 	case 'x':
 	    base = 16;
 	    ++prev;
@@ -343,42 +352,42 @@ sam_try_parse_escape_sequence(char **input,
 	    *c = n;
 	    break;
 	default:
-	    return FALSE;
+	    return false;
     }
     *input = start++;
 
-    return TRUE;
+    return true;
 }
 
-static sam_bool
-sam_try_parse_char(/*@in@*/ char **input,
-		   int  *c,
-		   sam_op_type *optype)
+static inline bool
+sam_try_parse_char(/*@in@*/ char **restrict input,
+		   int		  *restrict c,
+		   sam_op_type	  *restrict optype)
 {
     char *start = *input;
 
     if (*start++ != '\'') {
-	return FALSE;
+	return false;
     }
     if (*start == '\\') {
 	++start;
 	if (!sam_try_parse_escape_sequence(&start, c)) {
-	    return FALSE;
+	    return false;
 	}
     } else if (*start != '\0') {
 	*c = *start++;
 	if (*c == '\0') {
-	    return FALSE;
+	    return false;
 	}
     } else {
-	return FALSE;
+	return false;
     }
     if (*start++ != '\'') {
-	return FALSE;
+	return false;
     }
     *input = start;
     *optype = SAM_OP_TYPE_CHAR;
-    return TRUE;
+    return true;
 }
 
 /**
@@ -393,16 +402,16 @@ sam_try_parse_char(/*@in@*/ char **input,
  *  @param optype A pointer to the union of the possible types the
  *		  operand could be; updated to what is found.
  *
- *  @return sam_bool#TRUE if the parse was successful, sam_bool#FALSE
- *	    otherwise.
+ *  @return true if the parse was successful, false otherwise.
  */
-static sam_bool
-sam_try_parse_operand(/*@in@*/ char	 **input,
-		      /*@in@*/ sam_op_value  *operand,
-		      sam_op_type	     *optype)
+static inline bool
+sam_try_parse_operand(/*@in@*/ char	    **restrict input,
+		      /*@in@*/ sam_op_value  *restrict operand,
+		      sam_op_type	     *restrict optype)
 {
-    return ((*optype & (SAM_OP_TYPE_INT | SAM_OP_TYPE_FLOAT)) != 0 &&
-	    sam_try_parse_number(input, operand, optype)) ||
+    return
+	((*optype & (SAM_OP_TYPE_INT | SAM_OP_TYPE_FLOAT)) != 0 &&
+	 sam_try_parse_number(input, operand, optype)) ||
 	((*optype & SAM_OP_TYPE_CHAR) != 0 &&
 	 sam_try_parse_char(input, &operand->c, optype)) ||
 	((*optype & SAM_OP_TYPE_STR) != 0 &&
@@ -412,24 +421,26 @@ sam_try_parse_operand(/*@in@*/ char	 **input,
 	  sam_try_parse_identifier(input, &operand->s, optype)));
 }
 
-/*@null@*/ static sam_instruction *
-sam_parse_instruction(char **input)
+/*@null@*/ static inline sam_instruction *
+sam_parse_instruction(const sam_es *restrict es,
+		      char **restrict input)
 {
     char *opcode, *start = *input;
-    sam_instruction *i;
 
     if (!sam_try_parse_identifier(&start, &opcode, NULL)) {
-	sam_error_identifier(start);
+	sam_error_identifier(es, start);
 	return NULL;
     }
     sam_eat_whitespace(&start);
-    if ((i = sam_instruction_new(opcode)) == NULL) {
-	sam_error_opcode(opcode);
+
+    sam_instruction *restrict i = sam_opcode_get(opcode);
+    if (i == NULL) {
+	sam_error_opcode(es, opcode);
 	return NULL;
     }
     if (i->optype != SAM_OP_TYPE_NONE) {
 	if (!sam_try_parse_operand(&start, &i->operand, &i->optype)) {
-	    sam_error_operand(i->name, start);
+	    sam_error_operand(es, i->name, start);
 	    free(i);
 	    return NULL;
 	}
@@ -440,28 +451,28 @@ sam_parse_instruction(char **input)
     return i;
 }
 
-static sam_bool
-sam_check_for_colon(char **s)
+static inline bool
+sam_check_for_colon(char **restrict s)
 {
     char *start = *s;
 
     if (start == NULL || *start == '\0') {
-	return FALSE;
+	return false;
     }
     for (;;) {
 	if (*start == ':') {
 	    *s = start;
-	    return TRUE;
+	    return true;
 	} else if (isspace(*start)) {
 	    ++start;
 	} else {
-	    return FALSE;
+	    return false;
 	}
     }
 }
 
-/*@null@*/ static char *
-sam_parse_label(char **input)
+/*@null@*/ static inline char *
+sam_parse_label(char **restrict input)
 {
     char *label, *start = *input, *lookahead;
 
@@ -486,16 +497,14 @@ sam_parse_label(char **input)
 
 #if defined(HAVE_MMAN_H)
 
-/*@null@*/ static char *
-sam_input_read(/*@observer@*/ const char *path,
-	       /*@out@*/ sam_string *s)
+/*@null@*/ static inline char *
+sam_input_read(/*@observer@*/ const char *restrict path,
+	       /*@out@*/ sam_string *restrict s)
 {
-    int fd;
-    void *p;
     struct stat sb;
-    size_t size;
+    int fd = open(path, O_RDONLY);
 
-    if ((fd = open(path, O_RDONLY)) < 0) {
+    if (fd < 0) {
 	perror("open");
 	return NULL;
     }
@@ -513,37 +522,35 @@ sam_input_read(/*@observer@*/ const char *path,
 	}
 	return NULL;
     }
-    size = sb.st_size + 1;
-    p = mmap(0, size, PROT_READ|PROT_WRITE, MAP_PRIVATE, fd, 0);
-    if (p == (void *)-1) {
+    s->len = sb.st_size + 1;
+    s->data = mmap(0, s->len, PROT_READ|PROT_WRITE, MAP_PRIVATE, fd, 0);
+    if (s->data == (void *)-1) {
 	perror("mmap");
 	if (close(fd) < 0) {
 	    perror("close");
 	}
 	return NULL;
     }
-    mmapped = TRUE;
-    s->len = size;
-    s->alloc = size;
-    s->data = p;
+    mmapped = true;
+    s->alloc = s->len;
 
     return s->data;
 }
 
 #else /* HAVE_MMAN_H */
 
-/*@null@*/ static char *
-sam_input_read(const char *path,
-	       sam_string *s)
+/*@null@*/ static inline char *
+sam_input_read(const char *restrict path,
+	       sam_string *restrict s)
 {
-    FILE *in;
-    char *out;
-
-    if ((in = fopen(path, "r")) == NULL) {
+    FILE *restrict in = fopen(path, "r");
+    if (in == NULL) {
 	perror("fopen");
 	return NULL;
     }
-    if ((out = sam_string_read(in, s)) == NULL) {
+
+    char *restrict out = sam_string_read(in, s);
+    if (out == NULL) {
 	return NULL;
     }
     if (fclose(in) < 0) {
@@ -555,37 +562,37 @@ sam_input_read(const char *path,
 
 #endif /* HAVE_MMAN_H */
 
-void
-sam_file_free(sam_string *s)
+static inline void
+sam_input_free(sam_string *restrict s)
 {
-    if (mmapped) {
 #ifdef HAVE_MMAN_H
-	if (munmap(s->data, s->len) < 0) {
-	    perror("munmap");
-	}
-#endif /* HAVE_MMAN_H */
-    } else {
-	sam_string_free(s);
+    if (munmap(s->data, s->len) < 0) {
+	perror("munmap");
     }
+#else /* HAVE_MMAN_H */
+    sam_string_free(s);
+#endif /* HAVE_MMAN_H */
 }
 
-/*@null@*/ sam_bool
-sam_parse(sam_string	 *s,
-	  /*@null@*/ const char *file,
-	  sam_array	 *instructions,
-	  sam_hash_table *labels)
+/*@null@*/ bool
+sam_parse(sam_es *restrict es,
+	  sam_string *restrict string,
+	  sam_input_free_func *restrict free_func,
+	  const char *restrict file)
 {
-    sam_pa  cur_line = 0;
-    char   *input;
+    char *input;
 
     if (file == NULL) {
-	input = sam_string_read(stdin, s);
+	input = sam_string_read(stdin, string);
+	*free_func = sam_string_free;
     } else {
-	input = sam_input_read(file, s);
+	input = sam_input_read(file, string);
+	*free_func = sam_input_free;
     }
+
     if (input == NULL || *input == '\0') {
-	sam_error_empty_input();
-	return FALSE;
+	sam_error_empty_input(es);
+	return false;
     }
 
 #if defined(SAM_EXTENSIONS)
@@ -597,33 +604,28 @@ sam_parse(sam_string	 *s,
     }
 #endif /* SAM_EXTENSIONS */
 
-    sam_array_init(instructions);
-    sam_hash_table_init(labels);
-
     /* Parse as many labels as we find, then parse an instruction. */
-    while (*input != '\0') {
-	sam_instruction *i;
-	char		*label;
+    sam_pa cur_line = 0;
 
+    while (*input != '\0') {
 	sam_eat_whitespace(&input);
+
+	char *label;
 	while ((label = sam_parse_label(&input))) {
-	    if (!sam_hash_table_ins(labels, label, cur_line)) {
-		sam_error_duplicate_label(label, cur_line);
-		goto err;
+	    if (!sam_es_labels_ins(es, label, cur_line)) {
+		sam_error_duplicate_label(es, label, cur_line);
+		return false;
 	    }
 	    sam_eat_whitespace(&input);
 	}
-	if ((i = sam_parse_instruction(&input)) == NULL) {
-	    goto err;
+
+	sam_instruction *restrict i = sam_parse_instruction(es, &input);
+	if (i == NULL) {
+	    return false;
 	}
-	sam_array_ins(instructions, i);
+	sam_es_instructions_ins(es, i);
 	++cur_line;
     }
 
-    return TRUE;
-
-err:
-    sam_array_free(instructions);
-    sam_hash_table_free(labels);
-    return FALSE;
+    return true;
 }
