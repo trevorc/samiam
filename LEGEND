@@ -1,0 +1,8 @@
+$Id$
+
+all global identifiers are prefixed with sam_.
+
+es: execution state (opaque data structure representing the )
+ml: memory location (transparent data structure representing a single item
+		     on the heap or stack)
+bt: back trace      (a dump of the state of execution)
