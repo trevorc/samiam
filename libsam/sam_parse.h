@@ -26,6 +26,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.4  2007/01/04 06:10:35  trevor
+ * Accept pointer to a free_func to be called by sam_main() to deallocate input.
+ *
  * Revision 1.3  2006/12/25 00:29:54  trevor
  * Update for new hash table labels.
  *
@@ -37,10 +40,13 @@
 #ifndef SAM_PARSE_H
 #define SAM_PARSE_H
 
-/*@null@*/ extern sam_bool sam_parse(/*@out@*/ sam_string *s,
-				     /*@in@*/ /*@null@*/ const char *file,
-				     /*@out@*/ sam_array *instructions,
-				     /*@out@*/ sam_hash_table *labels);
-extern void sam_file_free(sam_string *s);
+#include <stdbool.h>
+
+typedef void (*sam_input_free_func)(sam_string *restrict s);
+
+extern bool    sam_parse	   (sam_es *restrict es,
+				    sam_string *restrict s,
+				    sam_input_free_func *restrict free_func,
+				    /*@null@*/ const char *restrict file);
 
 #endif /* SAM_PARSE_H */
