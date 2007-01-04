@@ -26,6 +26,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.2  2007/01/04 05:39:33  trevor
+ * Split off array, string, and hash table code.
+ *
  * Revision 1.1  2006/12/25 00:21:39  trevor
  * New SDK suite of headers.
  *
@@ -56,39 +59,7 @@
 #ifndef LIBSAM_UTIL_H
 #define LIBSAM_UTIL_H
 
-/** Convenience type for code readability. */
-typedef enum {
-    FALSE,
-    TRUE
-} sam_bool;
-
-/** Safe, dynamically allocating array type. */
-typedef struct {
-    size_t len;	    /**< Number of elements used in the array. */
-    size_t alloc;   /**< Allocated size (in number of elements) of the
-		     *	 array. */
-    void **arr;	    /**< The array itself. */
-} sam_array;
-
-/** Safe, dynamically allocating string type. */
-typedef struct {
-    size_t len;	    /**< Number of bytes allocated for the string (not
-		     **	 including the trailing NUL inserted by
-		     **	 #sam_string_ins()) */
-    size_t alloc;   /**< Number of bytes allocated for the string
-		     *	 including for the trailing NUL */
-    char *data;	    /**< The C string character array. */
-} sam_string;
-
-/** Hash table of strings to size_t. */
-typedef struct {
-    size_t   nmemb;
-    size_t   alloc;
-    struct {
-	char *key;
-	size_t value;
-    } *arr;
-} sam_hash_table;
+#include <stdlib.h>
 
 /**
  *  Wrap malloc(3). Calls abort(3) if there is no memory available.
@@ -98,23 +69,7 @@ typedef struct {
  *  @return A pointer to the start of the allocated block.
  */
 /*@out@*/ /*@only@*/ /*@notnull@*/ extern void *sam_malloc(size_t size);
-
-extern void *sam_calloc(size_t nmemb, size_t size);
-
-extern void free(/*@only@*/ /*@out@*/ /*@null@*/ void *p);
-
-/*@only@*/ /*@notnull@*/ extern void *sam_realloc(/*@only@*/ void *p, size_t size);
-extern void sam_array_init(/*@out@*/ sam_array *a);
-extern void sam_array_ins(/*@in@*/ sam_array *a, /*@only@*/ void *m);
-/*@only@*/ /*@null@*/ extern void *sam_array_rem(sam_array *a);
-extern void sam_array_free(sam_array *a);
-extern void sam_string_init(/*@out@*/ sam_string *s);
-extern void sam_string_ins(/*@in@*/ sam_string *s, char *src, size_t n);
-extern void sam_string_free(sam_string *s);
-/*@null@*/ extern char *sam_string_read(/*@in@*/ FILE *in, /*@out@*/ sam_string *s);
-extern void sam_hash_table_init(sam_hash_table *h);
-extern sam_bool sam_hash_table_ins(sam_hash_table *h, char *key, size_t value);
-extern sam_bool sam_hash_table_get(sam_hash_table *h, const char *key, size_t *value);
-extern void sam_hash_table_free(sam_hash_table *h);
+extern void free(/*@only@*/ /*@out@*/ /*@null@*/ void *restrict p);
+/*@only@*/ /*@notnull@*/ extern void *sam_realloc(/*@only@*/ void *restrict p, size_t size);
 
 #endif /* LIBSAM_UTIL_H */
