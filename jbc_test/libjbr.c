@@ -27,6 +27,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.13  2007/01/04 23:51:35  trevor
+ * Default type for scanf.
+ *
  * Revision 1.12  2007/01/04 06:19:13  trevor
  * Remove debugging statements.
  *
@@ -96,6 +99,9 @@ jbr_vfscanf(sam_io_stream ios,
 	    break;
 	case 's':
 	    type = "string";
+	    break;
+	default:
+	    type = "nonetype";
 	    break;
     }
 
