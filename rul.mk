@@ -2,7 +2,7 @@
 
 CC=gcc
 RM=rm -f
-WFLAGS=-std=c99 -pedantic -Werror -Wall -W -Wmissing-prototypes -Wmissing-declarations -Wstrict-prototypes -Wpointer-arith -Wnested-externs
+WFLAGS=-std=c99 -Werror -Wall -W -Wmissing-prototypes -Wmissing-declarations -Wstrict-prototypes -Wpointer-arith -Wnested-externs
 OFLAGS=-pipe -g -ggdb
 OFLAGS=-pipe -O3
 #MFLAGS=-msse3 -march=pentium-m
