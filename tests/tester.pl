@@ -27,6 +27,9 @@
 # SOFTWARE.
 #
 # $Log$
+# Revision 1.8  2007/01/04 06:11:52  trevor
+# Update for new system.
+#
 # Revision 1.7  2006/12/19 23:41:45  trevor
 # return values of infinity are handled by invoking a helper C program to get
 # the system value of infinity cast to int.
@@ -59,7 +62,7 @@ if (@ARGV > 0) {
 
 system './inf';
 if ($? == -1) {
-    print "couldn't execute ./inf: $!.\n";
+    die "couldn't execute ./inf: $!.\n";
 }
 $sysinf = $? >> 8;
 

@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include <sam.h>
 #include <libsam/sdk.h>
 
 #include "dltest4.h"
@@ -9,22 +8,18 @@
 #define TEMP "dltest4-temp.sam"
 
 sam_error
-iheartdis(sam_execution_state *s)
+me_in_the_morning(sam_es *restrict es)
 {
-    sam_ml_value v;
     FILE *fh;
 
     fh = fopen(TEMP, "w");
     fputs("PUSHIMM 123 STOP\n", fh);
     fclose(fh);
 
-    v.i = sam_main(0, TEMP, NULL);
+    sam_ml_value v = {.i = sam_main(0, TEMP, NULL)};
     remove(TEMP);
     v.i <<= 1;
 
-    if (!sam_push(s, sam_ml_new(v, SAM_ML_TYPE_INT))) {
-	return sam_error_stack_overflow();
-    }
-
-    return SAM_OK;
+    return sam_es_stack_push(es, sam_ml_new(v, SAM_ML_TYPE_INT))?
+	SAM_OK: sam_error_stack_overflow(es);
 }

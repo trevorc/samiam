@@ -1,1 +1,1 @@
-extern sam_error printy(sam_execution_state *s);
+extern sam_error printy(sam_es *restrict s);

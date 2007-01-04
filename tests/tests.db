@@ -49,6 +49,13 @@ subf.sam	3
 timesf.sam	4
 timesf2.sam	inf
 divf.sam	8
+lshift.sam	16
+lshift2.sam	0
+lshiftind.sam	6
+rshift.sam	0
+rshift2.sam	-1
+rshiftind.sam	4
+rshiftind2.sam	2
 equal1.sam	1
 equal2.sam	0
 equal3.sam	0
