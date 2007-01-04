@@ -26,6 +26,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.4  2007/01/04 05:40:57  trevor
+ * Use new io funcs.
+ *
  * Revision 1.3  2006/12/27 18:47:21  trevor
  * Fixed types.
  *
@@ -37,13 +40,15 @@
 #ifndef LIBJBR_H
 #define LIBJBR_H
 
-extern int readInt(sam_int *n);
-extern int readFloat(sam_float *f);
-extern int readChar(sam_int *c);
-extern int readString(char **s);
-extern int printInt(sam_int n);
-extern int printFloat(sam_float f);
-extern int printChar(sam_int c);
-extern int printString(char *s);
+#include <libsam/io.h>
+
+extern int   jbr_vfprintf(sam_io_stream ios,
+			  const char *restrict fmt,
+			  va_list ap);
+extern int   jbr_vfscanf(sam_io_stream ios,
+			 const char *restrict fmt,
+			 va_list ap);
+extern char *jbr_afgets(char **restrict s,
+			sam_io_stream ios);
 
 #endif /* LIBJBR_H */

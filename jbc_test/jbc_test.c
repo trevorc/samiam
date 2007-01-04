@@ -27,11 +27,17 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.6  2007/01/04 05:40:34  trevor
+ * Use new io funcs.
+ *
  * Revision 1.5  2006/12/27 21:17:50  trevor
  * Add missing headers.
  *
  * Revision 1.4  2006/12/12 23:31:35  trevor
  * Added the $Id$ and $Log$
+ * Added the $Id: jbc_test.c,v 1.5 2006/12/27 21:17:50 trevor Exp $ and Revision 1.6  2007/01/04 05:40:34  trevor
+ * Added the $Id: jbc_test.c,v 1.5 2006/12/27 21:17:50 trevor Exp $ and Use new io funcs.
+ * Added the $Id: jbc_test.c,v 1.5 2006/12/27 21:17:50 trevor Exp $ and
  * Added the $Id$ and Revision 1.5  2006/12/27 21:17:50  trevor
  * Added the $Id$ and Add missing headers.
  * Added the $Id$ and tags and copyright notice where they were missing.
@@ -40,12 +46,10 @@
 
 #include <stdio.h>
 #include <sam.h>
-#include <libsam/config.h>
-#include <libsam/types.h>
 
 #include "libjbr.h"
 
-static void
+static inline int
 usage(void)
 {
     puts("samiam 0.1\n"
@@ -74,19 +78,21 @@ usage(void)
 
     puts("usage: jbc_tester samfile\n"
 	 "Interpret and execute a SaM source file.\n\n");
+
+    return 1;
 }
 
 int
 main(int	 argc,
      char *const argv[])
 {
-    sam_io_funcs io_funcs = {
-	readInt, readFloat, readChar, readString,
-	printInt, printFloat, printChar, printString,
-    };
-    if (argc != 2) {
+    return argc == 2?
+	sam_main(0, argv[1],
+		 &(sam_io_funcs) {
+		     jbr_vfprintf,
+		     jbr_vfscanf,
+		     jbr_afgets,
+		     NULL
+		 }):
 	usage();
-	return 1;
-    }
-    return sam_main(0, argv[1], &io_funcs);
 }

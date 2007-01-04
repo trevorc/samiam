@@ -27,6 +27,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.11  2007/01/04 05:40:56  trevor
+ * Use new io funcs.
+ *
  * Revision 1.10  2006/12/27 18:45:23  trevor
  * Rearrange headers.
  *
@@ -52,89 +55,63 @@
 
 #include <libsam/config.h>
 #include <libsam/types.h>
+#include <libsam/string.h>
 
 #include "libjbr.h"
 
-static char buffer[36];
-
 int
-readInt(sam_int *n)
+jbr_vfprintf(sam_io_stream ios,
+	     const char *restrict fmt,
+	     va_list ap)
 {
-    long l;
-    char *endptr;
-
-    printf("Processor Input (enter integer): ");
-    if (fgets(buffer, 36, stdin) == NULL) {
-	return -1;
+    if (ios == SAM_IOS_OUT) {
+	printf("Processor Output: ");
     }
-    l = strtol(buffer, &endptr, 0);
-    *n = (int)l;
-
-    return 0;
+    int rv = vfprintf(sam_ios_to_file(ios), fmt, ap);
+    fprintf(sam_ios_to_file(ios), "\n");
+    fflush(sam_ios_to_file(ios));
+    return rv;
 }
 
 int
-readFloat(sam_float *f)
+jbr_vfscanf(sam_io_stream ios,
+	    const char *restrict fmt,
+	    va_list ap)
 {
-    char *endptr;
+    int	       rv;
+    const char *type;
 
-    printf("Processor Input (enter float): ");
-    if (fgets(buffer, 36, stdin) == NULL) {
-	return -1;
-    }
-    *f = strtod(buffer, &endptr);
-    return 0;
-}
-
-int
-readChar(sam_int *c)
-{
-    int n;
-
-    printf("Processor Input (enter character): ");
-    if ((n = getchar()) == EOF) {
-	return -1;
-    }
-    *c = n;
-    if ((n = getchar()) == EOF ||
-	(n != '\n' && ungetc(n, stdin) == EOF)) {
-	return -1;
+    switch (fmt[1]) {
+	case 'f':
+	    type = "float";
+	    break;
+	case 'd':
+	    type = "integer";
+	    break;
+	case 'c':
+	    type = "character";
+	    break;
+	case 's':
+	    type = "string";
+	    break;
     }
 
-    return 0;
+    printf("Processor Input (enter %s): ", type);
+    sam_string s;
+    if (sam_string_read(sam_ios_to_file(ios), &s) == NULL) {
+	puts("dying badly");
+	return EOF;
+    }
+    rv = vsscanf(s.data, fmt, ap);
+    sam_string_free(&s);
+    printf("%d items matched.\n", rv);
+    return rv;
 }
 
-int
-readString(/*@unused@*/ __attribute__((unused)) char **s)
+char *
+jbr_afgets(char **restrict s,
+	   sam_io_stream ios)
 {
-    printf("Processor Input (enter string): ");
-    return 0;
-}
-
-int
-printChar(sam_int c)
-{
-    printf("Processor Output: %c\n", (int)c);
-    return 0;
-}
-
-int
-printFloat(sam_float f)
-{
-    printf("Processor Output: %f\n", f);
-    return 0;
-}
-
-int
-printInt(sam_int i)
-{
-    printf("Processor Output: %li\n", i);
-    return 0;
-}
-
-int
-printString(char *s)
-{
-    printf("Processor Output: %s\n", s);
-    return 0;
+    sam_string str;
+    return *s = sam_string_read(sam_ios_to_file(ios), &str);
 }
