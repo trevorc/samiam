@@ -27,8 +27,14 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.4  2007/01/04 05:41:29  trevor
+ * Clean up.
+ *
  * Revision 1.3  2006/12/12 23:31:36  trevor
- * Added the $Id$ and $Log$ tags and copyright notice where they were missing.
+ * Added the $Id$ and $Log$
+ * Added the $Id$ and Revision 1.4  2007/01/04 05:41:29  trevor
+ * Added the $Id$ and Clean up.
+ * Added the $Id$ and tags and copyright notice where they were missing.
  *
  */
 
@@ -36,7 +42,7 @@
 #include <string.h>
 #include <sam.h>
 
-static void
+static int
 usage(void)
 {
     puts("samiam 0.1\n"
@@ -67,29 +73,23 @@ usage(void)
 	 "Interpret and execute a SaM source file.\n\n"
 	 "options:\n"
 	 "    -q    suppress output\n");
+
+    return -1;
 }
 
 int
-main(int	 argc,
-     char *const argv[])
+main(int argc,
+     char *restrict const argv[restrict])
 {
-    int   quiet = 0;
-    char *file = NULL;
+    int quiet = 0;
 
     if (argc > 1 && (strcmp (argv[1], "-q") == 0)) {
 	quiet = 1;
 	++argv;
 	--argc;
     }
-    if (argc > 1) {
-	file = argv[1];
-	++argv;
-	--argc;
-    }
-    if (argc > 1) {
-	usage();
-	return -1;
-    }
 
-    return sam_main(quiet, file, NULL);
+    return argc > 2?
+	usage():
+	sam_main(quiet, argc == 1? NULL: argv[1], NULL);
 }
