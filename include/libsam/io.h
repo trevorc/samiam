@@ -26,6 +26,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.2  2007/01/04 19:22:43  trevor
+ * Use gcc format __attribute__.
+ *
  * Revision 1.1  2007/01/04 05:39:57  trevor
  * New header architecture.
  *
@@ -70,15 +73,18 @@ typedef struct {
 extern FILE *sam_ios_to_file   (sam_io_stream ios);
 extern void  sam_io_bt	       (const sam_es *restrict es);
 extern int   sam_io_printf     (const sam_es *restrict es,
-				const char *restrict format,
-				...);
+				const char *restrict fmt,
+				...)
+__attribute__((format (printf, 2, 3)));
 extern int   sam_io_fprintf    (const sam_es *restrict es,
 				sam_io_stream ios,
 				const char *restrict fmt,
-				...);
+				...)
+__attribute__((format (printf, 3, 4)));
 extern int   sam_io_scanf      (const sam_es *restrict es,
 				const char *restrict fmt,
-				...);
+				...)
+__attribute__((format (scanf, 2, 3)));
 extern char *sam_io_afgets     (const sam_es *es,
 				char **restrict s,
 				sam_io_stream ios);
