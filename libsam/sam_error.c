@@ -26,6 +26,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.2  2007/01/04 19:20:57  trevor
+ * Include io.h
+ *
  * Revision 1.1  2007/01/04 05:42:23  trevor
  * Separate error code.
  *
@@ -37,6 +40,7 @@
 
 #include <libsam/error.h>
 #include <libsam/es.h>
+#include <libsam/io.h>
 #include <libsam/util.h>
 
 #include "sam_main.h"
@@ -60,7 +64,8 @@ sam_error_optype(/*@in@*/ sam_es *restrict es)
 {
     if (!sam_es_options_get(es, SAM_QUIET)) {
 	sam_io_fprintf(es,
-		       SAM_IOS_ERR, "error: bad operand type given: %s.\n",
+		       SAM_IOS_ERR,
+		       "error: bad operand type given: %s.\n",
 		       sam_op_type_to_string(
 			   sam_es_instructions_cur(es)->optype));
 	sam_es_bt_set(es, true);
