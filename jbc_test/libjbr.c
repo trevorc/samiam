@@ -27,6 +27,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.15  2007/01/05 01:34:23  trevor
+ * Do print a newline.
+ *
  * Revision 1.14  2007/01/05 00:58:49  trevor
  * Do not print newlines after vfprintf. Use sam_string_get() instead of sam_string_read() for afgets.
  *
@@ -77,6 +80,7 @@ jbr_vfprintf(sam_io_stream ios,
 	printf("Processor Output: ");
     }
     int rv = vfprintf(sam_ios_to_file(ios), fmt, ap);
+    fprintf(sam_ios_to_file(ios), "\n");
     fflush(sam_ios_to_file(ios));
     return rv;
 }
