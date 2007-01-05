@@ -42,5 +42,4 @@ check:
 %:
 	$(MAKE) -Clibsam $@
 	$(MAKE) -Csamiam $@
-	$(MAKE) -Cjbc_test $@
 	$(MAKE) -Ctests $@
