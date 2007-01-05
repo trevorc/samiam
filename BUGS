@@ -27,7 +27,7 @@ J    ---  #12  non integer return values don't work. (when the bottom of
      HI-C #13  remove items from this list
      ***  #14  instructions should manipulate the pc, not a for loop.
      LOW  #15  popsp should be able to cope with integer stack inputs
-     HI   #16  separate io functions from sam_*.c
+T    ---  #16  separate io functions from sam_*.c
      HI   #17  document everything!
 T    ---  #18  dynamic loading either needs to be removed entirely or fixed.
      MED  #19  the heap and stack must be allocated as one huge contiguous
