@@ -27,6 +27,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.14  2007/01/05 00:58:49  trevor
+ * Do not print newlines after vfprintf. Use sam_string_get() instead of sam_string_read() for afgets.
+ *
  * Revision 1.13  2007/01/04 23:51:35  trevor
  * Default type for scanf.
  *
@@ -74,7 +77,6 @@ jbr_vfprintf(sam_io_stream ios,
 	printf("Processor Output: ");
     }
     int rv = vfprintf(sam_ios_to_file(ios), fmt, ap);
-    fprintf(sam_ios_to_file(ios), "\n");
     fflush(sam_ios_to_file(ios));
     return rv;
 }
@@ -120,5 +122,5 @@ jbr_afgets(char **restrict s,
 	   sam_io_stream ios)
 {
     sam_string str;
-    return *s = sam_string_read(sam_ios_to_file(ios), &str);
+    return *s = sam_string_get(sam_ios_to_file(ios), &str);
 }
