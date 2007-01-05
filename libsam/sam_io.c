@@ -26,6 +26,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.2  2007/01/05 06:25:21  trevor
+ * if --> ?:
+ *
  * Revision 1.1  2007/01/04 06:15:03  trevor
  * Input/output routines.
  *
@@ -322,9 +325,7 @@ sam_io_afgets(const sam_es *restrict es,
 void
 sam_io_bt(const sam_es *restrict es)
 {
-    if (sam_es_io_funcs_bt(es) == NULL) {
-	sam_io_bt_default(es);
-    } else {
+    sam_es_io_funcs_bt(es) == NULL?
+	sam_io_bt_default(es):
 	sam_es_io_funcs_bt(es)(es);
-    }
 }
