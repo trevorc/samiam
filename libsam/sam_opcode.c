@@ -26,6 +26,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.2  2007/01/05 03:21:07  trevor
+ * De-newlinify.
+ *
  * Revision 1.1  2007/01/04 06:14:55  trevor
  * Opcode implementations.
  *
@@ -1615,7 +1618,7 @@ sam_op_writestr(/*@in@*/ sam_es *restrict es)
     if ((rv = sam_es_string_get(es, &str, ha)) != SAM_OK) {
 	return rv;
     }
-    rv = sam_io_printf(es, "%s\n", str) > 0? SAM_OK: sam_error_io(es);
+    rv = sam_io_printf(es, "%s", str) > 0? SAM_OK: sam_error_io(es);
     free(str);
     return rv;
 }
