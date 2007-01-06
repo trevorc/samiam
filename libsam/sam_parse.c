@@ -27,6 +27,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.16  2007/01/06 01:07:09  trevor
+ * Removed sam_main.h include.
+ *
  * Revision 1.15  2007/01/04 06:09:25  trevor
  * New sam_es architecture.
  *
@@ -89,7 +92,6 @@
 #endif /* HAVE_UNISTD_H || HAVE_MMAN_H */
 
 #include "sam_parse.h"
-#include "sam_main.h"
 
 #if defined(isspace)
 # undef isspace

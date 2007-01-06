@@ -26,6 +26,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.3  2007/01/06 01:07:09  trevor
+ * Removed sam_main.h include.
+ *
  * Revision 1.2  2007/01/04 19:20:57  trevor
  * Include io.h
  *
@@ -42,8 +45,6 @@
 #include <libsam/es.h>
 #include <libsam/io.h>
 #include <libsam/util.h>
-
-#include "sam_main.h"
 
 /*@observer@*/ static const char *
 sam_op_type_to_string(sam_op_type t)

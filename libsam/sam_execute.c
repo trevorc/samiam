@@ -27,6 +27,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.32  2007/01/06 01:07:09  trevor
+ * Removed sam_main.h include.
+ *
  * Revision 1.31  2007/01/04 06:15:40  trevor
  * Remove unused header dep.
  *
@@ -115,7 +118,6 @@
 #include <libsam/es.h>
 #include <libsam/io.h>
 
-#include "sam_main.h"
 #include "sam_execute.h"
 
 /**

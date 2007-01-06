@@ -26,6 +26,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.4  2007/01/06 01:07:09  trevor
+ * Removed sam_main.h include.
+ *
  * Revision 1.3  2007/01/04 06:16:04  trevor
  * Remove unused header dep.
  *
@@ -50,8 +53,6 @@
 #if defined(HAVE_DLFCN_H)
 #include <dlfcn.h>
 #endif /* HAVE_DLFCN_H */
-
-#include "sam_main.h"
 
 #if defined(SAM_EXTENSIONS) && defined(HAVE_DLFCN_H)
 typedef struct {
