@@ -26,6 +26,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.3  2007/01/06 01:07:42  trevor
+ * Added format attribute to sam_io_vf*f().
+ *
  * Revision 1.2  2007/01/05 06:25:21  trevor
  * if --> ?:
  *
@@ -42,6 +45,16 @@
 #include <libsam/string.h>
 #include <libsam/es.h>
 #include <libsam/io.h>
+
+static int sam_io_vfprintf(sam_io_stream ios,
+			   const char *restrict fmt,
+			   va_list ap)
+__attribute__((format(printf, 2, 0)));
+
+static int sam_io_vfscanf(sam_io_stream ios,
+			  const char *restrict fmt,
+			  va_list ap)
+__attribute__((format(scanf, 2, 0)));
 
 static int
 sam_io_vfprintf(sam_io_stream ios,
