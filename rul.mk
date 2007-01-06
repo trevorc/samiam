@@ -7,6 +7,7 @@ OFLAGS=-pipe -g -ggdb
 OFLAGS=-pipe -O3
 MFLAGS=
 #MFLAGS=-msse3 -march=pentium-m
+#MFLAGS=-mpower -mpowerpc -mcpu=powerpc
 #MFLAGS=-mthumb-interwork -msoft-float
 INCLUDES=-I../include
 DEFS=
