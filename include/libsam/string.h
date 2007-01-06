@@ -26,6 +26,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.2  2007/01/06 01:09:32  trevor
+ * Remove redundant sam_malloc() decl.
+ *
  * Revision 1.1  2007/01/04 05:39:57  trevor
  * New header architecture.
  *
@@ -43,15 +46,6 @@ typedef struct {
 		     *	 including for the trailing NUL */
     char *data;	    /**< The C string character array. */
 } sam_string;
-
-/**
- *  Wrap malloc(3). Calls abort(3) if there is no memory available.
- *
- *  @param size The amount to allocate.
- *
- *  @return A pointer to the start of the allocated block.
- */
-/*@out@*/ /*@only@*/ /*@notnull@*/ extern void *sam_malloc(size_t size);
 
 extern void sam_string_init(/*@out@*/ sam_string *restrict s);
 extern void sam_string_free(sam_string *restrict s);
