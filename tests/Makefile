@@ -9,7 +9,7 @@ ALL=equal1.sam inf dltest.so dltest2.so dltest3.so dltest4.so
 all: $(ALL)
 
 inf: inf.c
-	$(CC) -pipe -O3 -o $@ $<
+	$(CC) -pipe -O3 $(MFLAGS) -o $@ $<
 
 %.so: %.c
 	$(CC) -o $@ -lc -shared -Wl,-soname,$@ -fPIC $(CFLAGS) $(LDFLAGS) $<
