@@ -2,7 +2,7 @@
 
 CC=gcc
 RM=rm -f
-WFLAGS=-std=c99 -Werror -Wall -W -Wmissing-prototypes -Wmissing-declarations -Wstrict-prototypes -Wpointer-arith -Wnested-externs
+WFLAGS=-std=c99 -Werror -Wall -W -Wmissing-prototypes -Wmissing-declarations -Wstrict-prototypes -Wpointer-arith -Wnested-externs -Wdisabled-optimization -Wundef -Wendif-labels -Wshadow -Wcast-align -Wstrict-aliasing=2 -fstrict-aliasing -Wwrite-strings -Wmissing-noreturn -Wmissing-format-attribute -Wredundant-decls
 OFLAGS=-pipe -g -ggdb
 OFLAGS=-pipe -O3
 MFLAGS=
