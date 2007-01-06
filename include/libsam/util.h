@@ -26,6 +26,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.3  2007/01/06 01:09:05  trevor
+ * Remove free(3) decl.
+ *
  * Revision 1.2  2007/01/04 05:39:33  trevor
  * Split off array, string, and hash table code.
  *
@@ -69,7 +72,6 @@
  *  @return A pointer to the start of the allocated block.
  */
 /*@out@*/ /*@only@*/ /*@notnull@*/ extern void *sam_malloc(size_t size);
-extern void free(/*@only@*/ /*@out@*/ /*@null@*/ void *restrict p);
 /*@only@*/ /*@notnull@*/ extern void *sam_realloc(/*@only@*/ void *restrict p, size_t size);
 
 #endif /* LIBSAM_UTIL_H */
