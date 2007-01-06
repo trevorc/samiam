@@ -26,6 +26,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.5  2007/01/06 01:22:06  trevor
+ * Fixed global shadowing issue on armv5eb.
+ *
  * Revision 1.4  2007/01/06 01:07:09  trevor
  * Removed sam_main.h include.
  *
@@ -536,29 +539,29 @@ sam_es_heap_alloc(/*@in@*/ sam_es *restrict es,
 
 sam_error
 sam_es_heap_dealloc(sam_es *restrict es,
-		    sam_ha index)
+		    sam_ha ha)
 {
     sam_heap_pointer *u = es->heap.used_list;
     sam_heap_pointer *last = NULL;
 
-    if (es->heap.a.arr[index] == NULL) {
+    if (es->heap.a.arr[ha] == NULL) {
 	return SAM_OK;
     }
 
     for (;;) {
 	if (u == NULL) {
-	    return sam_error_free(es, index);
+	    return sam_error_free(es, ha);
 	}
-	if (u->start == index) {
+	if (u->start == ha) {
 	    if (last == NULL) {
 		es->heap.used_list = u->next;
 	    } else {
 		last->next = u->next;
 	    }
 	    for (size_t i = 0; i < u->size; ++i) {
-		sam_ml *restrict m = es->heap.a.arr[index + i];
+		sam_ml *restrict m = es->heap.a.arr[ha + i];
 		free(m);
-		es->heap.a.arr[index + i] = NULL;
+		es->heap.a.arr[ha + i] = NULL;
 	    }
 	    es->heap.free_list =
 		sam_es_heap_pointer_update(es->heap.free_list,
@@ -566,8 +569,8 @@ sam_es_heap_dealloc(sam_es *restrict es,
 	    free(u);
 	    return SAM_OK;
 	}
-	if (u->start > index) {
-	    return sam_error_free(es, index);
+	if (u->start > ha) {
+	    return sam_error_free(es, ha);
 	}
 	last = u;
 	u = u->next;

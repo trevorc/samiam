@@ -26,6 +26,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.2  2007/01/06 01:22:06  trevor
+ * Fixed global shadowing issue on armv5eb.
+ *
  * Revision 1.1  2007/01/04 05:39:57  trevor
  * New header architecture.
  *
@@ -82,7 +85,7 @@ extern sam_error sam_error_optype	     (sam_es *restrict es);
 extern sam_error sam_error_segmentation_fault(sam_es *restrict es,
 					      sam_ma  ma);
 extern sam_error sam_error_free		     (sam_es *restrict es,
-					      sam_ha  index);
+					      sam_ha  ha);
 extern sam_error sam_error_stack_underflow   (sam_es *restrict es);
 extern sam_error sam_error_stack_overflow    (sam_es *restrict es);
 extern sam_error sam_error_no_memory	     (sam_es *restrict es);

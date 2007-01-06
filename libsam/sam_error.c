@@ -26,6 +26,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.4  2007/01/06 01:22:06  trevor
+ * Fixed global shadowing issue on armv5eb.
+ *
  * Revision 1.3  2007/01/06 01:07:09  trevor
  * Removed sam_main.h include.
  *
@@ -94,14 +97,14 @@ sam_error_segmentation_fault(sam_es *restrict es,
 
 sam_error
 sam_error_free(sam_es *restrict es,
-	       sam_ha  index)
+	       sam_ha  ha)
 {
     if (!sam_es_options_get(es, SAM_QUIET)) {
 	sam_io_fprintf(es,
 		       SAM_IOS_ERR,
 		       "error: attempt to free nonexistant or unused heap "
 		       "address %luH\n",
-		       (unsigned long)index);
+		       (unsigned long)ha);
 	sam_es_bt_set(es, true);
     }
     return SAM_EFREE;
