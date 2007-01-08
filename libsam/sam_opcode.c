@@ -26,6 +26,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.3  2007/01/08 03:15:58  trevor
+ * Renamed import opcode to load. Added stubs for import and export opcodes.
+ *
  * Revision 1.2  2007/01/05 03:21:07  trevor
  * De-newlinify.
  *
@@ -1635,7 +1638,7 @@ sam_op_stop(/*@in@*/ sam_es *restrict es)
 
 #if defined(HAVE_DLFCN_H)
 static sam_error
-sam_op_import(sam_es *restrict es)
+sam_op_load(sam_es *restrict es)
 {
     sam_instruction *cur = sam_es_instructions_cur(es);
 
@@ -1660,9 +1663,9 @@ sam_op_call(sam_es *restrict es)
 #else /* HAVE_DLFCN_H */
 
 static sam_error
-sam_op_import(__attribute__((unused)) sam_es *restrict es)
+sam_op_load(__attribute__((unused)) sam_es *restrict es)
 {
-    fputs("error: samiam was not compiled with support for the import "
+    fputs("error: samiam was not compiled with support for the load "
 	  "instruction.\n", stderr);
     return SAM_ENOSYS;
 }
@@ -1670,12 +1673,33 @@ sam_op_import(__attribute__((unused)) sam_es *restrict es)
 static sam_error
 sam_op_call(__attribute__((unused)) sam_es *restrict es)
 {
-    fputs("error: samiam was not compiled with support for the open "
+    fputs("error: samiam was not compiled with support for the call "
 	  "instruction.\n", stderr);
     return SAM_ENOSYS;
 }
 
 #endif /* HAVE_DLFCN_H */
+
+static sam_error
+sam_op_import(sam_es *restrict es)
+{
+    sam_instruction *restrict cur = sam_es_instructions_cur(es);
+    if (sam_es_instructions_cur(es)->optype != SAM_OP_TYPE_LABEL) {
+	return sam_error_optype(es);
+    }
+    return sam_es_stack_push(es, sam_ml_new((sam_ml_value) {
+				    sam_main(sam_es_options(es),
+					     cur->operand.s,
+					     sam_es_io_funcs(es))
+				    }, SAM_ML_TYPE_INT))?
+	SAM_OK: sam_error_stack_overflow(es);
+}
+
+static sam_error
+sam_op_export(__attribute__((unused)) sam_es *restrict es)
+{
+    return SAM_OK;
+}
 
 static sam_error
 sam_op_patoi(/*@in@*/ sam_es *restrict es)
@@ -1781,8 +1805,10 @@ static const sam_instruction sam_instructions[] = {
     { "STOP",		SAM_OP_TYPE_NONE,  {0}, sam_op_stop	   },
 #if defined(SAM_EXTENSIONS)
     { "patoi",		SAM_OP_TYPE_NONE,  {0}, sam_op_patoi	   },
-    { "import",		SAM_OP_TYPE_LABEL, {0}, sam_op_import	   },
+    { "load",		SAM_OP_TYPE_LABEL, {0}, sam_op_load	   },
     { "call",		SAM_OP_TYPE_LABEL, {0}, sam_op_call	   },
+    { "import",		SAM_OP_TYPE_LABEL, {0}, sam_op_import	   },
+    { "export",		SAM_OP_TYPE_LABEL, {0}, sam_op_export	   },
 #endif
     { "",		SAM_OP_TYPE_NONE,  {0}, NULL		   },
 };
