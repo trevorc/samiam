@@ -26,6 +26,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.6  2007/01/08 03:14:36  trevor
+ * Added io_funcs and options accessors.
+ *
  * Revision 1.5  2007/01/06 01:22:06  trevor
  * Fixed global shadowing issue on armv5eb.
  *
@@ -635,6 +638,12 @@ sam_es_dlhandles_close(sam_es *restrict es)
     }
 }
 
+const sam_io_funcs *
+sam_es_io_funcs(const sam_es *restrict es)
+{
+    return &es->io_funcs;
+}
+
 sam_io_vfprintf_func
 sam_es_io_funcs_vfprintf(const sam_es *restrict es)
 {
@@ -659,6 +668,12 @@ sam_es_io_funcs_bt(const sam_es *restrict es)
     return es->io_funcs.bt;
 }
 
+sam_options
+sam_es_options(const sam_es *restrict es)
+{
+    return es->options;
+}
+
 bool
 sam_es_options_get(const sam_es *restrict es, sam_options option)
 {
@@ -667,7 +682,7 @@ sam_es_options_get(const sam_es *restrict es, sam_options option)
 
 /*@only@*/ sam_es *
 sam_es_new(sam_options options,
-	   /*@in@*/ sam_io_funcs *restrict io_funcs)
+	   /*@in@*/ const sam_io_funcs *restrict io_funcs)
 {
     sam_es *restrict es = sam_malloc(sizeof (sam_es));
     sam_io_funcs io_funcs_default = { NULL, NULL, NULL, NULL };

@@ -26,6 +26,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.2  2007/01/08 03:18:45  trevor
+ * Added io_funcs and options accessors.
+ *
  * Revision 1.1  2007/01/04 05:39:57  trevor
  * New header architecture.
  *
@@ -103,14 +106,16 @@ extern sam_error	     sam_es_dlhandles_ins    (sam_es *restrict es,
 extern sam_library_fn	     sam_es_dlhandles_get    (sam_es *restrict es,
 						      const char *restrict sym);
 extern void		     sam_es_dlhandles_close  (sam_es *restrict es);
+extern const sam_io_funcs   *sam_es_io_funcs	     (const sam_es *restrict es);
 extern sam_io_vfprintf_func  sam_es_io_funcs_vfprintf(const sam_es *restrict es);
 extern sam_io_vfscanf_func   sam_es_io_funcs_vfscanf (const sam_es *restrict es);
 extern sam_io_afgets_func    sam_es_io_funcs_afgets  (const sam_es *restrict es);
 extern sam_io_bt_func	     sam_es_io_funcs_bt	     (const sam_es *restrict es);
+extern sam_options	     sam_es_options	     (const sam_es *restrict es);
 extern bool		     sam_es_options_get	     (const sam_es *restrict es,
 						      sam_options option);
 extern sam_es		    *sam_es_new		     (sam_options options,
-						      /*@null@*/ sam_io_funcs *restrict io_funcs);
+						      /*@null@*/ const sam_io_funcs *restrict io_funcs);
 extern void		     sam_es_free	     (sam_es *restrict es);
 
 #endif /* LIBSAM_EXECUTE_H */
