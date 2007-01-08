@@ -1,4 +1,4 @@
-import "dltest2.so"
+load "dltest2.so"
 
 PUSHIMM 2
 PUSHIMM 3

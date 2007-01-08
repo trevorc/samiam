@@ -1,4 +1,4 @@
-import "dltest4.so"
+load "dltest4.so"
 PUSHIMM 1
 call me_in_the_morning
 ADD
