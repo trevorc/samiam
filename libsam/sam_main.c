@@ -27,6 +27,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.7  2007/01/08 03:15:25  trevor
+ * Added const to io_funcs param.
+ *
  * Revision 1.6  2007/01/04 06:09:05  trevor
  * New sam_es architecture.
  *
@@ -64,7 +67,7 @@
 int
 sam_main(sam_options options,
 	 /*@null@*/ const char *restrict file,
-	 /*@null@*/ sam_io_funcs *restrict io_funcs)
+	 /*@null@*/ const sam_io_funcs *restrict io_funcs)
 {
     sam_es *restrict es = sam_es_new(options, io_funcs);
 

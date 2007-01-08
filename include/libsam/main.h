@@ -26,6 +26,9 @@
  * SOFTWARE.
  *
  * $Log$
+ * Revision 1.2  2007/01/08 03:18:13  trevor
+ * Added const to io_funcs param.
+ *
  * Revision 1.1  2007/01/04 05:39:57  trevor
  * New header architecture.
  *
@@ -72,6 +75,6 @@ typedef enum {
  */
 extern int sam_main(sam_options options,
 		    /*@null@*/ const char *restrict file,
-		    /*@null@*/ sam_io_funcs *restrict io_funcs);
+		    /*@null@*/ const sam_io_funcs *restrict io_funcs);
 
 #endif /* LIBSAM_MAIN_H */
