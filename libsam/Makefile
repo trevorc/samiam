@@ -5,7 +5,7 @@ include ../rul.mk
 CFLAGS+=-fPIC
 LDFLAGS+=-lc -shared -Wl,-soname,libsam.so -ldl -rdynamic
 NAME=libsam
-OBJS=sam_error.o sam_execute_types.o sam_main.o sam_parse.o sam_util.o sam_error.o sam_string.o sam_hash_table.o sam_array.o sam_execute.o sam_opcode.o sam_io.o sam_es.o
+OBJS=error.o execute_types.o main.o parse.o util.o error.o string.o hash_table.o array.o execute.o opcode.o io.o es.o
 
 all: $(NAME).so
 $(NAME).so: $(OBJS)
