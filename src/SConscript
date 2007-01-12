@@ -1,0 +1,10 @@
+Import('ccflags')
+Import('dirs')
+
+env = Environment(CC='gcc',
+		  CCFLAGS=ccflags,
+		  CPPPATH='../include',
+		  LIBPATH=dirs['build']['lib'])
+
+SConscript(['libsam/SConscript'], ['env', 'dirs'])
+SConscript(['samiam/SConscript'], ['env', 'dirs'])

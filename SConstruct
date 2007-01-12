@@ -1,74 +1,55 @@
 #!/usr/bin/env python
 
-sam_sources = {
-    'libsam': [
-	'array',
-	'error',
-	'es',
-	'execute',
-	'execute_types',
-	'hash_table',
-	'io',
-	'main',
-	'opcode',
-	'parse',
-	'string',
-	'util',
-    ],
-    'samiam': [
-	'samiam',
-    ],
-}
+debug_default = 1
 
-cflags = {
-    'standards': [
-	'-std=c99',
-    ],
-    'warnings': [
-	'-W' + flag for flag in [
-	    '',
-	    'error',
-	    'all',
-	    'missing-prototypes',
-	    'missing-declarations',
-	    'strict-prototypes',
-	    'pointer-arith',
-	    'nested-externs',
-	    'disabled-optimization',
-	    'undef',
-	    'endif-labels',
-	    'shadow',
-	    'cast-align',
-	    'strict-aliasing=2',
-	    'write-strings',
-	    'missing-noreturn',
-	    'missing-format-attribute',
-	    'redundant-decls',
-	    'format',
-	]
-    ],
-    'optimizations': [
-	'-pipe',
-#	'-O3',
-    ],
-    'machine': [
+cflags = [
+    '-std=c99',
+    '-pipe',
+    '-W',
+    '-Werror',
+    '-Wall',
+    '-Wmissing-prototypes',
+    '-Wmissing-declarations',
+    '-Wstrict-prototypes',
+    '-Wpointer-arith',
+    '-Wnested-externs',
+    '-Wdisabled-optimization',
+    '-Wundef',
+    '-Wendif-labels',
+    '-Wshadow',
+    '-Wcast-align',
+    '-Wstrict-aliasing=2',
+    '-Wwrite-strings',
+    '-Wmissing-noreturn',
+    '-Wmissing-format-attribute',
+    '-Wredundant-decls',
+    '-Wformat',
 #	'-msse3 -march=pentium-m',
 #	'-mpower -mpowerpc -mcpu=powerpc', 
 #	'-mthumb-interwork -msoft-float',
-    ],
-    'debug': [
-	'-g',
-	'-ggdb'
-    ],
+]
+debug = [
+    '-g',
+    '-ggdb'
+]
+release = [
+    '-O3',
+]
+
+if int(ARGUMENTS.get('debug', debug_default)):
+    ccflags = ' '.join(debug + cflags)
+else:
+    ccflags = ' '.join(release + cflags)
+
+dirs = {
+    'install': {
+	'bin': '/usr/local/bin',
+	'lib': '/usr/local/lib',
+    },
+    'build': {
+	'bin': '#build/samiam',
+	'lib': '#build/libsam',
+    },
 }
 
-def transform(dir):
-    return [dir + '/' + file + '.c' for file in sam_sources[dir]]
-
-
-env = Environment(CC='gcc',
-		  CCFLAGS=' '.join(sum([v for k,v in cflags.items()], [])),
-		  CPPPATH='include')
-
-env.SharedLibrary('libsam', transform('libsam'), LIBS=['c', 'm', 'dl'], build_dir="lib")
-#env.Program('samiam', transform('samiam'), LIBPATH='libsam', LIBS='sam')
+SConscript('src/SConscript', ['ccflags', 'dirs'], build_dir='build', duplicate=0)

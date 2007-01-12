@@ -1,0 +1,19 @@
+#!/usr/bin/env python
+
+Import('env')
+Import('dirs')
+libsam = env.SharedLibrary('sam', [
+	'array.c',
+	'error.c',
+	'es.c',
+	'execute.c',
+	'execute_types.c',
+	'hash_table.c',
+	'io.c',
+	'main.c',
+	'opcode.c',
+	'parse.c',
+	'string.c',
+	'util.c',
+    ], LIBS=['c', 'm', 'dl'])
+env.Install(dirs['install']['lib'], libsam)
