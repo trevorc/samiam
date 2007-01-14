@@ -107,9 +107,11 @@ extern void sam_error_uninitialized	     (sam_es *restrict es);
 extern void sam_error_number_format	     (sam_es *restrict es,
 					      const char *buf);
 extern sam_error sam_error_final_stack_state (sam_es *restrict es);
+#if defined(SAM_EXTENSIONS) && defined(HAVE_DLFCN_H)
 extern sam_error sam_error_dlopen	     (sam_es *restrict es,
 					      const char *filename,
 					      char *reason);
 extern sam_error sam_error_dlsym	     (sam_es *restrict es);
+#endif /* SAM_EXTENSIONS && HAVE_DLFCN_H */
 
 #endif /* LIBSAM_ERROR_H */

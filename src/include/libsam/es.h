@@ -101,11 +101,6 @@ extern inline sam_instruction *sam_es_instructions_get(const sam_es *restrict es
 						      sam_pa pa);
 extern inline sam_instruction *sam_es_instructions_cur(sam_es *restrict es);
 extern inline size_t	     sam_es_instructions_len (const sam_es *restrict es);
-extern sam_error	     sam_es_dlhandles_ins    (sam_es *restrict es,
-						      const char *restrict path);
-extern sam_library_fn	     sam_es_dlhandles_get    (sam_es *restrict es,
-						      const char *restrict sym);
-extern void		     sam_es_dlhandles_close  (sam_es *restrict es);
 extern const sam_io_funcs   *sam_es_io_funcs	     (const sam_es *restrict es);
 extern sam_io_vfprintf_func  sam_es_io_funcs_vfprintf(const sam_es *restrict es);
 extern sam_io_vfscanf_func   sam_es_io_funcs_vfscanf (const sam_es *restrict es);
@@ -117,5 +112,13 @@ extern bool		     sam_es_options_get	     (const sam_es *restrict es,
 extern sam_es		    *sam_es_new		     (sam_options options,
 						      /*@null@*/ const sam_io_funcs *restrict io_funcs);
 extern void		     sam_es_free	     (sam_es *restrict es);
+
+#if defined(SAM_EXTENSIONS) && defined(HAVE_DLFCN_H)
+extern sam_error	     sam_es_dlhandles_ins    (sam_es *restrict es,
+						      const char *restrict path);
+extern sam_library_fn	     sam_es_dlhandles_get    (sam_es *restrict es,
+						      const char *restrict sym);
+extern void		     sam_es_dlhandles_close  (sam_es *restrict es);
+#endif /* SAM_EXTENSIONS && HAVE_DLFCN_H */
 
 #endif /* LIBSAM_EXECUTE_H */

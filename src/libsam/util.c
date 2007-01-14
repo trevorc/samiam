@@ -47,9 +47,9 @@
 #include <stdlib.h>
 #include <libsam/util.h>
 
-#if defined(HAVE_UNISTD_H) || defined(HAVE_MMAN_H)
+#if defined(HAVE_UNISTD_H)
 # include <unistd.h>
-#endif /* HAVE_UNISTD_H || HAVE_MMAN_H */
+#endif /* HAVE_UNISTD_H */
 
 /**
  * A wrapper around malloc(3) guaranteed to be safe. Calls abort()

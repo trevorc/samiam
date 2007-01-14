@@ -87,9 +87,9 @@
 # include <fcntl.h>
 #endif /* HAVE_MMAN_H */
 
-#if defined(HAVE_UNISTD_H) || defined(HAVE_MMAN_H)
+#if defined(HAVE_UNISTD_H)
 # include <unistd.h>
-#endif /* HAVE_UNISTD_H || HAVE_MMAN_H */
+#endif /* HAVE_MMAN_H */
 
 #include "sam_parse.h"
 

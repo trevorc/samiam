@@ -56,11 +56,7 @@
 #include <float.h>
 #include <limits.h>
 
-#define HAVE_MMAN_H	1
-#define HAVE_UNISTD_H	1
-#define HAVE_LOCALE_H	1
 #define SAM_EXTENSIONS	1
-#define HAVE_DLFCN_H	1
 
 #if !defined(__WORDSIZE)
 # define __WORDSIZE 32

@@ -1636,7 +1636,8 @@ sam_op_stop(/*@in@*/ sam_es *restrict es)
     return SAM_STOP;
 }
 
-#if defined(HAVE_DLFCN_H)
+#if defined(SAM_EXTENSIONS)
+# if defined(HAVE_DLFCN_H)
 static sam_error
 sam_op_load(sam_es *restrict es)
 {
@@ -1660,7 +1661,7 @@ sam_op_call(sam_es *restrict es)
     return fn == NULL? sam_error_dlsym(es): fn(es);
 }
 
-#else /* HAVE_DLFCN_H */
+# else /* HAVE_DLFCN_H */
 
 static sam_error
 sam_op_load(__attribute__((unused)) sam_es *restrict es)
@@ -1678,7 +1679,8 @@ sam_op_call(__attribute__((unused)) sam_es *restrict es)
     return SAM_ENOSYS;
 }
 
-#endif /* HAVE_DLFCN_H */
+# endif /* HAVE_DLFCN_H */
+#endif /* SAM_EXTENSIONS */
 
 static sam_error
 sam_op_import(sam_es *restrict es)

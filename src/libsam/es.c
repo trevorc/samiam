@@ -199,24 +199,6 @@ sam_es_heap_free(sam_es *restrict es)
     free(es->heap.a.arr);
 }
 
-#if 0
-static sam_bool
-sam_es_dlhandles_get(/*@in@*/ sam_es *es,
-		     const char *name)
-{
-    size_t i;
-
-    for (i = 0; i < es->dlhandles.len; ++i) {
-	sam_dlhandle *handle = es->dlhandles.arr[i];
-	if (strcmp(handle->name, name) == 0) {
-	    return false;
-	}
-    }
-
-    return true;
-}
-#endif
-
 static inline void
 sam_es_dlhandles_free(sam_array *restrict dlhandles)
 {
@@ -297,34 +279,6 @@ sam_es_fbr_set(sam_es *restrict es,
 {
     es->fbr = fbr;
 }
-
-#if 0
-/*
- * Portable implementation of round(3) for non-C99 and non-POSIX.1-2001
- * implementing systems (but returns int instead of double).
- */
-sam_int
-sam_round(sam_float f)
-{
-    if (f < 0) {
-	sam_float fl = ceil(f);
-
-	if (fabs(f - fl) >= .5) {
-	    return floor(f);
-	} else {
-	    return fl;
-	}
-    } else {
-	sam_float fl = floor(f);
-
-	if (fabs(f - fl) >= .5) {
-	    return ceil(f);
-	} else {
-	    return fl;
-	}
-    }
-}
-#endif
 
 sam_error
 sam_es_string_get(/*@in@*/ sam_es *restrict es,
@@ -594,49 +548,6 @@ sam_es_heap_leak_check(const sam_es *restrict es,
     return *leak_size > 0;
 }
 
-sam_error
-sam_es_dlhandles_ins(/*@in@*/ sam_es *restrict es,
-		     /*@observer@*/ /*@out@*/ const char *path)
-{
-    /*@observer@*/ void *restrict handle = dlopen(path, RTLD_NOW);
-    if (handle == NULL) {
-	return sam_error_dlopen(es, path, dlerror());
-    }
-
-    sam_dlhandle *restrict h = sam_malloc(sizeof (sam_dlhandle));
-    h->name = path;
-    h->handle = handle;
-    sam_array_ins(&es->dlhandles, h);
-
-    return SAM_OK;
-}
-
-/*@null@*/ /*@dependent@*/ sam_library_fn
-sam_es_dlhandles_get(sam_es *restrict es,
-		     const char *sym)
-{
-    sam_library_fn fn;
-    for (size_t i = 0; i < es->dlhandles.len; ++i) {
-	if ((fn = dlsym(((sam_dlhandle *)es->dlhandles.arr[i])->handle,
-			sym)) != NULL) {
-	    return fn;
-	}
-    }
-    dlerror();
-
-    return NULL;
-}
-
-inline void
-sam_es_dlhandles_close(sam_es *restrict es)
-{
-    /* Not released. */
-    es->lock = true;
-
-    for (size_t i = 0; i < es->dlhandles.len; ++i) {
-	dlclose(es->dlhandles.arr[i]);
-    }
-}
 
 const sam_io_funcs *
 sam_es_io_funcs(const sam_es *restrict es)
@@ -716,3 +627,49 @@ sam_es_free(/*@in@*/ /*@only@*/ sam_es *restrict es)
 #endif /* SAM_EXTENSIONS && HAVE_DLFCN_H */
     free(es);
 }
+
+#if defined(SAM_EXTENSIONS) && defined(HAVE_DLFCN_H)
+sam_error
+sam_es_dlhandles_ins(/*@in@*/ sam_es *restrict es,
+		     /*@observer@*/ /*@out@*/ const char *path)
+{
+    /*@observer@*/ void *restrict handle = dlopen(path, RTLD_NOW);
+    if (handle == NULL) {
+	return sam_error_dlopen(es, path, dlerror());
+    }
+
+    sam_dlhandle *restrict h = sam_malloc(sizeof (sam_dlhandle));
+    h->name = path;
+    h->handle = handle;
+    sam_array_ins(&es->dlhandles, h);
+
+    return SAM_OK;
+}
+
+/*@null@*/ /*@dependent@*/ sam_library_fn
+sam_es_dlhandles_get(sam_es *restrict es,
+		     const char *sym)
+{
+    sam_library_fn fn;
+    for (size_t i = 0; i < es->dlhandles.len; ++i) {
+	if ((fn = dlsym(((sam_dlhandle *)es->dlhandles.arr[i])->handle,
+			sym)) != NULL) {
+	    return fn;
+	}
+    }
+    dlerror();
+
+    return NULL;
+}
+
+inline void
+sam_es_dlhandles_close(sam_es *restrict es)
+{
+    /* Not released. */
+    es->lock = true;
+
+    for (size_t i = 0; i < es->dlhandles.len; ++i) {
+	dlclose(es->dlhandles.arr[i]);
+    }
+}
+#endif /* SAM_EXTENSIONS && HAVE_DLFCN_H */
