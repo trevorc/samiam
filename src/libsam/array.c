@@ -25,10 +25,6 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- * $Log$
- * Revision 1.1  2007/01/04 05:42:07  trevor
- * Separate array code.
- *
  */
 
 #include <stdio.h>

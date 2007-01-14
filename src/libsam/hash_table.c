@@ -25,10 +25,6 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- * $Log$
- * Revision 1.1  2007/01/04 05:44:04  trevor
- * Separate hash table code.
- *
  */
 
 #include <stdbool.h>

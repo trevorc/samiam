@@ -25,19 +25,6 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- * $Log$
- * Revision 1.4  2007/01/06 01:22:06  trevor
- * Fixed global shadowing issue on armv5eb.
- *
- * Revision 1.3  2007/01/06 01:07:09  trevor
- * Removed sam_main.h include.
- *
- * Revision 1.2  2007/01/04 19:20:57  trevor
- * Include io.h
- *
- * Revision 1.1  2007/01/04 05:42:23  trevor
- * Separate error code.
- *
  */
 
 #include <stdlib.h>

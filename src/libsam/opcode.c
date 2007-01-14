@@ -25,16 +25,6 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- * $Log$
- * Revision 1.3  2007/01/08 03:15:58  trevor
- * Renamed import opcode to load. Added stubs for import and export opcodes.
- *
- * Revision 1.2  2007/01/05 03:21:07  trevor
- * De-newlinify.
- *
- * Revision 1.1  2007/01/04 06:14:55  trevor
- * Opcode implementations.
- *
  */
 
 #include <math.h>

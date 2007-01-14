@@ -26,46 +26,6 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- * $Log$
- * Revision 1.16  2007/01/06 01:07:09  trevor
- * Removed sam_main.h include.
- *
- * Revision 1.15  2007/01/04 06:09:25  trevor
- * New sam_es architecture.
- *
- * Revision 1.14  2006/12/27 21:18:03  trevor
- * Fix #02. Accept non-newline terminated files.
- *
- * Revision 1.13  2006/12/25 00:29:54  trevor
- * Update for new hash table labels.
- *
- * Revision 1.12  2006/12/22 04:45:25  trevor
- * 7-keystroke fix. (two labels can now point to the sam line)
- *
- * Revision 1.11  2006/12/19 18:17:53  trevor
- * Moved parts of sam_util.h which were library-generic into libsam.h.
- *
- * Revision 1.10  2006/12/19 09:50:02  trevor
- * fixed a cast
- *
- * Revision 1.9  2006/12/19 09:29:34  trevor
- * Removed implicit casts.
- *
- * Revision 1.8  2006/12/19 07:28:09  anyoneeb
- * Split sam_value into sam_op_value and sam_ml_value.
- *
- * Revision 1.7  2006/12/19 05:43:40  anyoneeb
- * Added self to copyright.
- *
- * Revision 1.6  2006/12/19 05:41:15  anyoneeb
- * Sepated operand types from memory types.
- *
- * Revision 1.5  2006/12/17 00:44:15  trevor
- * Remove dynamic loading #includes. Rename sam_program_address to sam_pa.
- *
- * Revision 1.4  2006/12/12 23:31:36  trevor
- * Added the Id and Log tags and copyright notice where they were missing.
- *
  */
 
 #include <stdbool.h>

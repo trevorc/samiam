@@ -26,25 +26,6 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- * $Log$
- * Revision 1.7  2007/01/08 03:15:25  trevor
- * Added const to io_funcs param.
- *
- * Revision 1.6  2007/01/04 06:09:05  trevor
- * New sam_es architecture.
- *
- * Revision 1.5  2006/12/25 00:28:44  trevor
- * Update for new hash table labels.
- *
- * Revision 1.4  2006/12/19 18:17:53  trevor
- * Moved parts of sam_util.h which were library-generic into libsam.h.
- *
- * Revision 1.3  2006/12/19 09:29:34  trevor
- * Removed implicit casts.
- *
- * Revision 1.2  2006/12/12 23:31:36  trevor
- * Added the Id and Log tags and copyright notice where they were missing.
- *
  */
 
 #include <stdio.h>

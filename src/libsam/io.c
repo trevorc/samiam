@@ -25,16 +25,6 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- * $Log$
- * Revision 1.3  2007/01/06 01:07:42  trevor
- * Added format attribute to sam_io_vf*f().
- *
- * Revision 1.2  2007/01/05 06:25:21  trevor
- * if --> ?:
- *
- * Revision 1.1  2007/01/04 06:15:03  trevor
- * Input/output routines.
- *
  */
 
 #include <stdio.h>

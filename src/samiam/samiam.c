@@ -26,16 +26,6 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- * $Log$
- * Revision 1.4  2007/01/04 05:41:29  trevor
- * Clean up.
- *
- * Revision 1.3  2006/12/12 23:31:36  trevor
- * Added the $Id$ and $Log$
- * Added the $Id$ and Revision 1.4  2007/01/04 05:41:29  trevor
- * Added the $Id$ and Clean up.
- * Added the $Id$ and tags and copyright notice where they were missing.
- *
  */
 
 #include <stdio.h>

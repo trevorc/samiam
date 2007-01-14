@@ -25,10 +25,6 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- * $Log$
- * Revision 1.1  2007/01/04 05:43:29  trevor
- * Split misc execute types utilities.
- *
  */
 
 #include <libsam/util.h>

@@ -25,25 +25,6 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- * $Log$
- * Revision 1.6  2007/01/08 03:14:36  trevor
- * Added io_funcs and options accessors.
- *
- * Revision 1.5  2007/01/06 01:22:06  trevor
- * Fixed global shadowing issue on armv5eb.
- *
- * Revision 1.4  2007/01/06 01:07:09  trevor
- * Removed sam_main.h include.
- *
- * Revision 1.3  2007/01/04 06:16:04  trevor
- * Remove unused header dep.
- *
- * Revision 1.2  2007/01/04 06:04:54  trevor
- * Make gcc happy about dynamic loading.
- *
- * Revision 1.1  2007/01/04 05:42:58  trevor
- * Make es an opaque data structure and limit its access.
- *
  */
 
 #include <stdbool.h>
