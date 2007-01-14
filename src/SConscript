@@ -6,10 +6,10 @@ env = Environment(CC='gcc',
 		  CPPPATH='../include',
 		  LIBPATH=dirs['build']['lib'])
 conf = Configure(env)
+if conf.CheckCHeader('sys/mman.h'):
+    conf.env.Append(CCFLAGS=' -DHAVE_MMAN_H')
 if conf.CheckCHeader('dlfcn.h'):
     conf.env.Append(CCFLAGS=' -DHAVE_DLFCN_H')
-if conf.CheckCHeader('mman.h'):
-    conf.env.Append(CCFLAGS=' -DHAVE_MMAN_H')
 if conf.CheckCHeader('unistd.h'):
     conf.env.Append(CCFLAGS=' -DHAVE_UNISTD_H')
 if conf.CheckCHeader('locale.h'):
