@@ -25,13 +25,6 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- * $Log$
- * Revision 1.2  2007/01/04 05:37:48  trevor
- * Update to reflect new header architecture.
- *
- * Revision 1.1  2006/12/25 00:21:39  trevor
- * New SDK suite of headers.
- *
  */
 
 #ifndef LIBSAM_SDK_H

@@ -25,13 +25,6 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- * $Log$
- * Revision 1.2  2007/01/04 19:22:43  trevor
- * Use gcc format __attribute__.
- *
- * Revision 1.1  2007/01/04 05:39:57  trevor
- * New header architecture.
- *
  */
 
 #ifndef LIBSAM_IO_H

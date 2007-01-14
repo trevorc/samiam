@@ -25,38 +25,6 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- * $Log$
- * Revision 1.3  2007/01/06 01:09:05  trevor
- * Remove free(3) decl.
- *
- * Revision 1.2  2007/01/04 05:39:33  trevor
- * Split off array, string, and hash table code.
- *
- * Revision 1.1  2006/12/25 00:21:39  trevor
- * New SDK suite of headers.
- *
- * Revision 1.9  2006/12/19 18:17:53  trevor
- * Moved parts of sam_util.h which were library-generic into libsam.h.
- *
- * Revision 1.8  2006/12/19 18:01:22  trevor
- * Moved sam_exit_code to sam.h.
- *
- * Revision 1.7  2006/12/19 07:28:09  anyoneeb
- * Split sam_value into sam_op_value and sam_ml_value.
- *
- * Revision 1.6  2006/12/19 05:41:15  anyoneeb
- * Sepated operand types from memory types.
- *
- * Revision 1.5  2006/12/19 03:19:19  trevor
- * fixed doc for TYPE_STR
- *
- * Revision 1.4  2006/12/17 00:15:42  trevor
- * Added two new types: TYPE_HA and TYPE_SA. Removed TYPE_MA. Shifted values
- * of types down. Removed dynamic loading defs.
- *
- * Revision 1.3  2006/12/12 23:31:36  trevor
- * Added the Id and Log tags and copyright notice where they were missing.
- *
  */
 
 #ifndef LIBSAM_UTIL_H

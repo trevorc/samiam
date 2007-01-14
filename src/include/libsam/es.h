@@ -25,19 +25,6 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- * $Log$
- * Revision 1.2  2007/01/08 03:18:45  trevor
- * Added io_funcs and options accessors.
- *
- * Revision 1.1  2007/01/04 05:39:57  trevor
- * New header architecture.
- *
- * Revision 1.2  2006/12/25 18:58:21  trevor
- * fix #27.
- *
- * Revision 1.1  2006/12/25 00:21:39  trevor
- * New SDK suite of headers.
- *
  */
 
 #ifndef LIBSAM_EXECUTE_H

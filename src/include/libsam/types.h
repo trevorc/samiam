@@ -25,16 +25,6 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- * $Log$
- * Revision 1.3  2007/01/04 05:38:29  trevor
- * Split off errors and instructions.
- *
- * Revision 1.2  2006/12/26 22:54:07  trevor
- * Logical right shift added.
- *
- * Revision 1.1  2006/12/25 00:21:39  trevor
- * New SDK suite of headers.
- *
  */
 
 #ifndef LIBSAM_TYPES_H
