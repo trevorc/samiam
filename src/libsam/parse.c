@@ -58,8 +58,6 @@
 #endif
 #define isspace(c) ((c) == ' ' || (c) == '\n' || (c) == '\t')
 
-static bool mmapped = false;
-
 static void
 sam_eat_whitespace(char *restrict *restrict s)
 {
@@ -493,7 +491,6 @@ sam_input_read(/*@observer@*/ const char *restrict path,
 	}
 	return NULL;
     }
-    mmapped = true;
     s->alloc = s->len;
 
     return s->data;
