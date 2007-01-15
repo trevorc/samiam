@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 debug_default = 1
 
 cflags = [
