@@ -1,3 +1,5 @@
+# $Id$
+
 debug_default = 1
 
 cflags = [
