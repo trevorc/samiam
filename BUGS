@@ -37,7 +37,7 @@ T    ---  #20  the stack doesn't notice when it's overflowed
      MED  #21  labels are not printed in sam_stack_trace
      MED  #22  the allocator is slow and inefficient
 T    ---  #23  the makefiles are broken on bsd make
-     LOW  #24  make install assumes the suffixes .so
+T    ---  #24  make install assumes the suffixes .so
      LOW  #25  build fails on cygwin due to library linking issues
 T    ---  #26  searching for labels is O(n)
 T    ---  #27  clean up sam_op_writestr and sam_op_readstr
@@ -45,3 +45,4 @@ D    ---  #28  we need to split operands from memory locations. (they
 	       shouldn't use the same sam_value type). it's (a)
 	       confusing and (b) wasteful.
 T    ---  #29  tester needs to understand the return value of 'inf'
+     ---  #30  scons doesn't know about the test suite.
