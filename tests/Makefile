@@ -21,7 +21,7 @@ dltest4.so: dltest4.c
 	$(CC) -o $@ -lc -shared -Wl,-soname,$@ -fPIC $(CFLAGS) $(LDFLAGS) $<
 
 check: all
-	@LD_LIBRARY_PATH=../libsam:. perl tester.pl
+	@LD_LIBRARY_PATH=../build/libsam:. perl tester.pl
 
 equal1.sam: gen_equal.pl
 	@perl gen_equal.pl
