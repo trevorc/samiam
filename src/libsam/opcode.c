@@ -568,7 +568,7 @@ sam_es_read(/*@in@*/ sam_es *restrict es,
 	    const char *restrict fmt,
 	    sam_ml_type t)
 {
-    sam_ml_value v;
+    sam_ml_value v = {0};
 
     return (t == SAM_ML_TYPE_FLOAT?
 	sam_io_scanf(es, fmt, &v.f):

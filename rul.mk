@@ -9,7 +9,7 @@ MFLAGS=
 #MFLAGS=-msse3 -march=pentium-m
 #MFLAGS=-mpower -mpowerpc -mcpu=powerpc
 #MFLAGS=-mthumb-interwork -msoft-float
-INCLUDES=-I../include
+INCLUDES=-I../src/include
 DEFS=
 CFLAGS=$(WFLAGS) $(OFLAGS) $(MFLAGS) $(INCLUDES) $(DEFS)
 LDFLAGS=-lm
