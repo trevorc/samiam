@@ -1480,7 +1480,7 @@ sam_op_unlink(/*@in@*/ sam_es *restrict es)
 static sam_error
 sam_op_read(/*@in@*/ sam_es *restrict es)
 {
-    return sam_es_read(es, "%d", SAM_ML_TYPE_INT);
+    return sam_es_read(es, "%ld", SAM_ML_TYPE_INT);
 }
 
 static sam_error
