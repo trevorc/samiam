@@ -795,7 +795,7 @@ static sam_error
 sam_op_popsp(/*@in@*/ sam_es *restrict es)
 {
     sam_ml *m;
-    size_t  index;
+    size_t  i;
 
     if ((m = sam_es_stack_pop(es)) == NULL) {
 	return sam_error_stack_underflow(es);
@@ -805,10 +805,10 @@ sam_op_popsp(/*@in@*/ sam_es *restrict es)
 	free(m);
 	return sam_error_stack_input(es, "first", t, SAM_ML_TYPE_SA);
     }
-    index = m->value.sa;
+    i = m->value.sa;
     free(m);
 
-    return sam_sp_shift(es, index);
+    return sam_sp_shift(es, i);
 }
 
 static sam_error
