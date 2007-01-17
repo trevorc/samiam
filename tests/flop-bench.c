@@ -25,16 +25,6 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- * $Log$
- * Revision 1.3  2006/12/20 05:00:27  trevor
- * Splint annotations.
- *
- * Revision 1.2  2006/12/12 23:31:36  trevor
- * Added the $Id$ and $Log$
- * Added the $Id$ and Revision 1.3  2006/12/20 05:00:27  trevor
- * Added the $Id$ and Splint annotations.
- * Added the $Id$ and tags and copyright notice where they were missing.
- *
  */
 
 #define _ISOC99_SOURCE
