@@ -262,7 +262,7 @@ sam_error_final_stack_state(sam_es *es)
 sam_error
 sam_error_dlopen(sam_es *es,
 		 const char *filename,
-		 char	    *reason)
+		 const char *reason)
 {
     if (!sam_es_options_get(es, SAM_QUIET)) {
 	sam_io_fprintf(es,

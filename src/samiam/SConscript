@@ -1,6 +1,6 @@
-Import('env')
+Import('conf')
 Import('dirs')
 
-samiam = env.Program('samiam', 'samiam.c', LIBS='sam')
-env.Install(dirs['install']['bin'], samiam)
-Depends(samiam, dirs['build']['lib'] + '/libsam' + env['SHLIBSUFFIX'])
+samiam = conf.env.Program('samiam', 'samiam.c', LIBS='sam')
+conf.env.Install(dirs['install']['bin'], samiam)
+Depends(samiam, dirs['build']['lib'] + '/libsam' + conf.env['SHLIBSUFFIX'])

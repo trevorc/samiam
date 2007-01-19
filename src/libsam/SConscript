@@ -1,6 +1,8 @@
-Import('env')
+Import('conf')
 Import('dirs')
-libsam = env.SharedLibrary('sam', [
+
+conf.CheckLib('dl')
+libsam = conf.env.SharedLibrary('sam', [
 	'array.c',
 	'error.c',
 	'es.c',
@@ -13,5 +15,6 @@ libsam = env.SharedLibrary('sam', [
 	'parse.c',
 	'string.c',
 	'util.c',
-    ], LIBS=['c', 'm', 'dl'])
-env.Install(dirs['install']['lib'], libsam)
+])
+conf.env.Append(LIBS=['c', 'm'])
+conf.env.Install(dirs['install']['lib'], libsam)

@@ -1,11 +1,11 @@
 Import('ccflags')
 Import('dirs')
 
-env = Environment(CC='gcc',
-		  CCFLAGS=ccflags,
-		  CPPPATH='../include',
-		  LIBPATH=dirs['build']['lib'])
-conf = Configure(env)
+conf = Configure(
+    Environment(CCFLAGS=ccflags,
+		CPPPATH='../include',
+		LIBPATH=dirs['build']['lib']
+))
 if conf.CheckCHeader('sys/mman.h'):
     conf.env.Append(CCFLAGS=' -DHAVE_MMAN_H')
 if conf.CheckCHeader('dlfcn.h'):
@@ -14,7 +14,7 @@ if conf.CheckCHeader('unistd.h'):
     conf.env.Append(CCFLAGS=' -DHAVE_UNISTD_H')
 if conf.CheckCHeader('locale.h'):
     conf.env.Append(CCFLAGS=' -DHAVE_LOCALE_H')
-env = conf.Finish()
 
-SConscript(['libsam/SConscript'], ['env', 'dirs'])
-SConscript(['samiam/SConscript'], ['env', 'dirs'])
+SConscript(['libsam/SConscript'], ['conf', 'dirs'])
+SConscript(['samiam/SConscript'], ['conf', 'dirs'])
+env = conf.Finish()

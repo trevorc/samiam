@@ -137,7 +137,10 @@ sam_execute(/*@in@*/ sam_es *restrict es)
 	 sam_es_pc_pp(es)) {
 	err = sam_es_instructions_cur(es)->handler(es);
     }
+
+#if defined(SAM_EXTENSIONS) && defined(HAVE_DLFCN_H)
     sam_es_dlhandles_close(es);
+#endif /* SAM_EXTENSIONS && HAVE_DLFCN_H */
     sam_warning_leaks(es);
     if (err == SAM_OK) {
 	sam_warning_forgot_stop(es);

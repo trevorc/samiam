@@ -10,7 +10,7 @@ cflags = [
     '-Wall',
     '-Wmissing-prototypes',
     '-Wmissing-declarations',
-    '-Wstrict-prototypes',
+#    '-Wstrict-prototypes',
     '-Wpointer-arith',
     '-Wnested-externs',
     '-Wdisabled-optimization',
