@@ -18,3 +18,5 @@ libsam = conf.env.SharedLibrary('sam', [
 ])
 conf.env.Append(LIBS=['c', 'm'])
 conf.env.Install(dirs['install']['lib'], libsam)
+
+SConscript(['../samiam/SConscript'], ['conf', 'dirs', 'libsam'])

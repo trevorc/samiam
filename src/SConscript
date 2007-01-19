@@ -16,5 +16,4 @@ if conf.CheckCHeader('locale.h'):
     conf.env.Append(CCFLAGS=' -DHAVE_LOCALE_H')
 
 SConscript(['libsam/SConscript'], ['conf', 'dirs'])
-SConscript(['samiam/SConscript'], ['conf', 'dirs'])
 env = conf.Finish()

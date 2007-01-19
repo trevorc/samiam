@@ -3,7 +3,7 @@
 debug_default = 1
 
 cflags = [
-    '-std=c99',
+    '-std=gnu99',
     '-pipe',
     '-W',
     '-Werror',
