@@ -2,6 +2,15 @@ Import('conf')
 Import('dirs')
 Import('libsam')
 
-samiam = conf.env.Program('samiam', 'samiam.c', LIBS='sam')
+sources = ['samiam.c']
+
+if conf.CheckFunc('getopt_long'):
+    sources += ['parse_options_gnu.c']
+elif conf.CheckFunc('getopt'):
+    sources += ['parse_options_bsd.c']
+else:
+    sources += ['parse_options_plain.c']
+
+samiam = conf.env.Program('samiam', sources, LIBS='sam')
 conf.env.Install(dirs['install']['bin'], samiam)
 Depends(samiam, libsam)

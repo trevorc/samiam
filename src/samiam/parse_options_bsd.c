@@ -1,5 +1,4 @@
 /*
- * samiam.c         a simple frontend to libsam
  * $Id$
  *
  * part of samiam - the fast sam interpreter
@@ -31,16 +30,36 @@
 #include <stdio.h>
 #include <string.h>
 #include <sam.h>
+#include <unistd.h>
 
 #include "parse_options.h"
 
-int
-main(int argc,
-     char *const argv[restrict])
+static bool
+samiam_usage(void)
 {
-    sam_options options = 0;
-    char *file = NULL;
+    puts("usage: samiam [-q] [samfile]");
+    return false;
+}
 
-    return samiam_parse_options(argc, argv, &options, &file)?
-	sam_main(options, file, NULL): -1;
+bool
+samiam_parse_options(int argc,
+		     char *const argv[restrict],
+		     sam_options *restrict options,
+		     char **restrict file)
+{
+    int opt;
+
+    while ((opt = getopt(argc, argv, "q")) > -1) {
+	switch (opt) {
+	    case 'q':
+		*options |= SAM_QUIET;
+		break;
+	    case '?':
+		return samiam_usage();
+	}
+    }
+    if (argc - optind == 1) {
+	*file = argv[optind];
+    }
+    return argc - optind > 1? samiam_usage(): true;
 }

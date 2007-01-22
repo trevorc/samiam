@@ -8,7 +8,7 @@ HI	Release-critical bug.
 ***	Closed bug.
 
 ASGN SEV  NUM  DESC
-T    LOW  #00  no argument parsing in samiam.
+T    ---  #00  no argument parsing in samiam.
 T    ---  #01  duplicate labels
 T    ---  #02  shitty error messages for parsing
      LOW  #03  c string parsing "hello.\n"
