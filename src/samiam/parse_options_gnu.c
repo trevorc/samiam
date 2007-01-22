@@ -66,17 +66,23 @@ samiam_copyright(void)
     exit(0);
 }
 
+__attribute__((noreturn))
 static int
-samiam_usage(const char *restrict name)
+samiam_help(const char *restrict name)
 {
     printf("Usage: %s [OPTION]... [FILE]\n"
 	   "Interpret and execute a SaM source file.\n\n"
-	   "Mandatory arguments to long options are mandatory for "
-	   "short options too.\n"
 	   "  -q, --quiet    suppress verbose output\n"
 	   "      --help     display this help and exit\n"
 	   "      --version  output version information and exit\n\n",
 	   name);
+    exit(0);
+}
+
+static int
+samiam_usage(const char *restrict name)
+{
+    printf("Try `%s --help' for more information.\n", name);
     return false;
 }
 
@@ -102,8 +108,7 @@ samiam_parse_options(int argc,
 	    case 'v':
 		samiam_copyright();
 	    case 'h':
-		samiam_usage(argv[0]);
-		exit(0);
+		samiam_help(argv[0]);
 	    case '?':
 		return samiam_usage(argv[0]);
 	}
