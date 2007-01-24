@@ -46,3 +46,5 @@ D    ---  #28  we need to split operands from memory locations. (they
 	       confusing and (b) wasteful.
 T    ---  #29  tester needs to understand the return value of 'inf'
      ---  #30  scons doesn't know about the test suite.
+     LOW  #31  there still is a config.h
+     LOW  #32  decide what errors go in error.c and which should be static
