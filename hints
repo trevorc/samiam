@@ -1,6 +1,0 @@
-assumptions:
-
-stdin, stdout, stderr expected to be open
-
-integer operands are passed to strtol() with a base of 0
-
