@@ -1,0 +1,43 @@
+Compilation instructions
+=========== ============
+
+Ensure your system has the dependencies for building.
+
+Samiam and libsam:
+Run the command `scons' from the root samiam directory (the one with
+SConstruct in it.)
+
+Documentation:
+Issue the command `make' from the doc directory.
+
+Test suite:
+Issue the command `make check' from the tests directory.
+
+Dependencies
+============
+
+To compile samiam, you will need:
+
+    * (currently) gcc. If you remove the gcc extensions (the
+      __attribute__()s), you should be left with clean c99.
+      I've tested it with gcc 4.1.2 and 3.4.4.
+    * scons. I've tested with scons 0.96.93.D001 and 0.96.92.D002.
+    * Python (for scons). I've tested with Python 2.4.2, 2.4.4, and 2.5.
+
+To compile the documentation, you will need:
+
+    * xsltproc.
+    * docbook-xsl.
+
+To run the test suites, you will need:
+
+    * gcc.
+    * Python.
+    * GNU make. I've tested 3.8.1. Soon this dependency will disappear.
+    * Perl. I've tested 5.8.8. Soon this dependency will disappear.
+
+Samiam itself has no dependencies (except for libsam, libc, libm and
+optionally libdl).
+
+In addition, I've made a few shell scripts that make it easy to run and test
+samiam.
