@@ -1,0 +1,10 @@
+Import('ccflags')
+
+env = Environment(CCFLAGS=ccflags, CPPPATH='../src/include')
+env.Program('inf', 'inf.c')
+env.Program('flop', 'flop.c', LIBS='m')
+env.Program('flop-bench', 'flop-bench.c', LIBS='m')
+env.SharedLibrary('dltest', 'dltest.c')
+env.SharedLibrary('dltest2', 'dltest2.c')
+env.SharedLibrary('dltest3', 'dltest3.c')
+env.SharedLibrary('dltest4', 'dltest4.c')
