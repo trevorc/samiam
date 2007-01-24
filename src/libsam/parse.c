@@ -92,7 +92,6 @@ sam_truncate(char *s)
 	    *t = ' ';
 	}
     }
-
     if (len > TRUNC_HEAD + 3 + TRUNC_TAIL) {
 	sprintf(s + TRUNC_HEAD, "...%s", s + len - TRUNC_TAIL);
     }

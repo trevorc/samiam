@@ -129,7 +129,7 @@ static sam_error
 sam_pushabs(/*@in@*/ sam_es *restrict es,
 	    sam_ma ma)
 {
-    sam_ml *m = ma.stack?
+    sam_ml *restrict m = ma.stack?
 	sam_es_stack_get(es, ma.index.sa):
 	sam_es_heap_get(es, ma.index.ha);
 
@@ -183,10 +183,8 @@ sam_addition(/*@in@*/ sam_es *restrict es,
 		/* user could set an illegal index here */
 		m1->value.pa = m1->value.pa + sign * m2->value.i;
 		free(m2);
-		if (!sam_es_stack_push(es, m1)) {
-		    return sam_error_stack_overflow(es);
-		}
-		return SAM_OK;
+		return sam_es_stack_push(es, m1)?
+		    SAM_OK: sam_error_stack_overflow(es);
 	    }
 	    break;
 	case SAM_ML_TYPE_HA:
@@ -195,18 +193,14 @@ sam_addition(/*@in@*/ sam_es *restrict es,
 	    if (m2->type == SAM_ML_TYPE_INT) {
 		m1->value.ha = m1->value.ha + sign * m2->value.i;
 		free(m2);
-		if (!sam_es_stack_push(es, m1)) {
-		    return sam_error_stack_overflow(es);
-		}
-		return SAM_OK;
+		return sam_es_stack_push(es, m1)?
+		    SAM_OK: sam_error_stack_overflow(es);
 	    } else if (m2->type == SAM_ML_TYPE_HA && sign == -1) {
 		m1->value.i = m1->value.ha - m2->value.ha;
 		m1->type = SAM_ML_TYPE_INT;
 		free(m2);
-		if (!sam_es_stack_push(es, m1)) {
-		    return sam_error_stack_overflow(es);
-		}
-		return SAM_OK;
+		return sam_es_stack_push(es, m1)?
+		    SAM_OK: sam_error_stack_overflow(es);
 	    }
 	    break;
 	case SAM_ML_TYPE_SA:
@@ -215,58 +209,46 @@ sam_addition(/*@in@*/ sam_es *restrict es,
 		 * overflow the address */
 		m1->value.sa = m1->value.sa + sign * m2->value.i;
 		free(m2);
-		if (!sam_es_stack_push(es, m1)) {
-		    return sam_error_stack_overflow(es);
-		}
-		return SAM_OK;
+		return sam_es_stack_push(es, m1)?
+		    SAM_OK: sam_error_stack_overflow(es);
 	    } else if (m2->type == SAM_ML_TYPE_SA) {
 		m1->value.i = m1->value.sa - m2->value.sa;
 		m1->type = SAM_ML_TYPE_INT;
 		free(m2);
-		if (!sam_es_stack_push(es, m1)) {
-		    return sam_error_stack_overflow(es);
-		}
-		return SAM_OK;
+		return sam_es_stack_push(es, m1)?
+		    SAM_OK: sam_error_stack_overflow(es);
 	    }
 	    break;
 	case SAM_ML_TYPE_INT:
 	    if (m2->type == SAM_ML_TYPE_INT) {
 		m1->value.i += sign * m2->value.i;
 		free(m2);
-		if (!sam_es_stack_push(es, m1)) {
-		    return sam_error_stack_overflow(es);
-		}
-		return SAM_OK;
+		return sam_es_stack_push(es, m1)?
+		    SAM_OK: sam_error_stack_overflow(es);
 	    }
 	    if (m2->type == SAM_ML_TYPE_PA) {
 		/* user could set an illegal index here */
 		m1->value.pa = m1->value.i + sign * m2->value.pa;
 		m1->type = SAM_ML_TYPE_PA;
 		free(m2);
-		if (!sam_es_stack_push(es, m1)) {
-		    return sam_error_stack_overflow(es);
-		}
-		return SAM_OK;
+		return sam_es_stack_push(es, m1)?
+		    SAM_OK: sam_error_stack_overflow(es);
 	    }
 	    if (m2->type == SAM_ML_TYPE_HA) {
 		/* user could set an illegal index here or overflow */
 		m1->value.ha = m1->value.i + sign * m2->value.ha;
 		m1->type = SAM_ML_TYPE_HA;
 		free(m2);
-		if (!sam_es_stack_push(es, m1)) {
-		    return sam_error_stack_overflow(es);
-		}
-		return SAM_OK;
+		return sam_es_stack_push(es, m1)?
+		    SAM_OK: sam_error_stack_overflow(es);
 	    }
 	    if (m2->type == SAM_ML_TYPE_SA) {
 		/* user could set an illegal index here or overflow */
 		m1->value.sa = m1->value.i + sign * m2->value.sa;
 		m1->type = SAM_ML_TYPE_SA;
 		free(m2);
-		if (!sam_es_stack_push(es, m1)) {
-		    return sam_error_stack_overflow(es);
-		}
-		return SAM_OK;
+		return sam_es_stack_push(es, m1)?
+		    SAM_OK: sam_error_stack_overflow(es);
 	    }
 	    break;
 	default:
@@ -443,11 +425,9 @@ sam_float_arithmetic(sam_es *restrict es,
     }
     free(m2);
     m1->type = SAM_ML_TYPE_FLOAT;
-    if (!sam_es_stack_push(es, m1)) {
-	return sam_error_stack_overflow(es);
-    }
 
-    return SAM_OK;
+    return sam_es_stack_push(es, m1)?
+	SAM_OK: sam_error_stack_overflow(es);
 }
 
 static sam_error
@@ -480,11 +460,9 @@ sam_unary_arithmetic(sam_es			    *restrict es,
 	    m1->value.i = m1->value.i < 0;
 	    break;
     }
-    if (!sam_es_stack_push(es, m1)) {
-	return sam_error_stack_overflow(es);
-    }
 
-    return SAM_OK;
+    return sam_es_stack_push(es, m1)?
+	SAM_OK: sam_error_stack_overflow(es);
 }
 
 static sam_int
@@ -528,19 +506,17 @@ sam_bitshift(/*@in@*/ sam_es    *restrict es,
 	return sam_error_negative_shift(es, i);
     }
     m->value.i = sam_do_shift(m->value.i, cur->operand.i, type);
-    if (!sam_es_stack_push(es, m)) {
-	return sam_error_stack_overflow(es);
-    }
 
-    return SAM_OK;
+    return sam_es_stack_push(es, m)?
+	SAM_OK: sam_error_stack_overflow(es);
 }
+
 static sam_error
 sam_bitshiftind(/*@in@*/ sam_es *restrict es,
 		sam_bitshift_type type)
 {
-    sam_ml *m1, *m2;
-
-    if ((m2 = sam_es_stack_pop(es)) == NULL) {
+    sam_ml *restrict m2 = sam_es_stack_pop(es);
+    if (m2 == NULL) {
 	return sam_error_stack_underflow(es);
     }
     if (m2->type != SAM_ML_TYPE_INT) {
@@ -548,7 +524,9 @@ sam_bitshiftind(/*@in@*/ sam_es *restrict es,
 	free(m2);
 	return sam_error_stack_input(es, "first", t, SAM_ML_TYPE_INT);
     }
-    if ((m1 = sam_es_stack_pop(es)) == NULL) {
+
+    sam_ml *restrict m1 = sam_es_stack_pop(es);
+    if (m1 == NULL) {
 	free(m2);
 	return sam_error_stack_underflow(es);
     }
@@ -583,9 +561,9 @@ sam_es_read(/*@in@*/ sam_es *restrict es,
 static sam_error
 sam_op_ftoi(/*@in@*/ sam_es *restrict es)
 {
-    sam_ml *m;
+    sam_ml *restrict m = sam_es_stack_pop(es);
 
-    if ((m = sam_es_stack_pop(es)) == NULL) {
+    if (m == NULL) {
 	return sam_error_stack_underflow(es);
     }
     if (m->type != SAM_ML_TYPE_FLOAT) {
@@ -594,13 +572,11 @@ sam_op_ftoi(/*@in@*/ sam_es *restrict es)
 	return sam_error_type_conversion(es, SAM_ML_TYPE_INT, t,
 					 SAM_ML_TYPE_FLOAT);
     }
-    m->value.i = (int)floor(m->value.f);
+    m->value.i = floor(m->value.f);
     m->type = SAM_ML_TYPE_INT;
-    if (!sam_es_stack_push(es, m)) {
-	return sam_error_stack_overflow(es);
-    }
 
-    return SAM_OK;
+    return sam_es_stack_push(es, m)?
+	SAM_OK: sam_error_stack_overflow(es);
 }
 
 static sam_error
@@ -619,11 +595,9 @@ sam_op_ftoir(/*@in@*/ sam_es *restrict es)
     }
     m->value.i = round(m->value.f);
     m->type = SAM_ML_TYPE_INT;
-    if (!sam_es_stack_push(es, m)) {
-	return sam_error_stack_overflow(es);
-    }
 
-    return SAM_OK;
+    return sam_es_stack_push(es, m)?
+	SAM_OK: sam_error_stack_overflow(es);
 }
 
 static sam_error

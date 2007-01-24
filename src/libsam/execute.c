@@ -149,7 +149,7 @@ sam_execute(/*@in@*/ sam_es *restrict es)
 	sam_io_bt(es);
     }
 
-    sam_ml *m = sam_es_stack_get(es, 0);
+    sam_ml *restrict m = sam_es_stack_get(es, 0);
     return m == NULL?
 	sam_warning_empty_stack(es):
 	sam_convert_to_int(es, m);

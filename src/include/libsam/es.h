@@ -41,9 +41,9 @@
 
 typedef sam_error	   (*sam_library_fn)	     (sam_es *restrict es);
 
-extern inline void	     sam_es_bt_set  (sam_es *restrict es,
+extern inline void	     sam_es_bt_set	     (sam_es *restrict es,
 						      bool st);
-extern bool		     sam_es_bt_get  (const sam_es *restrict es);
+extern bool		     sam_es_bt_get	     (const sam_es *restrict es);
 extern inline sam_pa	     sam_es_pc_get	     (const sam_es *restrict es);
 extern inline sam_pa	     sam_es_pc_pp	     (sam_es *restrict es);
 extern inline void	     sam_es_pc_set	     (sam_es *restrict es,
@@ -73,7 +73,7 @@ extern sam_ha		     sam_es_heap_alloc	     (sam_es *restrict es,
 						      size_t size);
 extern sam_error	     sam_es_heap_dealloc     (sam_es *restrict es,
 						      sam_ha  ha);
-inline bool		     sam_es_heap_leak_check  (const sam_es *restrict es,
+extern inline bool	     sam_es_heap_leak_check  (const sam_es *restrict es,
 						      unsigned long *restrict block_count,
 						      unsigned long *restrict leak_size);
 extern bool		     sam_es_labels_ins	     (sam_es *restrict es,

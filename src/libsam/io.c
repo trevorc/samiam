@@ -64,7 +64,7 @@ sam_io_vfscanf(sam_io_stream ios,
     sam_string s;
     int	       rv;
 
-    if (fmt == NULL || sam_string_get(sam_ios_to_file(ios), &s) == NULL) {
+    if (sam_string_get(sam_ios_to_file(ios), &s) == NULL) {
 	return EOF;
     }
     rv = vsscanf(s.data, fmt, ap);
@@ -79,7 +79,7 @@ sam_sprint_char(char	 *s,
     char *start = s;
 
     if (isprint(c)) {
-	sprintf(s, "'%c'", (int)c);
+	sprintf(s, "'%c'", c);
 	return 1;
     }
     *s++ = '\'';
@@ -107,7 +107,7 @@ sam_sprint_char(char	 *s,
 	    *s++ = 'v';
 	    break;
 	default:
-	    *s++ = c;
+	    s += sprintf(s, "%d", c);
     }
     *s++ = '\'';
     *s++ = '\0';

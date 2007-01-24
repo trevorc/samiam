@@ -70,9 +70,9 @@ typedef struct {
 /** The parsed instructions and labels along with the current state
  *  of execution. */
 struct _sam_es {
-    volatile bool lock; /**< Is it unsafe to access or modify the
+    volatile bool lock;	    /**< Is it unsafe to access or modify the
 			     *   execution state? */
-    bool bt;   /**< Is a stack trace is needed? */
+    bool bt;		    /**< Is a stack trace is needed? */
     sam_pa pc;		    /**< The index into sam_es# program
 			     *   pointing to the current instruction,
 			     *   aka the program counter. Incremented by
@@ -99,7 +99,6 @@ struct _sam_es {
 #endif /* SAM_EXTENSIONS && HAVE_DLFCN_H */
 };
 
-/* Execution errors. */
 /* The sam allocator. */
 /*@only@*/ static inline sam_heap_pointer *
 sam_es_heap_pointer_new(size_t start,
@@ -385,8 +384,8 @@ sam_es_labels_get(/*@in@*/ sam_es *restrict es,
 }
 
 inline void
-sam_es_instructions_ins (sam_es *restrict es,
-			 sam_instruction *restrict i)
+sam_es_instructions_ins(sam_es *restrict es,
+			sam_instruction *restrict i)
 {
     sam_array_ins(&es->instructions, i);
 }
@@ -397,6 +396,7 @@ sam_es_instructions_get(/*@in@*/ const sam_es *restrict es,
 {
     return pa < es->instructions.len? es->instructions.arr[pa]: NULL;
 }
+
 sam_instruction *
 sam_es_instructions_cur(sam_es *restrict es)
 {
