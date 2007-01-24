@@ -1,15 +1,15 @@
 # $Id$
 
-include ../rul.mk
-
-RM=rm -f
 TMPDIR=/tmp
+CFLAGS=-std=c99 -Werror -Wall -W -Wmissing-prototypes -Wmissing-declarations -Wstrict-prototypes -Wpointer-arith -Wnested-externs -Wdisabled-optimization -Wundef -Wendif-labels -Wshadow -Wcast-align -Wstrict-aliasing=2 -fstrict-aliasing -Wwrite-strings -Wmissing-noreturn -Wmissing-format-attribute -Wredundant-decls -Wformat -pipe -O3 -I../src/include
+LDFLAGS=-lm
+
 ALL=equal1.sam inf dltest.so dltest2.so dltest3.so dltest4.so
 
 all: $(ALL)
 
 inf: inf.c
-	$(CC) -pipe -O3 $(MFLAGS) -o $@ $<
+	$(CC) $(CFLAGS) -o $@ $<
 
 %.so: %.c
 	$(CC) -o $@ -lc -shared -Wl,-soname,$@ -fPIC $(CFLAGS) $(LDFLAGS) $<
@@ -27,13 +27,13 @@ equal1.sam: gen_equal.pl
 	@perl gen_equal.pl
 
 flop: flop.c
-	$(CC) -pipe -O3 -o $@ $<
+	$(CC) $(CFLAGS) -o $@ $<
 
 flop.sam: flop
 	@./flop >$(TMPDIR)/$@
 
 flop-bench: flop-bench.o
-	$(CC) -lm -o $@ $^
+	$(CC) $(LDFLAGS) -o $@ $^
 
 clean:
 	$(RM) equal*.sam flop $(TMPDIR)/flop.sam flop-bench.o flop-bench $(ALL)
