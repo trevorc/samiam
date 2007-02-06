@@ -3,7 +3,7 @@
  *
  * part of samiam - the fast sam interpreter
  *
- * Copyright (c) 2006 Trevor Caira, Jimmy Hartzell
+ * Copyright (c) 2007 Trevor Caira, Jimmy Hartzell
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -26,16 +26,13 @@
  * SOFTWARE.
  */
 
-#ifndef SAM_PARSE_H
-#define SAM_PARSE_H
+#ifndef LIBSAM_PARSE_H
+#define LIBSAM_PARSE_H
 
 #include <stdbool.h>
 
-typedef void (*sam_input_free_func)(sam_string *restrict s);
+extern bool sam_parse(sam_es *restrict es,
+		      /*@null@*/ const char *restrict file);
 
-extern bool    sam_parse	   (sam_es *restrict es,
-				    sam_string *restrict s,
-				    sam_input_free_func *restrict free_func,
-				    /*@null@*/ const char *restrict file);
+#endif /* LIBSAM_PARSE_H */
 
-#endif /* SAM_PARSE_H */
