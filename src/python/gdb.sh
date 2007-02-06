@@ -2,4 +2,4 @@
 
 . common.sh
 
-eval gdb --args $python_cmd
+eval gdb --args python $python_args

@@ -2,4 +2,4 @@
 
 . common.sh
 
-eval valgrind --suppressions=$oldpwd/valgrind-python.supp $python_cmd
+eval valgrind --suppressions=valgrind-python.supp python $python_args

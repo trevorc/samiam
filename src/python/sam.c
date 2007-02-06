@@ -35,7 +35,7 @@ ExecutionState_init(ExecutionState *self, PyObject *args, PyObject *kwds)
 	return -1; 
     }
 
-    self->es = sam_es_new(0, NULL);
+    self->es = sam_es_new(1, NULL);
 
     self->file = strdup(file);
     if (!sam_parse(self->es, file)) {
@@ -45,36 +45,6 @@ ExecutionState_init(ExecutionState *self, PyObject *args, PyObject *kwds)
 
     return 0;
 }
-
-#if 0
-static PyObject *
-ExecutionState_bt(ExecutionState *restrict self,
-		  PyObject *restrict args,
-		  PyObject *restrict kwargs)
-{
-    static const char *restrict kwlist[restrict] = {"", NULL};
-
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|s", kwlist, &)) {
-	return NULL;
-    }
-}
-
-static PyObject *
-ExecutionState_bt(ExecutionState *restrict self,
-		  PyObject *restrict args)
-{
-    PyObject *arg = NULL;
-
-    if (!PyArg_ParseTuple(args, "|O", &arg)) {
-	return NULL;
-    }
-    if (!PyBool_Check(arg)) {
-	return NULL;
-    }
-
-    Py_RETURN_NONE;
-}
-#endif
 
 static PyObject *
 ExecutionState_bt_get(ExecutionState *restrict self)

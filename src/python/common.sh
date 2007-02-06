@@ -25,8 +25,7 @@ function sam_so_err {
 
 SAM_SO=`find build -name sam.so 2>/dev/null` || sam_so_err
 
-export LD_LIBRARY_PATH=$PWD/../../build/libsam
-export PYTHONPATH=$PWD/`dirname $SAM_SO`
+export LD_LIBRARY_PATH=../../build/libsam
+export PYTHONPATH=`dirname $SAM_SO`
 
-oldpwd=$PWD
-python_cmd="python \$oldpwd/\$pyfile \$oldpwd/\$samfile"
+python_args="$pyfile $samfile"
