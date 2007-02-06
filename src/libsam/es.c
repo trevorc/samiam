@@ -628,14 +628,16 @@ sam_es_new(sam_options options,
 void
 sam_es_free(/*@in@*/ /*@only@*/ sam_es *restrict es)
 {
+    if (es->input.alloc > 0) {
 #if defined(HAVE_MMAN_H)
-    if (es->input.mmapped) {
-	if (munmap(es->input.data, es->input.len) < 0) {
-	    perror("munmap");
-	}
-    } else
+	if (es->input.mmapped) {
+	    if (munmap(es->input.data, es->input.len) < 0) {
+		perror("munmap");
+	    }
+	} else
 #endif /* HAVE_MMAN_H */
-    sam_string_free(&es->input);
+	sam_string_free(&es->input);
+    }
 
     sam_array_free(&es->stack);
     sam_es_heap_free(es);

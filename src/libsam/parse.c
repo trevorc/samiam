@@ -461,6 +461,7 @@ sam_input_read(/*@observer@*/ const char *restrict path,
     struct stat sb;
     int fd = open(path, O_RDONLY);
 
+    s->alloc = 0;
     if (fd < 0) {
 	perror("open");
 	return NULL;
