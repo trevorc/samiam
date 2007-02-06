@@ -127,14 +127,15 @@ sam_sp_shift(sam_es *restrict es,
 
 static sam_error
 sam_pushabs(/*@in@*/ sam_es *restrict es,
+	    bool stack,
 	    sam_ma ma)
 {
-    sam_ml *restrict m = ma.stack?
-	sam_es_stack_get(es, ma.index.sa):
-	sam_es_heap_get(es, ma.index.ha);
+    sam_ml *restrict m = stack?
+	sam_es_stack_get(es, ma.sa):
+	sam_es_heap_get(es, ma.ha);
 
     return m == NULL?
-	sam_error_segmentation_fault(es, ma):
+	sam_error_segmentation_fault(es, stack, ma):
 	    (sam_es_stack_push(es, sam_ml_new(m->value, m->type))?
 	     SAM_OK: sam_error_stack_overflow(es));
 }
@@ -142,12 +143,13 @@ sam_pushabs(/*@in@*/ sam_es *restrict es,
 static sam_error
 sam_storeabs(/*@in@*/ sam_es *restrict es,
 	     /*@only@*/ sam_ml *m,
+	     bool stack,
 	     sam_ma ma)
 {
-    return (ma.stack?
-	    sam_es_stack_set(es, m, ma.index.sa):
-	    sam_es_heap_set(es, m, ma.index.ha))?
-		SAM_OK: sam_error_segmentation_fault(es, ma);
+    return (stack?
+	    sam_es_stack_set(es, m, ma.sa):
+	    sam_es_heap_set(es, m, ma.ha))?
+		SAM_OK: sam_error_segmentation_fault(es, stack, ma);
 }
 
 static sam_error
@@ -909,23 +911,20 @@ static sam_error
 sam_op_pushind(/*@in@*/ sam_es *restrict es)
 {
     sam_ml  *m;
-    sam_ma   ma;
     sam_ml_type t;
 
     if ((m = sam_es_stack_pop(es)) == NULL) {
 	return sam_error_stack_underflow(es);
     }
     if (m->type == SAM_ML_TYPE_HA) {
-	ma.stack = false;
-	ma.index.ha = m->value.ha;
+	sam_ma ma = {.ha = m->value.ha};
 	free(m);
-	return sam_pushabs(es, ma);
+	return sam_pushabs(es, false, ma);
     }
     if (m->type == SAM_ML_TYPE_SA) {
-	ma.stack = true;
-	ma.index.sa = m->value.sa;
+	sam_ma ma = {.sa = m->value.sa};
 	free(m);
-	return sam_pushabs(es, ma);
+	return sam_pushabs(es, true, ma);
     }
     t = m->type;
     free(m);
@@ -935,7 +934,6 @@ sam_op_pushind(/*@in@*/ sam_es *restrict es)
 static sam_error
 sam_op_storeind(/*@in@*/ sam_es *restrict es)
 {
-    sam_ma   ma;
     sam_ml_type t;
     /*@null@*/ sam_ml *m2 = sam_es_stack_pop(es);
 
@@ -949,16 +947,14 @@ sam_op_storeind(/*@in@*/ sam_es *restrict es)
 	return sam_error_stack_underflow(es);
     }
     if (m1->type == SAM_ML_TYPE_HA) {
-	ma.stack = false;
-	ma.index.ha = m1->value.ha;
+	sam_ma ma = {.ha = m1->value.ha};
 	free(m1);
-	return sam_storeabs(es, m2, ma);
+	return sam_storeabs(es, m2, false, ma);
     }
     if (m1->type == SAM_ML_TYPE_SA) {
-	ma.stack = true;
-	ma.index.sa = m1->value.sa;
+	sam_ma ma = {.sa = m1->value.sa};
 	free(m1);
-	return sam_storeabs(es, m2, ma);
+	return sam_storeabs(es, m2, true, ma);
     }
     t = m1->type;
     free(m1);
@@ -970,23 +966,21 @@ sam_op_storeind(/*@in@*/ sam_es *restrict es)
 static sam_error
 sam_op_pushabs(/*@in@*/ sam_es *restrict es)
 {
-    sam_ma ma;
     sam_instruction *restrict cur = sam_es_instructions_cur(es);
 
     if (cur->optype != SAM_OP_TYPE_INT) {
 	return sam_error_optype(es);
     }
-    ma.stack = true;
-    ma.index.sa = (sam_sa)cur->operand.i;
+    
+    sam_ma ma = {.sa = cur->operand.i};
 
-    return sam_pushabs(es, ma);
+    return sam_pushabs(es, true, ma);
 }
 
 /* cannot be used to store onto the heap. */
 static sam_error
 sam_op_storeabs(/*@in@*/ sam_es *restrict es)
 {
-    sam_ma ma;
     sam_instruction *restrict cur = sam_es_instructions_cur(es);
     sam_ml *restrict m = sam_es_stack_pop(es);
 
@@ -997,31 +991,27 @@ sam_op_storeabs(/*@in@*/ sam_es *restrict es)
 	free(m);
 	return sam_error_optype(es);
     }
-    ma.stack = true;
-    ma.index.sa = cur->operand.i;
 
-    return sam_storeabs(es, m, ma);
+    sam_ma ma = {.sa = cur->operand.i};
+    return sam_storeabs(es, m, true, ma);
 }
 
 static sam_error
 sam_op_pushoff(/*@in@*/ sam_es *restrict es)
 {
-    sam_ma ma;
     sam_instruction *restrict cur = sam_es_instructions_cur(es);
 
     if (cur->optype != SAM_OP_TYPE_INT) {
 	return sam_error_optype(es);
     }
-    ma.stack = true;
-    ma.index.sa = sam_es_fbr_get(es) + cur->operand.i;
 
-    return sam_pushabs(es, ma);
+    sam_ma ma = {.sa = sam_es_fbr_get(es) + cur->operand.i};
+    return sam_pushabs(es, true, ma);
 }
 
 static sam_error
 sam_op_storeoff(/*@in@*/ sam_es *restrict es)
 {
-    sam_ma ma;
     sam_instruction *restrict cur = sam_es_instructions_cur(es);
     sam_ml	    *m;
 
@@ -1032,10 +1022,9 @@ sam_op_storeoff(/*@in@*/ sam_es *restrict es)
 	free(m);
 	return sam_error_optype(es);
     }
-    ma.stack = true;
-    ma.index.sa = sam_es_fbr_get(es) + cur->operand.i;
 
-    return sam_storeabs(es, m, ma);
+    sam_ma ma = {.sa = sam_es_fbr_get(es) + cur->operand.i};
+    return sam_storeabs(es, m, true, ma);
 }
 
 static sam_error
@@ -1572,10 +1561,8 @@ sam_op_writestr(/*@in@*/ sam_es *restrict es)
     free(m);
 
     if (ha >= sam_es_heap_len(es)) {
-	sam_ma ma;
-	ma.stack = false;
-	ma.index.ha = ha;
-	return sam_error_segmentation_fault(es, ma);
+	sam_ma ma = {.ha = ha};
+	return sam_error_segmentation_fault(es, false, ma);
     }
     i = ha;
 

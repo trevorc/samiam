@@ -7,15 +7,11 @@ class SimpleSam(sam.ExecutionState):
 	self.stack = []
 	self.heap = []
 
-	for i in es:
-	    for ch in es.stack_changes():
+	for stack_changes, heap_changes in self:
+	    for ch in stack_changes:
 		self.buffer_stack_change(ch)
-	    for ch in es.heap_changes():
+	    for ch in heap_changes:
 		self.buffer_heap_change(ch)
-	    self.fbr = es.fbr()
-	    self.pc = es.pc()
-	    self.sp = es.sp()
-
 	    self.commit_changes()
 
     def buffer_stack_change(self, change):

@@ -17,13 +17,16 @@ sighandler(void)
 
 static void
 commit_changes(sam_es *restrict es,
-	       size_t stack_items)
+	       size_t stack_items,
+	       size_t heap_items)
 {
-    printf("number of items on the stack: %d.\n"
+    printf("number of items on the stack: %lu.\n"
+	   "number of items on the heap: %lu.\n"
 	   "pc: %lu\n"
 	   "fbr: %lu\n"
 	   "sp: %lu\n\n",
 	   stack_items,
+	   heap_items,
 	   sam_es_pc_get(es),
 	   sam_es_fbr_get(es),
 	   sam_es_sp_get(es));
@@ -33,6 +36,7 @@ int
 main(void)
 {
     size_t stack_items = 0;
+    size_t heap_items = 0;
     signal(SIGALRM, (sighandler_t)sighandler);
     sighandler();
 
@@ -46,10 +50,14 @@ main(void)
 
 	for (sam_es_change ch; sam_es_change_get(es, &ch);) {
 	    if (ch.stack) {
-		stack_items += ch.add? 1: -1;
+		stack_items += ch.add;
+		stack_items -= ch.remove;
+	    } else {
+		heap_items += ch.add;
+		heap_items -= ch.remove;
 	    }
 	    if (lock) {
-		commit_changes(es, stack_items);
+		commit_changes(es, stack_items, heap_items);
 		lock = false;
 	    }
 	}

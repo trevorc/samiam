@@ -37,13 +37,13 @@
       details on the samiam implementation of the sam programming language, see
       <citerefentry><refentrytitle>libsam</refentrytitle><manvolnum>3</manvolnum></citerefentry>.</para>
     <para>The design of this interpreter does not mirror SaM. Instead, the
-      interpreter has been packaged as a shared library, accessibly both
+      interpreter has been packaged as a shared library, accessible both
       programmatically using the
       <citerefentry><refentrytitle>libsam</refentrytitle><manvolnum>3</manvolnum></citerefentry>
       API and its bindings, and through frontends such as the one documented
       by this manual. This frontend is intended as a simple general-purpose
       interface to the interpreter.</para>
-    <para>Unlike SaM, <command>samiam</command> is generally does not
+    <para>Unlike SaM, <command>samiam</command> generally does not
       accept faulty assembly code, in particular, code which makes
       illegal accesses to freed or unallocated memory. This is
       intentional; the original purpose of <command>samiam</command> was
@@ -84,7 +84,7 @@
   </refsect1>
   <refsect1>
     <title>COPYRIGHT</title>
-    <para>Copyright (C) 2006 Trevor Caira and Jimmy Hartzell.</para>
+    <para>Copyright (C) 2007 Trevor Caira and Jimmy Hartzell.</para>
     <para>This is free software. See COPYING in the source distribution for the
       copyright notice.</para>
   </refsect1>

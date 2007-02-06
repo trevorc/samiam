@@ -66,6 +66,7 @@ sam_error_optype(/*@in@*/ sam_es *restrict es)
 
 sam_error
 sam_error_segmentation_fault(sam_es *restrict es,
+			     bool stack,
 			     sam_ma ma)
 {
     if (!sam_es_options_get(es, SAM_QUIET)) {
@@ -73,10 +74,10 @@ sam_error_segmentation_fault(sam_es *restrict es,
 		       SAM_IOS_ERR,
 		       "error: segmentation fault. attempt to access illegal "
 		       "memory at %s address %lu.\n",
-		       ma.stack? "stack": "heap",
-		       ma.stack?
-		       (unsigned long)ma.index.sa:
-		       (unsigned long)ma.index.ha);
+		       stack? "stack": "heap",
+		       stack?
+		       (unsigned long)ma.sa:
+		       (unsigned long)ma.ha);
 	sam_es_bt_set(es, true);
     }
     return SAM_ESEGFAULT;

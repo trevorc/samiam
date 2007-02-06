@@ -76,6 +76,7 @@ typedef enum {
 
 extern sam_error sam_error_optype	     (sam_es *restrict es);
 extern sam_error sam_error_segmentation_fault(sam_es *restrict es,
+					      bool stack,
 					      sam_ma  ma);
 extern sam_error sam_error_free		     (sam_es *restrict es,
 					      sam_ha  ha);

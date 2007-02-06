@@ -3,7 +3,7 @@
  *
  * part of samiam - the fast sam interpreter
  *
- * Copyright (c) 2006 Trevor Caira, Jimmy Hartzell
+ * Copyright (c) 2007 Trevor Caira, Jimmy Hartzell
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -34,9 +34,13 @@
 #define SCALE 100
 #define NUM 5000000
 
+extern void srand48(long int seedval);
+extern double drand48(void);
+extern long lrand48(void);
+
 static const char *ops[] = { "ADDF", "TIMESF", "SUBF", "DIVF" };
 
-int main() {
+int main(void) {
     unsigned long i;
     struct timeval tv;
 

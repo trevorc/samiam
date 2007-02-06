@@ -8,6 +8,7 @@
 #
 
 num = 32769
+#num = 840
 
 for i in range(num):
     print 'PUSHIMM 1'

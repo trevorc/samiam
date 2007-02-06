@@ -66,13 +66,9 @@ typedef struct {
 } sam_ml;
 
 /** A pointer to an element on the heap or the stack. */
-typedef struct {
-    bool stack; /**< Flag indicating whether the pointer is on the
-		     *	 stack or heap. */
-    union {
-	sam_ha ha;
-	sam_sa sa;
-    } index;	    /**< The value of the pointer. */
+typedef union {
+    sam_ha ha;
+    sam_sa sa;
 } sam_ma;
 
 typedef struct _sam_es sam_es;

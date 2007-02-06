@@ -169,17 +169,16 @@ static PyMethodDef module_methods[] = {
 PyMODINIT_FUNC
 initsam(void)
 {
-    PyObject *m;
-
     if (PyType_Ready(&ExecutionStateType) < 0) {
 	return;
     }
 
-    m = Py_InitModule3("sam", module_methods, "Libsam Python bindings.");
+    PyObject *register m =
+	Py_InitModule3("sam", module_methods, "Libsam Python bindings.");
 
     SamError = PyErr_NewException("sam.SamError", NULL, NULL);
     if (SamError != NULL) {
-        Py_INCREF(SamError);
+	Py_INCREF(SamError);
 	PyModule_AddObject(m, "SamError", SamError);
     }
 

@@ -72,11 +72,17 @@ typedef struct {
     sam_array a;
 } sam_heap;
 
+typedef struct _sam_es_change_list sam_es_change_list;
+
+struct _sam_es_change_list {
+    sam_es_change change;
+    sam_es_change_list *next;
+    sam_es_change_list *prev;
+};
+
 /** The parsed instructions and labels along with the current state
  *  of execution. */
 struct _sam_es {
-    volatile bool lock;	    /**< Is it unsafe to access or modify the
-			     *   execution state? */
     bool bt;		    /**< Is a stack trace is needed? */
     sam_string input;	    /**< The sam input file data. */
     sam_pa pc;		    /**< The index into sam_es# program
@@ -98,6 +104,8 @@ struct _sam_es {
     sam_hash_table labels;  /**< A shallow copy of the labels hash
 			     *   table allocated in main and initialized
 			     *   in sam_parse(). */
+    sam_es_change_list *first_change;
+    sam_es_change_list *last_change;
     sam_io_dispatcher io_dispatcher;
     sam_options options;
 #if defined(SAM_EXTENSIONS) && defined(HAVE_DLFCN_H)
@@ -191,6 +199,22 @@ sam_es_dlhandles_free(sam_array *restrict dlhandles)
     free(dlhandles->arr);
 }
 
+/* TODO: collapse changes */
+static void
+sam_es_change_register(sam_es *restrict es,
+		       const sam_es_change *restrict change)
+{
+    sam_es_change_list *new = sam_malloc(sizeof (sam_es_change_list));
+    new->change = *change;
+    new->next = NULL;
+    new->prev = es->last_change;
+
+    es->last_change = new;
+    if (es->first_change == NULL) {
+	es->first_change = new;
+    }
+}
+
 #if 0
 /*@only@*/ static int
 sam_asprintf(char **restrict p,
@@ -282,10 +306,8 @@ sam_es_string_get(/*@in@*/ sam_es *restrict es,
     *str = NULL;
     for (;; ++i, ++len) {
 	if (i == es->heap.a.len) {
-	    sam_ma ma;
-	    ma.stack = false;
-	    ma.index.ha = len;
-	    return sam_error_segmentation_fault(es, ma);
+	    sam_ma ma = {.ha = len};
+	    return sam_error_segmentation_fault(es, false, ma);
 	}
 	sam_ml *restrict m = sam_es_heap_get(es, i);
 	if(m == NULL || m->value.i == '\0') {
@@ -308,25 +330,34 @@ sam_es_string_get(/*@in@*/ sam_es *restrict es,
 /*@null@*/ inline sam_ml *
 sam_es_stack_pop(/*@in@*/ sam_es *restrict es)
 {
+    sam_es_change ch = {
+	.stack  = 1,
+	.remove = 1,
+	.ma.sa  = es->stack.len,
+    };
+    sam_es_change_register(es, &ch);
     return sam_array_rem(&es->stack);
 }
 
 bool
 sam_es_stack_push(/*@in@*/ sam_es *restrict es,
-		  /*@only@*/ /*@out@*/ sam_ml *m)
+		  /*@only@*/ /*@out@*/ sam_ml *ml)
 {
     if (es->stack.len == SAM_STACK_PTR_MAX) {
-	free(m);
+	free(ml);
 	return false;
     }
-    sam_array_ins(&es->stack, m);
-    return true;
-}
 
-inline static sam_ml *
-sam_es_stack_peek_bottom(const sam_es *restrict es)
-{
-    return sam_es_stack_get(es, 0);
+    sam_es_change ch = {
+	.stack = 1,
+	.add   = 1,
+	.ma.sa = es->stack.len,
+	.ml    = ml,
+    };
+    sam_es_change_register(es, &ch);
+
+    sam_array_ins(&es->stack, ml);
+    return true;
 }
 
 inline size_t
@@ -351,6 +382,14 @@ sam_es_stack_set(sam_es *restrict es,
 	free(ml);
 	return false;
     }
+
+    sam_es_change ch = {
+	.stack = 1,
+	.ma.sa = sa,
+	.ml    = ml,
+    };
+    sam_es_change_register(es, &ch);
+
     free(es->stack.arr[sa]);
     es->stack.arr[sa] = ml;
 
@@ -373,6 +412,14 @@ sam_es_heap_set(sam_es *restrict es,
 	free(ml);
 	return false;
     }
+
+    sam_es_change ch = {
+	.stack = 0,
+	.ma.ha = ha,
+	.ml    = ml,
+    };
+    sam_es_change_register(es, &ch);
+
     free(es->heap.a.arr[ha]);
     es->heap.a.arr[ha] = ml;
 
@@ -550,14 +597,6 @@ sam_es_heap_leak_check(const sam_es *restrict es,
     return *leak_size > 0;
 }
 
-/*
-const sam_io_funcs *
-sam_es_io_funcs(const sam_es *restrict es)
-{
-    return &es->io_funcs;
-}
-*/
-
 sam_io_vfprintf_func
 sam_es_io_func_vfprintf(const sam_es *restrict es)
 {
@@ -582,12 +621,6 @@ sam_es_io_func_bt(const sam_es *restrict es)
     return es->io_dispatcher == NULL? NULL: es->io_dispatcher(SAM_IO_BT).bt;
 }
 
-sam_options
-sam_es_options(const sam_es *restrict es)
-{
-    return es->options;
-}
-
 bool
 sam_es_options_get(const sam_es *restrict es, sam_options option)
 {
@@ -600,13 +633,38 @@ sam_es_input_get(sam_es *restrict es)
     return &es->input;
 }
 
+bool
+sam_es_change_get(sam_es *restrict es,
+		  sam_es_change *ch)
+{
+    if (es->first_change == NULL) {
+	return false;
+    }
+
+    if (ch != NULL) {
+	*ch = es->first_change->change;
+    }
+
+    sam_es_change_list *next = es->first_change->next;
+    free(es->first_change);
+
+    if (es->first_change == es->last_change) {
+	es->first_change = NULL;
+	es->last_change = NULL;
+    } else {
+	es->first_change = next;
+	es->first_change->prev = NULL;
+    }
+
+    return true;
+}
+
 /*@only@*/ sam_es *
 sam_es_new(sam_options options,
 	   /*@in@*/ sam_io_dispatcher io_dispatcher)
 {
     sam_es *restrict es = sam_malloc(sizeof (sam_es));
 
-    es->lock = false;
     es->bt = false;
     es->pc = 0;
     es->fbr = 0;
@@ -616,6 +674,8 @@ sam_es_new(sam_options options,
     sam_hash_table_init(&es->labels);
     es->heap.used_list = NULL;
     es->heap.free_list = NULL;
+    es->first_change = NULL;
+    es->last_change = NULL;
     es->io_dispatcher = io_dispatcher;
     es->options = options;
 #if defined(SAM_EXTENSIONS) && defined(HAVE_DLFCN_H)
@@ -643,6 +703,7 @@ sam_es_free(/*@in@*/ /*@only@*/ sam_es *restrict es)
     sam_es_heap_free(es);
     sam_array_free(&es->instructions);
     sam_hash_table_free(&es->labels);
+    while (sam_es_change_get(es, NULL));
 #if defined(SAM_EXTENSIONS) && defined(HAVE_DLFCN_H)
     sam_array_free(&es->dlhandles);
 #endif /* SAM_EXTENSIONS && HAVE_DLFCN_H */
@@ -686,9 +747,6 @@ sam_es_dlhandles_get(sam_es *restrict es,
 inline void
 sam_es_dlhandles_close(sam_es *restrict es)
 {
-    /* Not released. */
-    es->lock = true;
-
     for (size_t i = 0; i < es->dlhandles.len; ++i) {
 	dlclose(es->dlhandles.arr[i]);
     }

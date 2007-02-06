@@ -10,9 +10,7 @@
 sam_error
 me_in_the_morning(sam_es *restrict es)
 {
-    FILE *fh;
-
-    fh = fopen(TEMP, "w");
+    FILE *restrict fh = fopen(TEMP, "w");
     fputs("PUSHIMM 123 STOP\n", fh);
     fclose(fh);
 
