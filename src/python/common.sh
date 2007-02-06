@@ -17,7 +17,7 @@ else
     samfile=$1
 fi
 
-function sam_so_err {
+sam_so_err() {
     echo "couldn't find sam.so."
     echo "please run ./compile.sh"
     exit 1
