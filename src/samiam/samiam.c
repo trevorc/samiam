@@ -4,7 +4,7 @@
  *
  * part of samiam - the fast sam interpreter
  *
- * Copyright (c) 2006 Trevor Caira, Jimmy Hartzell
+ * Copyright (c) 2007 Trevor Caira, Jimmy Hartzell
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -42,5 +42,5 @@ main(int argc,
     char *file = NULL;
 
     return samiam_parse_options(argc, argv, &options, &file)?
-	sam_main(options, file, NULL): -1;
+	sam_main(options, file, NULL): SAM_USAGE;
 }

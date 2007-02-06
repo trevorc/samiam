@@ -3,7 +3,7 @@
  *
  * part of samiam - the fast sam interpreter
  *
- * Copyright (c) 2006 Trevor Caira, Jimmy Hartzell
+ * Copyright (c) 2007 Trevor Caira, Jimmy Hartzell
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -35,10 +35,15 @@
 #include <libsam/array.h>
 #include <libsam/hash_table.h>
 #include <libsam/es.h>
+#include <libsam/string.h>
 #include <libsam/util.h>
 
+#if defined(HAVE_MMAN_H)
+# include <sys/mman.h>
+#endif
+
 #if defined(HAVE_DLFCN_H)
-#include <dlfcn.h>
+# include <dlfcn.h>
 #endif /* HAVE_DLFCN_H */
 
 #if defined(SAM_EXTENSIONS) && defined(HAVE_DLFCN_H)
@@ -73,6 +78,7 @@ struct _sam_es {
     volatile bool lock;	    /**< Is it unsafe to access or modify the
 			     *   execution state? */
     bool bt;		    /**< Is a stack trace is needed? */
+    sam_string input;	    /**< The sam input file data. */
     sam_pa pc;		    /**< The index into sam_es# program
 			     *   pointing to the current instruction,
 			     *   aka the program counter. Incremented by
@@ -92,8 +98,8 @@ struct _sam_es {
     sam_hash_table labels;  /**< A shallow copy of the labels hash
 			     *   table allocated in main and initialized
 			     *   in sam_parse(). */
-    sam_io_funcs io_funcs;
-    sam_options  options;
+    sam_io_dispatcher io_dispatcher;
+    sam_options options;
 #if defined(SAM_EXTENSIONS) && defined(HAVE_DLFCN_H)
     sam_array dlhandles;    /**< Handles returned from dlopen(). */
 #endif /* SAM_EXTENSIONS && HAVE_DLFCN_H */
@@ -260,6 +266,12 @@ sam_es_fbr_set(sam_es *restrict es,
     es->fbr = fbr;
 }
 
+inline size_t
+sam_es_sp_get(sam_es *restrict es)
+{
+    return es->stack.len;
+}
+
 sam_error
 sam_es_string_get(/*@in@*/ sam_es *restrict es,
 		  /*@out@*/ char **restrict str,
@@ -383,6 +395,15 @@ sam_es_labels_get(/*@in@*/ sam_es *restrict es,
     return sam_hash_table_get(&es->labels, name, pa);
 }
 
+#if 0
+inline const char *
+sam_es_labels_get_by_pa(sam_es *restrict es,
+			sam_pa pa)
+{
+    ;
+}
+#endif
+
 inline void
 sam_es_instructions_ins(sam_es *restrict es,
 			sam_instruction *restrict i)
@@ -441,7 +462,7 @@ sam_es_heap_alloc(/*@in@*/ sam_es *restrict es,
 	    size_t start = es->heap.a.len;
 
 	    for (size_t i = start; i < start + size; ++i) {
-		sam_ml_value v = { 0 };
+		sam_ml_value v = { .i = 0 };
 		sam_array_ins(&es->heap.a,
 			      sam_ml_new(v, SAM_ML_TYPE_NONE));
 	    }
@@ -529,35 +550,36 @@ sam_es_heap_leak_check(const sam_es *restrict es,
     return *leak_size > 0;
 }
 
-
+/*
 const sam_io_funcs *
 sam_es_io_funcs(const sam_es *restrict es)
 {
     return &es->io_funcs;
 }
+*/
 
 sam_io_vfprintf_func
-sam_es_io_funcs_vfprintf(const sam_es *restrict es)
+sam_es_io_func_vfprintf(const sam_es *restrict es)
 {
-    return es->io_funcs.vfprintf;
+    return es->io_dispatcher == NULL? NULL: es->io_dispatcher(SAM_IO_VFPRINTF).vfprintf;
 }
 
 sam_io_vfscanf_func
-sam_es_io_funcs_vfscanf(const sam_es *restrict es)
+sam_es_io_func_vfscanf(const sam_es *restrict es)
 {
-    return es->io_funcs.vfscanf;
+    return es->io_dispatcher == NULL? NULL: es->io_dispatcher(SAM_IO_VFSCANF).vfscanf;
 }
 
 sam_io_afgets_func
-sam_es_io_funcs_afgets(const sam_es *restrict es)
+sam_es_io_func_afgets(const sam_es *restrict es)
 {
-    return es->io_funcs.afgets;
+    return es->io_dispatcher == NULL? NULL: es->io_dispatcher(SAM_IO_AFGETS).afgets;
 }
 
 sam_io_bt_func
-sam_es_io_funcs_bt(const sam_es *restrict es)
+sam_es_io_func_bt(const sam_es *restrict es)
 {
-    return es->io_funcs.bt;
+    return es->io_dispatcher == NULL? NULL: es->io_dispatcher(SAM_IO_BT).bt;
 }
 
 sam_options
@@ -572,12 +594,17 @@ sam_es_options_get(const sam_es *restrict es, sam_options option)
     return (~es->options & option) == 0;
 }
 
+sam_string *
+sam_es_input_get(sam_es *restrict es)
+{
+    return &es->input;
+}
+
 /*@only@*/ sam_es *
 sam_es_new(sam_options options,
-	   /*@in@*/ const sam_io_funcs *restrict io_funcs)
+	   /*@in@*/ sam_io_dispatcher io_dispatcher)
 {
     sam_es *restrict es = sam_malloc(sizeof (sam_es));
-    sam_io_funcs io_funcs_default = { NULL, NULL, NULL, NULL };
 
     es->lock = false;
     es->bt = false;
@@ -587,7 +614,9 @@ sam_es_new(sam_options options,
     sam_array_init(&es->heap.a);
     sam_array_init(&es->instructions);
     sam_hash_table_init(&es->labels);
-    es->io_funcs = io_funcs == NULL? io_funcs_default: *io_funcs;
+    es->heap.used_list = NULL;
+    es->heap.free_list = NULL;
+    es->io_dispatcher = io_dispatcher;
     es->options = options;
 #if defined(SAM_EXTENSIONS) && defined(HAVE_DLFCN_H)
     sam_array_init(&es->dlhandles);
@@ -599,6 +628,15 @@ sam_es_new(sam_options options,
 void
 sam_es_free(/*@in@*/ /*@only@*/ sam_es *restrict es)
 {
+#if defined(HAVE_MMAN_H)
+    if (es->input.mmapped) {
+	if (munmap(es->input.data, es->input.len) < 0) {
+	    perror("munmap");
+	}
+    } else
+#endif /* HAVE_MMAN_H */
+    sam_string_free(&es->input);
+
     sam_array_free(&es->stack);
     sam_es_heap_free(es);
     sam_array_free(&es->instructions);

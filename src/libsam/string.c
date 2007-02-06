@@ -3,7 +3,7 @@
  *
  * part of samiam - the fast sam interpreter
  *
- * Copyright (c) 2006 Trevor Caira, Jimmy Hartzell
+ * Copyright (c) 2007 Trevor Caira, Jimmy Hartzell
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -47,6 +47,10 @@ sam_string_init(/*@out@*/ sam_string *s)
     s->data = sam_malloc(SAM_INIT_ALLOC);
     s->alloc = SAM_INIT_ALLOC;
     s->len = 0;
+
+#if defined(HAVE_MMAN_H)
+    s->mmapped = false;
+#endif /* HAVE_MMAN_H */
 }
 
 static void

@@ -1,10 +1,9 @@
 /*
- * sam_parse.c      read and parse sam from stdin or a file
  * $Id$
  *
  * part of samiam - the fast sam interpreter
  *
- * Copyright (c) 2006 Trevor Caira, Jimmy Hartzell, Daniel Perelman
+ * Copyright (c) 2007 Trevor Caira, Jimmy Hartzell, Daniel Perelman
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -38,8 +37,9 @@
 #include <libsam/es.h>
 #include <libsam/hash_table.h>
 #include <libsam/string.h>
-#include <libsam/opcode.h>
 #include <libsam/main.h>
+#include <libsam/opcode.h>
+#include <libsam/parse.h>
 
 #if defined(HAVE_MMAN_H)
 # include <sys/stat.h>
@@ -50,8 +50,6 @@
 #if defined(HAVE_UNISTD_H)
 # include <unistd.h>
 #endif /* HAVE_MMAN_H */
-
-#include "sam_parse.h"
 
 #if defined(isspace)
 # undef isspace
@@ -491,6 +489,7 @@ sam_input_read(/*@observer@*/ const char *restrict path,
 	return NULL;
     }
     s->alloc = s->len;
+    s->mmapped = true;
 
     return s->data;
 }
@@ -520,32 +519,16 @@ sam_input_read(const char *restrict path,
 
 #endif /* HAVE_MMAN_H */
 
-static inline void
-sam_input_free(sam_string *restrict s)
-{
-#ifdef HAVE_MMAN_H
-    if (munmap(s->data, s->len) < 0) {
-	perror("munmap");
-    }
-#else /* HAVE_MMAN_H */
-    sam_string_free(s);
-#endif /* HAVE_MMAN_H */
-}
-
 /*@null@*/ bool
 sam_parse(sam_es *restrict es,
-	  sam_string *restrict string,
-	  sam_input_free_func *restrict free_func,
 	  const char *restrict file)
 {
     char *input;
 
     if (file == NULL) {
-	input = sam_string_read(stdin, string);
-	*free_func = sam_string_free;
+	input = sam_string_read(stdin, sam_es_input_get(es));
     } else {
-	input = sam_input_read(file, string);
-	*free_func = sam_input_free;
+	input = sam_input_read(file, sam_es_input_get(es));
     }
 
     if (input == NULL || *input == '\0') {

@@ -1,0 +1,5 @@
+#!/bin/sh
+
+. common.sh
+
+eval $python_cmd

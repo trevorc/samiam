@@ -3,7 +3,7 @@
  *
  * part of samiam - the fast sam interpreter
  *
- * Copyright (c) 2006 Trevor Caira, Jimmy Hartzell
+ * Copyright (c) 2007 Trevor Caira, Jimmy Hartzell
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -62,6 +62,11 @@ sam_array_ins(/*@in@*/	 sam_array *restrict a,
 /*@null@*/ inline void *
 sam_array_rem(/*@in@*/ sam_array *restrict a)
 {
+    if (a->len < a->alloc / 4) {
+	a->alloc /= 2;
+	a->arr = sam_realloc(a->arr, sizeof (*a->arr) * a->alloc);
+    }
+
     return a->len == 0? NULL: a->arr[--a->len];
 }
 

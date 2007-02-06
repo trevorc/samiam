@@ -3,7 +3,7 @@
  *
  * part of samiam - the fast sam interpreter
  *
- * Copyright (c) 2006 Trevor Caira, Jimmy Hartzell
+ * Copyright (c) 2007 Trevor Caira, Jimmy Hartzell
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -116,7 +116,7 @@ sam_sp_shift(sam_es *restrict es,
 	free(m);
     }
     while (sp > sam_es_stack_len(es)) {
-	if (!sam_es_stack_push(es, sam_ml_new((sam_ml_value){0},
+	if (!sam_es_stack_push(es, sam_ml_new((sam_ml_value){.i = 0},
 					      SAM_ML_TYPE_NONE))) {
 	    return sam_error_stack_overflow(es);
 	}
@@ -546,7 +546,7 @@ sam_es_read(/*@in@*/ sam_es *restrict es,
 	    const char *restrict fmt,
 	    sam_ml_type t)
 {
-    sam_ml_value v = {0};
+    sam_ml_value v = {.i = 0};
 
     return (t == SAM_ML_TYPE_FLOAT?
 	sam_io_scanf(es, fmt, &v.f):
@@ -643,26 +643,23 @@ sam_op_pushimm(/*@in@*/ sam_es *restrict es)
 static sam_error
 sam_op_pushimmf(/*@in@*/ sam_es *restrict es)
 {
-    sam_instruction	*cur = sam_es_instructions_cur(es);
-    sam_ml *m;
+    sam_instruction *restrict cur = sam_es_instructions_cur(es);
     sam_ml_value v;
 
     if (cur->optype != SAM_OP_TYPE_FLOAT) {
 	return sam_error_optype(es);
     }
     v.f = cur->operand.f;
-    m = sam_ml_new(v, SAM_ML_TYPE_FLOAT);
-    if (!sam_es_stack_push(es, m)) {
-	return sam_error_stack_overflow(es);
-    }
 
-    return SAM_OK;
+    sam_ml *restrict m = sam_ml_new(v, SAM_ML_TYPE_FLOAT);
+    return sam_es_stack_push(es, m)?
+	SAM_OK: sam_error_stack_overflow(es);
 }
 
 static sam_error
 sam_op_pushimmch(/*@in@*/ sam_es *restrict es)
 {
-    sam_instruction	*cur = sam_es_instructions_cur(es);
+    sam_instruction *restrict cur = sam_es_instructions_cur(es);
     sam_ml_value v;
 
     if (cur->optype != SAM_OP_TYPE_CHAR) {
@@ -1646,6 +1643,7 @@ sam_op_call(__attribute__((unused)) sam_es *restrict es)
 # endif /* HAVE_DLFCN_H */
 #endif /* SAM_EXTENSIONS */
 
+#if 0
 static sam_error
 sam_op_import(sam_es *restrict es)
 {
@@ -1654,9 +1652,9 @@ sam_op_import(sam_es *restrict es)
 	return sam_error_optype(es);
     }
     return sam_es_stack_push(es, sam_ml_new((sam_ml_value) {
-				    sam_main(sam_es_options(es),
-					     cur->operand.s,
-					     sam_es_io_funcs(es))
+				    .i = sam_main(sam_es_options(es),
+						  cur->operand.s,
+						  sam_es_io_funcs(es))
 				    }, SAM_ML_TYPE_INT))?
 	SAM_OK: sam_error_stack_overflow(es);
 }
@@ -1666,6 +1664,7 @@ sam_op_export(__attribute__((unused)) sam_es *restrict es)
 {
     return SAM_OK;
 }
+#endif
 
 static sam_error
 sam_op_patoi(/*@in@*/ sam_es *restrict es)
@@ -1685,109 +1684,115 @@ sam_op_patoi(/*@in@*/ sam_es *restrict es)
     return sam_es_stack_push(es, m)? SAM_OK: sam_error_stack_overflow(es);
 }
 
-static const sam_instruction sam_instructions[] = {
-    { "FTOI",		SAM_OP_TYPE_NONE,  {0}, sam_op_ftoi	   },
-    { "FTOIR",		SAM_OP_TYPE_NONE,  {0}, sam_op_ftoir	   },
-    { "ITOF",		SAM_OP_TYPE_NONE,  {0}, sam_op_itof	   },
-    { "PUSHIMM",	SAM_OP_TYPE_INT,   {0}, sam_op_pushimm	   },
-    { "PUSHIMMF",	SAM_OP_TYPE_FLOAT, {0}, sam_op_pushimmf	   },
-    { "PUSHIMMCH",	SAM_OP_TYPE_CHAR,  {0}, sam_op_pushimmch   },
-    { "PUSHIMMMA",	SAM_OP_TYPE_INT,   {0}, sam_op_pushimmma   },
+static const struct {
+    const char *name;
+    sam_op_type optype;
+    sam_handler handler;
+} sam_opcodes[] = {
+    { "FTOI",		SAM_OP_TYPE_NONE,  sam_op_ftoi		},
+    { "FTOIR",		SAM_OP_TYPE_NONE,  sam_op_ftoir		},
+    { "ITOF",		SAM_OP_TYPE_NONE,  sam_op_itof		},
+    { "PUSHIMM",	SAM_OP_TYPE_INT,   sam_op_pushimm	},
+    { "PUSHIMMF",	SAM_OP_TYPE_FLOAT, sam_op_pushimmf	},
+    { "PUSHIMMCH",	SAM_OP_TYPE_CHAR,  sam_op_pushimmch	},
+    { "PUSHIMMMA",	SAM_OP_TYPE_INT,   sam_op_pushimmma	},
     { "PUSHIMMPA",	SAM_OP_TYPE_LABEL |
-			SAM_OP_TYPE_INT,   {0}, sam_op_pushimmpa   },
-    { "PUSHIMMSTR",	SAM_OP_TYPE_STR,   {0}, sam_op_pushimmstr  },
-    { "PUSHSP",		SAM_OP_TYPE_NONE,  {0}, sam_op_pushsp	   },
-    { "PUSHFBR",	SAM_OP_TYPE_NONE,  {0}, sam_op_pushfbr	   },
-    { "POPSP",		SAM_OP_TYPE_NONE,  {0}, sam_op_popsp	   },
-    { "POPFBR",		SAM_OP_TYPE_NONE,  {0}, sam_op_popfbr	   },
-    { "DUP",		SAM_OP_TYPE_NONE,  {0}, sam_op_dup	   },
-    { "SWAP",		SAM_OP_TYPE_NONE,  {0}, sam_op_swap	   },
-    { "ADDSP",		SAM_OP_TYPE_INT,   {0}, sam_op_addsp	   },
-    { "MALLOC",		SAM_OP_TYPE_NONE,  {0}, sam_op_malloc	   },
-    { "FREE",		SAM_OP_TYPE_NONE,  {0}, sam_op_free	   },
-    { "PUSHIND",	SAM_OP_TYPE_NONE,  {0}, sam_op_pushind	   },
-    { "STOREIND",	SAM_OP_TYPE_NONE,  {0}, sam_op_storeind	   },
-    { "PUSHABS",	SAM_OP_TYPE_INT,   {0}, sam_op_pushabs	   },
-    { "STOREABS",	SAM_OP_TYPE_INT,   {0}, sam_op_storeabs	   },
-    { "PUSHOFF",	SAM_OP_TYPE_INT,   {0}, sam_op_pushoff	   },
-    { "STOREOFF",	SAM_OP_TYPE_INT,   {0}, sam_op_storeoff	   },
-    { "ADD",		SAM_OP_TYPE_NONE,  {0}, sam_op_add	   },
-    { "SUB",		SAM_OP_TYPE_NONE,  {0}, sam_op_sub	   },
-    { "TIMES",		SAM_OP_TYPE_NONE,  {0}, sam_op_times	   },
-    { "DIV",		SAM_OP_TYPE_NONE,  {0}, sam_op_div	   },
-    { "MOD",		SAM_OP_TYPE_NONE,  {0}, sam_op_mod	   },
-    { "ADDF",		SAM_OP_TYPE_NONE,  {0}, sam_op_addf	   },
-    { "SUBF",		SAM_OP_TYPE_NONE,  {0}, sam_op_subf	   },
-    { "TIMESF",		SAM_OP_TYPE_NONE,  {0}, sam_op_timesf	   },
-    { "DIVF",		SAM_OP_TYPE_NONE,  {0}, sam_op_divf	   },
-    { "LSHIFT",		SAM_OP_TYPE_INT,   {0}, sam_op_lshift	   },
-    { "LSHIFTIND",	SAM_OP_TYPE_NONE,  {0}, sam_op_lshiftind   },
-    { "RSHIFT",		SAM_OP_TYPE_INT,   {0}, sam_op_rshift	   },
-    { "RSHIFTIND",	SAM_OP_TYPE_NONE,  {0}, sam_op_rshiftind   },
+			SAM_OP_TYPE_INT,   sam_op_pushimmpa	},
+    { "PUSHIMMSTR",	SAM_OP_TYPE_STR,   sam_op_pushimmstr	},
+    { "PUSHSP",		SAM_OP_TYPE_NONE,  sam_op_pushsp	},
+    { "PUSHFBR",	SAM_OP_TYPE_NONE,  sam_op_pushfbr	},
+    { "POPSP",		SAM_OP_TYPE_NONE,  sam_op_popsp		},
+    { "POPFBR",		SAM_OP_TYPE_NONE,  sam_op_popfbr	},
+    { "DUP",		SAM_OP_TYPE_NONE,  sam_op_dup		},
+    { "SWAP",		SAM_OP_TYPE_NONE,  sam_op_swap		},
+    { "ADDSP",		SAM_OP_TYPE_INT,   sam_op_addsp		},
+    { "MALLOC",		SAM_OP_TYPE_NONE,  sam_op_malloc	},
+    { "FREE",		SAM_OP_TYPE_NONE,  sam_op_free		},
+    { "PUSHIND",	SAM_OP_TYPE_NONE,  sam_op_pushind	},
+    { "STOREIND",	SAM_OP_TYPE_NONE,  sam_op_storeind	},
+    { "PUSHABS",	SAM_OP_TYPE_INT,   sam_op_pushabs	},
+    { "STOREABS",	SAM_OP_TYPE_INT,   sam_op_storeabs	},
+    { "PUSHOFF",	SAM_OP_TYPE_INT,   sam_op_pushoff	},
+    { "STOREOFF",	SAM_OP_TYPE_INT,   sam_op_storeoff	},
+    { "ADD",		SAM_OP_TYPE_NONE,  sam_op_add		},
+    { "SUB",		SAM_OP_TYPE_NONE,  sam_op_sub		},
+    { "TIMES",		SAM_OP_TYPE_NONE,  sam_op_times		},
+    { "DIV",		SAM_OP_TYPE_NONE,  sam_op_div		},
+    { "MOD",		SAM_OP_TYPE_NONE,  sam_op_mod		},
+    { "ADDF",		SAM_OP_TYPE_NONE,  sam_op_addf		},
+    { "SUBF",		SAM_OP_TYPE_NONE,  sam_op_subf		},
+    { "TIMESF",		SAM_OP_TYPE_NONE,  sam_op_timesf	},
+    { "DIVF",		SAM_OP_TYPE_NONE,  sam_op_divf		},
+    { "LSHIFT",		SAM_OP_TYPE_INT,   sam_op_lshift	},
+    { "LSHIFTIND",	SAM_OP_TYPE_NONE,  sam_op_lshiftind	},
+    { "RSHIFT",		SAM_OP_TYPE_INT,   sam_op_rshift	},
+    { "RSHIFTIND",	SAM_OP_TYPE_NONE,  sam_op_rshiftind	},
 #if defined(SAM_EXTENSIONS)
-    { "LRSHIFT",	SAM_OP_TYPE_INT,   {0}, sam_op_lrshift	   },
-    { "LRSHIFTIND",	SAM_OP_TYPE_NONE,  {0}, sam_op_lrshiftind  },
+    { "LRSHIFT",	SAM_OP_TYPE_INT,   sam_op_lrshift	},
+    { "LRSHIFTIND",	SAM_OP_TYPE_NONE,  sam_op_lrshiftind	},
 #endif
-    { "AND",		SAM_OP_TYPE_NONE,  {0}, sam_op_and	   },
-    { "OR",		SAM_OP_TYPE_NONE,  {0}, sam_op_or	   },
-    { "NAND",		SAM_OP_TYPE_NONE,  {0}, sam_op_nand	   },
-    { "NOR",		SAM_OP_TYPE_NONE,  {0}, sam_op_nor	   },
-    { "XOR",		SAM_OP_TYPE_NONE,  {0}, sam_op_xor	   },
-    { "NOT",		SAM_OP_TYPE_NONE,  {0}, sam_op_not	   },
-    { "BITAND",		SAM_OP_TYPE_NONE,  {0}, sam_op_bitand	   },
-    { "BITOR",		SAM_OP_TYPE_NONE,  {0}, sam_op_bitor	   },
-    { "BITNAND",	SAM_OP_TYPE_NONE,  {0}, sam_op_bitnand	   },
-    { "BITNOR",		SAM_OP_TYPE_NONE,  {0}, sam_op_bitnor	   },
-    { "BITXOR",		SAM_OP_TYPE_NONE,  {0}, sam_op_bitxor	   },
-    { "BITNOT",		SAM_OP_TYPE_NONE,  {0}, sam_op_bitnot	   },
-    { "CMP",		SAM_OP_TYPE_NONE,  {0}, sam_op_cmp	   },
-    { "CMPF",		SAM_OP_TYPE_NONE,  {0}, sam_op_cmpf	   },
-    { "GREATER",	SAM_OP_TYPE_NONE,  {0}, sam_op_greater	   },
-    { "LESS",		SAM_OP_TYPE_NONE,  {0}, sam_op_less	   },
-    { "EQUAL",		SAM_OP_TYPE_NONE,  {0}, sam_op_equal	   },
-    { "ISNIL",		SAM_OP_TYPE_NONE,  {0}, sam_op_isnil	   },
-    { "ISPOS",		SAM_OP_TYPE_NONE,  {0}, sam_op_ispos	   },
-    { "ISNEG",		SAM_OP_TYPE_NONE,  {0}, sam_op_isneg	   },
+    { "AND",		SAM_OP_TYPE_NONE,  sam_op_and		},
+    { "OR",		SAM_OP_TYPE_NONE,  sam_op_or		},
+    { "NAND",		SAM_OP_TYPE_NONE,  sam_op_nand		},
+    { "NOR",		SAM_OP_TYPE_NONE,  sam_op_nor		},
+    { "XOR",		SAM_OP_TYPE_NONE,  sam_op_xor		},
+    { "NOT",		SAM_OP_TYPE_NONE,  sam_op_not		},
+    { "BITAND",		SAM_OP_TYPE_NONE,  sam_op_bitand	},
+    { "BITOR",		SAM_OP_TYPE_NONE,  sam_op_bitor		},
+    { "BITNAND",	SAM_OP_TYPE_NONE,  sam_op_bitnand	},
+    { "BITNOR",		SAM_OP_TYPE_NONE,  sam_op_bitnor	},
+    { "BITXOR",		SAM_OP_TYPE_NONE,  sam_op_bitxor	},
+    { "BITNOT",		SAM_OP_TYPE_NONE,  sam_op_bitnot	},
+    { "CMP",		SAM_OP_TYPE_NONE,  sam_op_cmp		},
+    { "CMPF",		SAM_OP_TYPE_NONE,  sam_op_cmpf		},
+    { "GREATER",	SAM_OP_TYPE_NONE,  sam_op_greater	},
+    { "LESS",		SAM_OP_TYPE_NONE,  sam_op_less		},
+    { "EQUAL",		SAM_OP_TYPE_NONE,  sam_op_equal		},
+    { "ISNIL",		SAM_OP_TYPE_NONE,  sam_op_isnil		},
+    { "ISPOS",		SAM_OP_TYPE_NONE,  sam_op_ispos		},
+    { "ISNEG",		SAM_OP_TYPE_NONE,  sam_op_isneg		},
     { "JUMP",		SAM_OP_TYPE_LABEL |
-			SAM_OP_TYPE_INT,   {0}, sam_op_jump	   },
+			SAM_OP_TYPE_INT,   sam_op_jump		},
     { "JUMPC",		SAM_OP_TYPE_LABEL |
-			SAM_OP_TYPE_INT,   {0}, sam_op_jumpc	   },
-    { "JUMPIND",	SAM_OP_TYPE_NONE,  {0}, sam_op_jumpind	   },
-    { "RST",		SAM_OP_TYPE_NONE,  {0}, sam_op_rst	   },
+			SAM_OP_TYPE_INT,   sam_op_jumpc		},
+    { "JUMPIND",	SAM_OP_TYPE_NONE,  sam_op_jumpind	},
+    { "RST",		SAM_OP_TYPE_NONE,  sam_op_rst		},
     { "JSR",		SAM_OP_TYPE_LABEL |
-			SAM_OP_TYPE_INT,   {0}, sam_op_jsr	   },
-    { "JSRIND",		SAM_OP_TYPE_NONE,  {0}, sam_op_jsrind	   },
-    { "SKIP",		SAM_OP_TYPE_NONE,  {0}, sam_op_skip	   },
-    { "LINK",		SAM_OP_TYPE_NONE,  {0}, sam_op_link	   },
-    { "UNLINK",		SAM_OP_TYPE_NONE,  {0}, sam_op_unlink	   },
-    { "READ",		SAM_OP_TYPE_NONE,  {0}, sam_op_read	   },
-    { "READF",		SAM_OP_TYPE_NONE,  {0}, sam_op_readf	   },
-    { "READCH",		SAM_OP_TYPE_NONE,  {0}, sam_op_readch	   },
-    { "READSTR",	SAM_OP_TYPE_NONE,  {0}, sam_op_readstr	   },
-    { "WRITE",		SAM_OP_TYPE_NONE,  {0}, sam_op_write	   },
-    { "WRITEF",		SAM_OP_TYPE_NONE,  {0}, sam_op_writef	   },
-    { "WRITECH",	SAM_OP_TYPE_NONE,  {0}, sam_op_writech	   },
-    { "WRITESTR",	SAM_OP_TYPE_NONE,  {0}, sam_op_writestr    },
-    { "STOP",		SAM_OP_TYPE_NONE,  {0}, sam_op_stop	   },
+			SAM_OP_TYPE_INT,   sam_op_jsr		},
+    { "JSRIND",		SAM_OP_TYPE_NONE,  sam_op_jsrind	},
+    { "SKIP",		SAM_OP_TYPE_NONE,  sam_op_skip		},
+    { "LINK",		SAM_OP_TYPE_NONE,  sam_op_link		},
+    { "UNLINK",		SAM_OP_TYPE_NONE,  sam_op_unlink	},
+    { "READ",		SAM_OP_TYPE_NONE,  sam_op_read		},
+    { "READF",		SAM_OP_TYPE_NONE,  sam_op_readf		},
+    { "READCH",		SAM_OP_TYPE_NONE,  sam_op_readch	},
+    { "READSTR",	SAM_OP_TYPE_NONE,  sam_op_readstr	},
+    { "WRITE",		SAM_OP_TYPE_NONE,  sam_op_write		},
+    { "WRITEF",		SAM_OP_TYPE_NONE,  sam_op_writef	},
+    { "WRITECH",	SAM_OP_TYPE_NONE,  sam_op_writech	},
+    { "WRITESTR",	SAM_OP_TYPE_NONE,  sam_op_writestr	},
+    { "STOP",		SAM_OP_TYPE_NONE,  sam_op_stop		},
 #if defined(SAM_EXTENSIONS)
-    { "patoi",		SAM_OP_TYPE_NONE,  {0}, sam_op_patoi	   },
-    { "load",		SAM_OP_TYPE_LABEL, {0}, sam_op_load	   },
-    { "call",		SAM_OP_TYPE_LABEL, {0}, sam_op_call	   },
-    { "import",		SAM_OP_TYPE_LABEL, {0}, sam_op_import	   },
-    { "export",		SAM_OP_TYPE_LABEL, {0}, sam_op_export	   },
+    { "patoi",		SAM_OP_TYPE_NONE,  sam_op_patoi		},
+    { "load",		SAM_OP_TYPE_LABEL, sam_op_load		},
+    { "call",		SAM_OP_TYPE_LABEL, sam_op_call		},
 #endif
-    { "",		SAM_OP_TYPE_NONE,  {0}, NULL		   },
+#if 0
+    { "import",		SAM_OP_TYPE_LABEL, sam_op_import	},
+    { "export",		SAM_OP_TYPE_LABEL, sam_op_export	},
+#endif
+    { "",		SAM_OP_TYPE_NONE,  NULL			},
 };
 
 sam_instruction *
 sam_opcode_get(/*@in@*/ /*@dependent@*/ const char *name)
 {
-    for (size_t j = 0; sam_instructions[j].handler != NULL; ++j) {
-	if (strcmp(name, sam_instructions[j].name) == 0) {
+    for (size_t j = 0; sam_opcodes[j].handler != NULL; ++j) {
+	if (strcmp(name, sam_opcodes[j].name) == 0) {
 	    sam_instruction *restrict i = sam_malloc(sizeof (sam_instruction));
 	    i->name = name;
-	    i->optype = sam_instructions[j].optype;
-	    i->handler = sam_instructions[j].handler;
+	    i->optype = sam_opcodes[j].optype;
+	    i->handler = sam_opcodes[j].handler;
 	    i->operand.i = 0;
 	    return i;
 	}

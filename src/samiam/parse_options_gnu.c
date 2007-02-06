@@ -3,7 +3,7 @@
  *
  * part of samiam - the fast sam interpreter
  *
- * Copyright (c) 2006 Trevor Caira, Jimmy Hartzell
+ * Copyright (c) 2007 Trevor Caira, Jimmy Hartzell
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -40,7 +40,7 @@ static int
 samiam_copyright(void)
 {
     puts("samiam 0.1\n"
-	 "Copyright (c) 2006 Trevor Caira, Jimmy Hartzell\n");
+	 "Copyright (c) 2007 Trevor Caira, Jimmy Hartzell\n");
 
     puts("Permission is hereby granted, free of charge, to any person "
 	 "obtaining\na copy of this software and associated documentation "

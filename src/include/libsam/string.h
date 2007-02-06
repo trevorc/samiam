@@ -3,7 +3,7 @@
  *
  * part of samiam - the fast sam interpreter
  *
- * Copyright (c) 2006 Trevor Caira, Jimmy Hartzell, Daniel Perelman
+ * Copyright (c) 2007 Trevor Caira, Jimmy Hartzell, Daniel Perelman
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -30,6 +30,8 @@
 #ifndef LIBSAM_STRING_H
 #define LIBSAM_STRING_H
 
+#include <stdbool.h>
+
 /** Safe, dynamically allocating string type. */
 typedef struct {
     size_t len;	    /**< Number of bytes allocated for the string (not
@@ -38,7 +40,10 @@ typedef struct {
     size_t alloc;   /**< Number of bytes allocated for the string
 		     *	 including for the trailing NUL */
     char *data;	    /**< The C string character array. */
-} sam_string;
+#if defined(HAVE_MMAN_H)
+    bool mmapped;   /**< Is this string allocated with an mmap? */
+#endif
+} __attribute__((packed)) sam_string;
 
 extern void sam_string_init(/*@out@*/ sam_string *restrict s);
 extern void sam_string_free(sam_string *restrict s);

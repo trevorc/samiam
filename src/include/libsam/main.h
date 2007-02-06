@@ -3,7 +3,7 @@
  *
  * part of samiam - the fast sam interpreter
  *
- * Copyright (c) 2006 Trevor Caira, Jimmy Hartzell, Daniel Perelman
+ * Copyright (c) 2007 Trevor Caira, Jimmy Hartzell, Daniel Perelman
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -68,6 +68,6 @@ typedef enum {
  */
 extern int sam_main(sam_options options,
 		    /*@null@*/ const char *restrict file,
-		    /*@null@*/ const sam_io_funcs *restrict io_funcs);
+		    /*@null@*/ sam_io_dispatcher io_dispatcher);
 
 #endif /* LIBSAM_MAIN_H */

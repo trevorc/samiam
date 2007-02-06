@@ -4,7 +4,7 @@
  *
  * part of samiam - the fast sam interpreter
  *
- * Copyright (c) 2006 Trevor Caira, Jimmy Hartzell
+ * Copyright (c) 2007 Trevor Caira, Jimmy Hartzell
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -37,9 +37,9 @@
 #include <libsam/string.h>
 #include <libsam/array.h>
 #include <libsam/hash_table.h>
+#include <libsam/parse.h>
 
 #include "sam_execute.h"
-#include "sam_parse.h"
 
 #if defined(HAVE_LOCALE_H)
 # include <locale.h>
@@ -48,9 +48,9 @@
 int
 sam_main(sam_options options,
 	 /*@null@*/ const char *restrict file,
-	 /*@null@*/ const sam_io_funcs *restrict io_funcs)
+	 /*@null@*/ sam_io_dispatcher io_dispatcher)
 {
-    sam_es *restrict es = sam_es_new(options, io_funcs);
+    sam_es *restrict es = sam_es_new(options, io_dispatcher);
 
 #ifdef HAVE_LOCALE_H
     if (setlocale(LC_ALL, "") == NULL ||
@@ -59,16 +59,13 @@ sam_main(sam_options options,
     }
 #endif /* HAVE_LOCALE_H */
 
-    sam_string input;
-    sam_input_free_func free_func;
-    if (!sam_parse(es, &input, &free_func, file)) {
+    if (!sam_parse(es, file)) {
 	sam_es_free(es);
 	return SAM_PARSE_ERROR;
     }
 
     sam_exit_code retval = sam_execute(es);
     sam_es_free(es);
-    free_func(&input);
 
     return retval;
 }

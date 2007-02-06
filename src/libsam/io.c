@@ -3,7 +3,7 @@
  *
  * part of samiam - the fast sam interpreter
  *
- * Copyright (c) 2006 Trevor Caira, Jimmy Hartzell, Daniel Perelman
+ * Copyright (c) 2007 Trevor Caira, Jimmy Hartzell, Daniel Perelman
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -234,11 +234,17 @@ sam_io_bt_default(const sam_es *restrict es)
 		sam_io_fprintf(es, SAM_IOS_ERR, "    ");
 	    }
 	    if (i < sam_es_instructions_len(es)) {
-		sam_instruction *inst = sam_es_instructions_get(es, i);
-		fprintf(stderr, "%s ", inst->name);
+		sam_instruction *restrict inst =
+		    sam_es_instructions_get(es, i);
+		sam_io_fprintf(es, SAM_IOS_ERR, "%s", inst->name);
 		if (inst->optype != SAM_OP_TYPE_NONE) {
+		    sam_io_fprintf(es, SAM_IOS_ERR, " ");
 		    sam_io_op_value_print(es, inst->operand, inst->optype);
 		}
+#if 0
+		char *restrict label = sam_es_labels_get(es, );
+		sam_io_fprintf(es, SAM_IOS_ERR, " [%s]", );
+#endif
 	    }
 	}
 	sam_io_fprintf(es, SAM_IOS_ERR, "\n");
@@ -269,9 +275,9 @@ sam_io_printf(const sam_es *restrict es,
     va_list ap;
 
     va_start(ap, fmt);
-    int len = sam_es_io_funcs_vfprintf(es) == NULL?
+    int len = sam_es_io_func_vfprintf(es) == NULL?
 	sam_io_vfprintf(SAM_IOS_OUT, fmt, ap):
-	sam_es_io_funcs_vfprintf(es)(SAM_IOS_OUT, fmt, ap);
+	sam_es_io_func_vfprintf(es)(SAM_IOS_OUT, fmt, ap);
     va_end(ap);
 
     return len;
@@ -286,9 +292,9 @@ sam_io_fprintf(const sam_es *restrict es,
     va_list ap;
 
     va_start(ap, fmt);
-    int len = sam_es_io_funcs_vfprintf(es) == NULL?
+    int len = sam_es_io_func_vfprintf(es) == NULL?
 	sam_io_vfprintf(ios, fmt, ap):
-	sam_es_io_funcs_vfprintf(es)(ios, fmt, ap);
+	sam_es_io_func_vfprintf(es)(ios, fmt, ap);
     va_end(ap);
 
     return len;
@@ -302,9 +308,9 @@ sam_io_scanf(const sam_es *restrict es,
     va_list ap;
 
     va_start(ap, fmt);
-    int len = sam_es_io_funcs_vfscanf(es) == NULL?
+    int len = sam_es_io_func_vfscanf(es) == NULL?
 	sam_io_vfscanf(SAM_IOS_IN, fmt, ap):
-	sam_es_io_funcs_vfscanf(es)(SAM_IOS_IN, fmt, ap);
+	sam_es_io_func_vfscanf(es)(SAM_IOS_IN, fmt, ap);
     va_end(ap);
 
     return len;
@@ -318,17 +324,17 @@ sam_io_afgets(const sam_es *restrict es,
     if (s == NULL) {
 	return NULL;
     }
-    if (sam_es_io_funcs_afgets(es) == NULL) {
+    if (sam_es_io_func_afgets(es) == NULL) {
 	sam_string str;
 	return *s = sam_string_get(sam_ios_to_file(ios), &str);
     }
-    return *s = sam_es_io_funcs_afgets(es)(s, ios);
+    return *s = sam_es_io_func_afgets(es)(s, ios);
 }
 
 void
 sam_io_bt(const sam_es *restrict es)
 {
-    sam_es_io_funcs_bt(es) == NULL?
+    sam_es_io_func_bt(es) == NULL?
 	sam_io_bt_default(es):
-	sam_es_io_funcs_bt(es)(es);
+	sam_es_io_func_bt(es)(es);
 }

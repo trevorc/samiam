@@ -3,7 +3,7 @@
  *
  * part of samiam - the fast sam interpreter
  *
- * Copyright (c) 2006 Trevor Caira, Jimmy Hartzell
+ * Copyright (c) 2007 Trevor Caira, Jimmy Hartzell
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -38,6 +38,7 @@
 #include "types.h"
 #include "main.h"
 #include "opcode.h"
+#include "string.h"
 
 typedef sam_error	   (*sam_library_fn)	     (sam_es *restrict es);
 
@@ -48,6 +49,7 @@ extern inline sam_pa	     sam_es_pc_get	     (const sam_es *restrict es);
 extern inline sam_pa	     sam_es_pc_pp	     (sam_es *restrict es);
 extern inline void	     sam_es_pc_set	     (sam_es *restrict es,
 						      sam_pa  pc);
+extern inline size_t	     sam_es_sp_get	     (sam_es *restrict es);
 extern inline sam_sa	     sam_es_fbr_get	     (const sam_es *restrict es);
 extern inline void	     sam_es_fbr_set	     (sam_es *restrict es,
 						      sam_sa  fbr);
@@ -88,16 +90,17 @@ extern inline sam_instruction *sam_es_instructions_get(const sam_es *restrict es
 						      sam_pa pa);
 extern inline sam_instruction *sam_es_instructions_cur(sam_es *restrict es);
 extern inline size_t	     sam_es_instructions_len (const sam_es *restrict es);
-extern const sam_io_funcs   *sam_es_io_funcs	     (const sam_es *restrict es);
-extern sam_io_vfprintf_func  sam_es_io_funcs_vfprintf(const sam_es *restrict es);
-extern sam_io_vfscanf_func   sam_es_io_funcs_vfscanf (const sam_es *restrict es);
-extern sam_io_afgets_func    sam_es_io_funcs_afgets  (const sam_es *restrict es);
-extern sam_io_bt_func	     sam_es_io_funcs_bt	     (const sam_es *restrict es);
+//extern const sam_io_func    *sam_es_io_funcs	     (const sam_es *restrict es);
+extern sam_io_vfprintf_func  sam_es_io_func_vfprintf (const sam_es *restrict es);
+extern sam_io_vfscanf_func   sam_es_io_func_vfscanf  (const sam_es *restrict es);
+extern sam_io_afgets_func    sam_es_io_func_afgets   (const sam_es *restrict es);
+extern sam_io_bt_func	     sam_es_io_func_bt	     (const sam_es *restrict es);
 extern sam_options	     sam_es_options	     (const sam_es *restrict es);
 extern bool		     sam_es_options_get	     (const sam_es *restrict es,
 						      sam_options option);
+extern sam_string	    *sam_es_input_get	     (sam_es *restrict es);
 extern sam_es		    *sam_es_new		     (sam_options options,
-						      /*@null@*/ const sam_io_funcs *restrict io_funcs);
+						      /*@null@*/ sam_io_dispatcher dispatcher);
 extern void		     sam_es_free	     (sam_es *restrict es);
 
 #if defined(SAM_EXTENSIONS) && defined(HAVE_DLFCN_H)

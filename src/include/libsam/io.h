@@ -3,7 +3,7 @@
  *
  * part of samiam - the fast sam interpreter
  *
- * Copyright (c) 2006 Trevor Caira, Jimmy Hartzell, Daniel Perelman
+ * Copyright (c) 2007 Trevor Caira, Jimmy Hartzell, Daniel Perelman
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -56,12 +56,21 @@ typedef void  (*sam_io_bt_func)(const sam_es *restrict es);
 /**
  *  Input/output callbacks. Used by various i/o opcodes.
  */
-typedef struct {
+typedef union {
     /*@null@*/ /*@dependent@*/ sam_io_vfprintf_func vfprintf;
     /*@null@*/ /*@dependent@*/ sam_io_vfscanf_func  vfscanf;
     /*@null@*/ /*@dependent@*/ sam_io_afgets_func   afgets;
     /*@null@*/ /*@dependent@*/ sam_io_bt_func	    bt;
-} sam_io_funcs;
+} sam_io_func;
+
+typedef enum {
+    SAM_IO_VFPRINTF,
+    SAM_IO_VFSCANF,
+    SAM_IO_AFGETS,
+    SAM_IO_BT,
+} sam_io_func_name;
+
+typedef sam_io_func (*sam_io_dispatcher)(sam_io_func_name io_func);
 
 extern FILE *sam_ios_to_file   (sam_io_stream ios);
 extern void  sam_io_bt	       (const sam_es *restrict es);
