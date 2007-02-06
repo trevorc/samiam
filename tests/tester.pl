@@ -51,7 +51,7 @@ use strict;
 use warnings;
 
 my $app = "../build/samiam/samiam";
-my $filename = "tests.db_";
+my $filename = "tests.db";
 my $sysinf = 0;
 my @tests = ();
 my @pids = ();
