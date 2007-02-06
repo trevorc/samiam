@@ -209,6 +209,9 @@ sam_es_change_register(sam_es *restrict es,
     new->next = NULL;
     new->prev = es->last_change;
 
+    if (es->last_change != NULL) {
+	es->last_change->next = new;
+    }
     es->last_change = new;
     if (es->first_change == NULL) {
 	es->first_change = new;
