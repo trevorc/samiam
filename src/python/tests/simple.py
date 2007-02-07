@@ -1,24 +1,30 @@
-import sam
+from sam import ExecutionState
 
-class SimpleSam(sam.ExecutionState):
-    def __init__(self, samfile):
-	sam.ExecutionState.__init__(self, samfile)
-
+class SimpleSam:
+    def __init__(self, file):
 	self.stack = []
 	self.heap = []
 
-	for stack_changes, heap_changes in self:
-	    for ch in stack_changes:
-		self.buffer_stack_change(ch)
-	    for ch in heap_changes:
-		self.buffer_heap_change(ch)
+	for changes in ExecutionState(file):
+	    for ch in changes:
+		self.buffer_change(ch)
 	    self.commit_changes()
 
-    def buffer_stack_change(self, change):
-	pass
-
-    def buffer_heap_change(self, change):
-	pass
+    def buffer_change(self, change):
+	if change.stack:
+	    if change.add:
+		self.stack += change.ml
+	    elif change.remove:
+		del self.stack[-1]
+	    else:
+		self.stack[change.sa] = change.ml
+	else:
+	    if change.add:
+		self.heap += change.ml
+	    elif change.remove:
+		del self.heap[-1]
+	    else:
+		self.heap[change.ha] = change.ml
 
     def commit_changes(self):
 	pass
