@@ -173,7 +173,7 @@ initsam(void)
 	return;
     }
 
-    PyObject *register m =
+    PyObject *restrict m =
 	Py_InitModule3("sam", module_methods, "Libsam Python bindings.");
 
     SamError = PyErr_NewException("sam.SamError", NULL, NULL);
