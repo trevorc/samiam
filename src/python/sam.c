@@ -202,6 +202,13 @@ static void
 ExecutionStateIter_dealloc(ExecutionStateIterObject *restrict self)
 {
     Py_DECREF(self->es);
+
+#ifndef NDEBUG
+    printf("self:\t%p\n", (void *)self);
+    printf("ob_type:\t%p\n", (void *)self->ob_type);
+    printf("tp_free:\t%p\n", (void *)self->ob_type->tp_free);
+#endif
+
     self->ob_type->tp_free((PyObject *)self);
 }
 
@@ -243,6 +250,7 @@ PyTypeObject ExecutionStateIterType = {
     .tp_name	  = "executionstateiterator",
     .tp_basicsize = sizeof (ExecutionStateIterObject),
     .tp_dealloc	  = (destructor)ExecutionStateIter_dealloc,
+    .tp_free	  = PyObject_Free,
     .tp_getattro  = PyObject_GenericGetAttr,
     .tp_flags	  = Py_TPFLAGS_DEFAULT,
     .tp_iter	  = PyObject_SelfIter,
