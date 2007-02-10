@@ -3,17 +3,16 @@
 
 #include <libsam/sdk.h>
 
+static PyTypeObject ExecutionStateType;
+static PyObject *ExecutionState_iter(PyObject *es);
+static PyObject *SamError;
+static PyObject *ParseError;
+
 typedef struct {
     PyObject_HEAD
     sam_es *restrict es;
     char *file;
 } ExecutionState;
-
-static PyTypeObject ExecutionStateType;
-
-/* Exceptions. */
-static PyObject *SamError;
-static PyObject *ParseError;
 
 static void
 ExecutionState_dealloc(ExecutionState *self)
@@ -130,8 +129,6 @@ ExecutionState_sp_get(ExecutionState *restrict self)
 static PyMethodDef ExecutionState_methods[] = {
     {0, 0, 0, 0}, /* Sentinel */
 };
-
-static PyObject *ExecutionState_iter(PyObject *es);
 
 static PyGetSetDef ExecutionState_getset[] = {
     {"bt", (getter)ExecutionState_bt_get, (setter)ExecutionState_bt_set,
