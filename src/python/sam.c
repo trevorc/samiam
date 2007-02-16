@@ -10,12 +10,96 @@ static PyObject *ParseError;
 
 typedef struct {
     PyObject_HEAD
-    sam_es *restrict es;
-    char *file;
-} ExecutionState;
+    char* inst,
+    PyTuple labels,
+} Instruction;
 
+/* Actually, all of these objects should probably have identical
+ * PyTypeObject structs except for the methods. */
+typedef struct {
+    PyObject_HEAD
+    sam_es *es;
+} pyEsRefObj
+
+/* TODO Do sequences automatically get iterators, or do you have to
+ * define one yourself even though there is a sane default? */
+/* Sequence of the SaM program code */
+typedef pyEsRefObj Instructions;
+
+static PyTypeObject InstructionsType;
+
+static PyTypeObject InstructionsType = {
+    PyObject_HEAD_INIT(NULL)
+    .tp_name	  = "sam.Instructions",
+    .tp_basicsize = sizeof (Instructions),
+    .tp_dealloc   = (destructor)Instructions_dealloc,
+    .tp_flags     = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    .tp_doc	  = "Sam program code",
+    .tp_iter	  = (getiterfunc)Instructions_iter,
+    .tp_as_squence = Instructions_sequence_methods,
+    .tp_methods   = Instructions_methods,
+    .tp_getset	  = Instructions_getset,
+    .tp_init	  = (initproc)Instructions_init,
+    .tp_new	  = PyType_GenericNew,
+};
+
+/* Sequence of the SaM stack */
+typedef pyEsRefObj Stack
+
+static PyTypeObject StackType;
+
+static PyTypeObject StackType = {
+    PyObject_HEAD_INIT(NULL)
+    .tp_name	  = "sam.Stack",
+    .tp_basicsize = sizeof (Stack),
+    .tp_dealloc   = (destructor)Stack_dealloc,
+    .tp_flags     = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    .tp_doc	  = "Sam stack",
+    .tp_iter	  = (getiterfunc)Stack_iter,
+    .tp_as_sequence = Stack_sequence_methods,
+    .tp_methods   = Stack_methods,
+    .tp_getset	  = Stack_getset,
+    .tp_init	  = (initproc)Stack_init,
+    .tp_new	  = PyType_GenericNew,
+};
+
+/* Sequence of the SaM heap */
+typedef pyEsRefObj Heap
+
+static PyTypeObject HeapType;
+
+static PyTypeObject HeapType = {
+    PyObject_HEAD_INIT(NULL)
+    .tp_name	  = "sam.Heap",
+    .tp_basicsize = sizeof (Heap),
+    .tp_dealloc   = (destructor)Heap_dealloc,
+    .tp_flags     = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    .tp_doc	  = "Sam execution state",
+    .tp_iter	  = (getiterfunc)Heap_iter,
+    .tp_as_sequence = Heap_sequence_methods,
+    .tp_methods   = Heap_methods,
+    .tp_getset	  = Heap_getset,
+    .tp_init	  = (initproc)Heap_init,
+    .tp_new	  = PyType_GenericNew,
+};
+
+typedef struct {
+    PyObject_HEAD
+    sam_es *es;
+    char *file;
+} Program;
+
+<<<<<<< .mine
+static PyTypeObject ProgramType;
+
+/* Exceptions. */
+static PyObject *SamError;
+static PyObject *ParseError;
+
+=======
+>>>>>>> .r1079
 static void
-ExecutionState_dealloc(ExecutionState *self)
+Program_dealloc(Program *self)
 {
     if (self->es) {
 	sam_es_free(self->es);
@@ -25,7 +109,7 @@ ExecutionState_dealloc(ExecutionState *self)
 }
 
 static int
-ExecutionState_init(ExecutionState *self, PyObject *args, PyObject *kwds)
+Program_init(Program *self, PyObject *args, PyObject *kwds)
 {
     static char *kwlist[] = {"file", NULL};
     char *file;
@@ -46,7 +130,7 @@ ExecutionState_init(ExecutionState *self, PyObject *args, PyObject *kwds)
 }
 
 static PyObject *
-ExecutionState_bt_get(ExecutionState *restrict self)
+Program_bt_get(Program *restrict self)
 {
     if (sam_es_bt_get(self->es)) {
 	Py_RETURN_TRUE;
@@ -55,16 +139,16 @@ ExecutionState_bt_get(ExecutionState *restrict self)
 }
 
 static int
-ExecutionState_bt_set(ExecutionState *restrict self, PyObject *v)
+Program_bt_set(Program *restrict self, PyObject *v)
 {
     if (v == NULL) {
 	PyErr_SetString(PyExc_TypeError,
-			"Could not delete ExecutionState.bt.");
+			"Could not delete Program.bt.");
 	return -1;
     }
     if (!PyBool_Check(v)) {
 	PyErr_SetString(PyExc_TypeError,
-			"ExecutionState.bt must be set to a Bool.");
+			"Program.bt must be set to a Bool.");
 	return -1;
     }
     sam_es_bt_set(self->es, v == Py_True);
@@ -73,22 +157,22 @@ ExecutionState_bt_set(ExecutionState *restrict self, PyObject *v)
 }
 
 static PyObject *
-ExecutionState_fbr_get(ExecutionState *restrict self)
+Program_fbr_get(Program *restrict self)
 {
     return PyLong_FromUnsignedLong(sam_es_fbr_get(self->es));
 }
 
 static int
-ExecutionState_fbr_set(ExecutionState *restrict self, PyObject *v)
+Program_fbr_set(Program *restrict self, PyObject *v)
 {
     if (v == NULL) {
 	PyErr_SetString(PyExc_TypeError,
-			"Could not delete ExecutionState.fbr.");
+			"Could not delete Program.fbr.");
 	return -1;
     }
     if (!PyLong_Check(v)) {
 	PyErr_SetString(PyExc_TypeError,
-			"ExecutionState.fbr must be set to a long integer.");
+			"Program.fbr must be set to a long integer.");
 	return -1;
     }
     sam_es_fbr_set(self->es, PyLong_AsLong(v));
@@ -97,22 +181,22 @@ ExecutionState_fbr_set(ExecutionState *restrict self, PyObject *v)
 }
 
 static PyObject *
-ExecutionState_pc_get(ExecutionState *restrict self)
+Program_pc_get(Program *restrict self)
 {
     return PyLong_FromUnsignedLong(sam_es_pc_get(self->es));
 }
 
 static int
-ExecutionState_pc_set(ExecutionState *restrict self, PyObject *v)
+Program_pc_set(Program *restrict self, PyObject *v)
 {
     if (v == NULL) {
 	PyErr_SetString(PyExc_TypeError,
-			"Could not delete ExecutionState.pc.");
+			"Could not delete Program.pc.");
 	return -1;
     }
     if (!PyLong_Check(v)) {
 	PyErr_SetString(PyExc_TypeError,
-			"ExecutionState.pc must be set to a long integer.");
+			"Program.pc must be set to a long integer.");
 	return -1;
     }
     sam_es_pc_set(self->es, PyLong_AsLong(v));
@@ -121,37 +205,42 @@ ExecutionState_pc_set(ExecutionState *restrict self, PyObject *v)
 }
 
 static PyObject *
-ExecutionState_sp_get(ExecutionState *restrict self)
+Program_sp_get(Program *restrict self)
 {
     return PyLong_FromUnsignedLong(sam_es_sp_get(self->es));
 }
 
-static PyMethodDef ExecutionState_methods[] = {
+static PyMethodDef Program_methods[] = {
     {0, 0, 0, 0}, /* Sentinel */
 };
 
-static PyGetSetDef ExecutionState_getset[] = {
-    {"bt", (getter)ExecutionState_bt_get, (setter)ExecutionState_bt_set,
+<<<<<<< .mine
+static PyObject *Program_iter(PyObject *es);
+
+=======
+>>>>>>> .r1079
+static PyGetSetDef Program_getset[] = {
+    {"bt", (getter)Program_bt_get, (setter)Program_bt_set,
 	"bt -- back trace bit.", NULL},
-    {"fbr", (getter)ExecutionState_fbr_get, (setter)ExecutionState_fbr_set,
+    {"fbr", (getter)Program_fbr_get, (setter)Program_fbr_set,
 	"fbr -- frame base register.", NULL},
-    {"pc", (getter)ExecutionState_pc_get, (setter)ExecutionState_pc_set,
+    {"pc", (getter)Program_pc_get, (setter)Program_pc_set,
 	"pc -- program counter.", NULL},
-    {"sp", (getter)ExecutionState_sp_get, NULL,
+    {"sp", (getter)Program_sp_get, NULL,
 	"sp -- stack pointer.", NULL},
 };
 
-static PyTypeObject ExecutionStateType = {
+static PyTypeObject ProgramType = {
     PyObject_HEAD_INIT(NULL)
-    .tp_name	  = "sam.ExecutionState",
-    .tp_basicsize = sizeof (ExecutionState),
-    .tp_dealloc   = (destructor)ExecutionState_dealloc,
+    .tp_name	  = "sam.Program",
+    .tp_basicsize = sizeof (Program),
+    .tp_dealloc   = (destructor)Program_dealloc,
     .tp_flags     = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
     .tp_doc	  = "Sam execution state",
-    .tp_iter	  = (getiterfunc)ExecutionState_iter,
-    .tp_methods   = ExecutionState_methods,
-    .tp_getset	  = ExecutionState_getset,
-    .tp_init	  = (initproc)ExecutionState_init,
+    .tp_iter	  = (getiterfunc)Program_iter,
+    .tp_methods   = Program_methods,
+    .tp_getset	  = Program_getset,
+    .tp_init	  = (initproc)Program_init,
     .tp_new	  = PyType_GenericNew,
 };
 
@@ -166,7 +255,7 @@ static PyMethodDef module_methods[] = {
 PyMODINIT_FUNC
 initsam(void)
 {
-    if (PyType_Ready(&ExecutionStateType) < 0) {
+    if (PyType_Ready(&ProgramType) < 0) {
 	return;
     }
 
@@ -185,18 +274,18 @@ initsam(void)
 	PyModule_AddObject(m, "ParseError", ParseError);
     }
 
-    Py_INCREF(&ExecutionStateType);
-    PyModule_AddObject(m, "ExecutionState",
-		       (PyObject *)&ExecutionStateType);
+    Py_INCREF(&ProgramType);
+    PyModule_AddObject(m, "Program",
+		       (PyObject *)&ProgramType);
 }
 
 typedef struct {
     PyObject_HEAD
-    ExecutionState *es;
-} ExecutionStateIterObject;
+    Program *es;
+} ProgramIterObject;
 
 static void
-ExecutionStateIter_dealloc(ExecutionStateIterObject *restrict self)
+ProgramIter_dealloc(ProgramIterObject *restrict self)
 {
     Py_DECREF(self->es);
 
@@ -210,7 +299,7 @@ ExecutionStateIter_dealloc(ExecutionStateIterObject *restrict self)
 }
 
 static PyObject *
-ExecutionStateIter_next(ExecutionStateIterObject *restrict self)
+ProgramIter_next(ProgramIterObject *restrict self)
 {
 #ifndef NDEBUG
     printf("self:\t\t%p\n"
@@ -242,30 +331,30 @@ ExecutionStateIter_next(ExecutionStateIterObject *restrict self)
     return rv;
 }
 
-PyTypeObject ExecutionStateIterType = {
+PyTypeObject ProgramIterType = {
     PyObject_HEAD_INIT(&PyType_Type)
-    .tp_name	  = "executionstateiterator",
-    .tp_basicsize = sizeof (ExecutionStateIterObject),
-    .tp_dealloc	  = (destructor)ExecutionStateIter_dealloc,
+    .tp_name	  = "programiterator",
+    .tp_basicsize = sizeof (ProgramIterObject),
+    .tp_dealloc	  = (destructor)ProgramIter_dealloc,
     .tp_free	  = PyObject_Free,
     .tp_getattro  = PyObject_GenericGetAttr,
     .tp_flags	  = Py_TPFLAGS_DEFAULT,
     .tp_iter	  = PyObject_SelfIter,
-    .tp_iternext  = (iternextfunc)ExecutionStateIter_next,
+    .tp_iternext  = (iternextfunc)ProgramIter_next,
 };
 
 static PyObject *
-ExecutionState_iter(PyObject *es)
+Program_iter(PyObject *es)
 {
-    ExecutionStateIterObject *restrict self =
-	PyObject_New(ExecutionStateIterObject, &ExecutionStateIterType);
+    ProgramIterObject *restrict self =
+	PyObject_New(ProgramIterObject, &ProgramIterType);
 
     if (self == NULL) {
 	return NULL;
     }
 
     Py_INCREF(es);
-    self->es = (ExecutionState *)es;
+    self->es = (Program *)es;
 
     return (PyObject *)self;
 }
