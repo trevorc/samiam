@@ -10,8 +10,8 @@ static PyObject *ParseError;
 
 typedef struct {
     PyObject_HEAD
-    char* inst,
-    PyTuple labels,
+    char *inst;
+    PyObject *labels; /* tuple */
 } Instruction;
 
 /* Actually, all of these objects should probably have identical
@@ -19,12 +19,12 @@ typedef struct {
 typedef struct {
     PyObject_HEAD
     sam_es *es;
-} pyEsRefObj
+} EsRefObj;
 
 /* TODO Do sequences automatically get iterators, or do you have to
  * define one yourself even though there is a sane default? */
 /* Sequence of the SaM program code */
-typedef pyEsRefObj Instructions;
+typedef EsRefObj Instructions;
 
 static PyTypeObject InstructionsType;
 
@@ -44,7 +44,7 @@ static PyTypeObject InstructionsType = {
 };
 
 /* Sequence of the SaM stack */
-typedef pyEsRefObj Stack
+typedef EsRefObj Stack;
 
 static PyTypeObject StackType;
 
@@ -53,18 +53,18 @@ static PyTypeObject StackType = {
     .tp_name	  = "sam.Stack",
     .tp_basicsize = sizeof (Stack),
     .tp_dealloc   = (destructor)Stack_dealloc,
-    .tp_flags     = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    .tp_flags	  = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
     .tp_doc	  = "Sam stack",
     .tp_iter	  = (getiterfunc)Stack_iter,
     .tp_as_sequence = Stack_sequence_methods,
-    .tp_methods   = Stack_methods,
+    .tp_methods	  = Stack_methods,
     .tp_getset	  = Stack_getset,
     .tp_init	  = (initproc)Stack_init,
     .tp_new	  = PyType_GenericNew,
 };
 
 /* Sequence of the SaM heap */
-typedef pyEsRefObj Heap
+typedef EsRefObj Heap;
 
 static PyTypeObject HeapType;
 
@@ -89,15 +89,6 @@ typedef struct {
     char *file;
 } Program;
 
-<<<<<<< .mine
-static PyTypeObject ProgramType;
-
-/* Exceptions. */
-static PyObject *SamError;
-static PyObject *ParseError;
-
-=======
->>>>>>> .r1079
 static void
 Program_dealloc(Program *self)
 {
@@ -214,11 +205,8 @@ static PyMethodDef Program_methods[] = {
     {0, 0, 0, 0}, /* Sentinel */
 };
 
-<<<<<<< .mine
 static PyObject *Program_iter(PyObject *es);
 
-=======
->>>>>>> .r1079
 static PyGetSetDef Program_getset[] = {
     {"bt", (getter)Program_bt_get, (setter)Program_bt_set,
 	"bt -- back trace bit.", NULL},
