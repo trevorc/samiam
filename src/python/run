@@ -3,4 +3,9 @@
 . common.sh
 
 echo Executing: python $python_args
-exec python $python_args
+
+(exec python $python_args)
+
+rv=$?
+echo Return value: $rv
+exit $rv
