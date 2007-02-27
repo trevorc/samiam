@@ -4,8 +4,13 @@
 #include <libsam/sdk.h>
 
 /* Exceptions {{{1 */
-static PyTypeObject ExecutionStateType;
+/* PyTypeObject ExecutionStateType {{{2 */
+static PyTypeObject ExecutionStateTypez
+
+/* PyObject SamError {{{2 */
 static PyObject *SamError;
+
+/* PyObject ParseError {{{2 */
 static PyObject *ParseError;
 
 /* EsRefObj {{{1 */
@@ -38,6 +43,65 @@ ProgRefType_dealloc(ProgRefType *restrict self)
     self->ob_type->tp_free((PyObject *)self);
 }
 
+/* ProgRefIterType {{{1 */
+/* typedef ProgRefIterType {{{2 */
+typedef struct {
+    PyObject_HEAD
+    Program *prog;
+    size_t idx;
+} ProgRefIterType;
+
+/* InstructionsIter {{{1 */
+/* typedef InstructionsIterObject {{{2 */
+typedef ProgRefIterType InstructionsIterObject;
+
+/* InstructionsIter_next () {{{2 */
+static PyObject *
+InstructionsIter_next(InstructionsIterObject *restrict self)
+{
+    /* TODO */
+    if (sam_es_pc_get(self->prog->es) >=
+	sam_es_instructions_len(self->prog->es)) {
+	return NULL;
+    }
+
+    long err = sam_es_instructions_cur(self->prog->es)->handler(self->prog->es);
+
+    PyObject *restrict rv = PyLong_FromLong(err);
+    sam_es_pc_pp(self->prog->es);
+
+    return rv;
+}
+
+/* PyTypeObject InstructionsIterType {{{2 */
+PyTypeObject InstructionsIterType = {
+    PyObject_HEAD_INIT(&PyType_Type)
+    .tp_name	  = "programiterator",
+    .tp_basicsize = sizeof (ProgramIterObject),
+    .tp_dealloc	  = (destructor)ProgRefType_dealloc,
+    .tp_free	  = PyObject_Free,
+    .tp_getattro  = PyObject_GenericGetAttr,
+    .tp_flags	  = Py_TPFLAGS_DEFAULT,
+    .tp_iter	  = PyObject_SelfIter,
+    .tp_iternext  = (iternextfunc)ProgramIter_next,
+};
+
+/* Instructions_iter () {{{2 */
+static PyObject *
+Instructions_iter(PyObject *prog)
+{
+    ProgramIterObject *restrict self =
+	PyObject_New(ProgramIterObject, &ProgramIterType);
+
+    if (self == NULL) {
+	return NULL;
+    }
+
+    Py_INCREF(prog);
+    self->prog = (Program *)prog;
+
+    return (PyObject *)self;
+}
 /* Instructions {{{1 */
 /* typedef Instruction {{{2 */
 typedef struct {
