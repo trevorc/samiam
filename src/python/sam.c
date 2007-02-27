@@ -3,56 +3,77 @@
 
 #include <libsam/sdk.h>
 
+/* Exceptions {{{1 */
 static PyTypeObject ExecutionStateType;
-static PyObject *ExecutionState_iter(PyObject *es);
 static PyObject *SamError;
 static PyObject *ParseError;
 
+/* EsRefObj {{{1 */
+/* typedef EsRefObj {{{2 */
+typedef struct {
+    PyObject_HEAD
+    sam_es *es;
+} EsRefObj;
+
+/* typedef Program {{{2 */
+typedef struct {
+    PyObject_HEAD
+    sam_es *es;
+    char *file;
+} Program;
+
+/* ProgRefType {{{1 */
+/* typedef ProgRefType {{{2 */
+typedef struct {
+    PyObject_HEAD
+    Program *prog;
+} ProgRefType;
+
+/* ProgRefType_dealloc () {{{2 */
+/* Deallocator for types which keep track of a Program. */
+static void
+ProgRefType_dealloc(ProgRefType *restrict self)
+{
+    Py_DECREF(self->prog);
+    self->ob_type->tp_free((PyObject *)self);
+}
+
+/* Instructions {{{1 */
+/* typedef Instruction {{{2 */
 typedef struct {
     PyObject_HEAD
     char *inst;
     PyObject *labels; /* tuple */
 } Instruction;
 
-/* Actually, all of these objects should probably have identical
- * PyTypeObject structs except for the methods. */
-typedef struct {
-    PyObject_HEAD
-    sam_es *es;
-} EsRefObj;
-
-/* TODO Do sequences automatically get iterators, or do you have to
- * define one yourself even though there is a sane default? */
+/* typedef Instructions {{{2 */
 /* Sequence of the SaM program code */
 typedef EsRefObj Instructions;
 
-static PyTypeObject InstructionsType;
-
+/* PyTypeObject InstructionsType {{{2 */
 static PyTypeObject InstructionsType = {
     PyObject_HEAD_INIT(NULL)
     .tp_name	  = "sam.Instructions",
     .tp_basicsize = sizeof (Instructions),
-    .tp_dealloc   = (destructor)Instructions_dealloc,
     .tp_flags     = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
     .tp_doc	  = "Sam program code",
     .tp_iter	  = (getiterfunc)Instructions_iter,
-    .tp_as_squence = Instructions_sequence_methods,
+    .tp_as_sequence = Instructions_sequence_methods,
     .tp_methods   = Instructions_methods,
     .tp_getset	  = Instructions_getset,
     .tp_init	  = (initproc)Instructions_init,
     .tp_new	  = PyType_GenericNew,
 };
 
-/* Sequence of the SaM stack */
+/* Stack {{{1 */
+/* typedef Stack {{{2 */
 typedef EsRefObj Stack;
 
-static PyTypeObject StackType;
-
+/* PyTypeObject StackType {{{2 */
 static PyTypeObject StackType = {
     PyObject_HEAD_INIT(NULL)
     .tp_name	  = "sam.Stack",
     .tp_basicsize = sizeof (Stack),
-    .tp_dealloc   = (destructor)Stack_dealloc,
     .tp_flags	  = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
     .tp_doc	  = "Sam stack",
     .tp_iter	  = (getiterfunc)Stack_iter,
@@ -63,16 +84,16 @@ static PyTypeObject StackType = {
     .tp_new	  = PyType_GenericNew,
 };
 
+/* Heap {{{1 */
+/* typedef Heap {{{2 */
 /* Sequence of the SaM heap */
 typedef EsRefObj Heap;
 
-static PyTypeObject HeapType;
-
+/* PyTypeObject HeapType {{{2 */
 static PyTypeObject HeapType = {
     PyObject_HEAD_INIT(NULL)
     .tp_name	  = "sam.Heap",
     .tp_basicsize = sizeof (Heap),
-    .tp_dealloc   = (destructor)Heap_dealloc,
     .tp_flags     = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
     .tp_doc	  = "Sam execution state",
     .tp_iter	  = (getiterfunc)Heap_iter,
@@ -83,12 +104,159 @@ static PyTypeObject HeapType = {
     .tp_new	  = PyType_GenericNew,
 };
 
-typedef struct {
-    PyObject_HEAD
-    sam_es *es;
-    char *file;
-} Program;
+/* ProgramIter {{{1 */
+/* typedef ProgramIterObject {{{2 */
+typedef ProgRefType ProgramIterObject;
 
+/* ProgramIter_next () {{{2 */
+static PyObject *
+ProgramIter_next(ProgramIterObject *restrict self)
+{
+    if (sam_es_pc_get(self->prog->es) >=
+	sam_es_instructions_len(self->prog->es)) {
+	return NULL;
+    }
+
+    long err = sam_es_instructions_cur(self->prog->es)->handler(self->prog->es);
+
+    PyObject *restrict rv = PyLong_FromLong(err);
+    sam_es_pc_pp(self->prog->es);
+
+    return rv;
+}
+
+
+/* PyTypeObject ProgramIterType {{{2 */
+PyTypeObject ProgramIterType = {
+    PyObject_HEAD_INIT(&PyType_Type)
+    .tp_name	  = "programiterator",
+    .tp_basicsize = sizeof (ProgramIterObject),
+    .tp_dealloc	  = (destructor)ProgRefType_dealloc,
+    .tp_free	  = PyObject_Free,
+    .tp_getattro  = PyObject_GenericGetAttr,
+    .tp_flags	  = Py_TPFLAGS_DEFAULT,
+    .tp_iter	  = PyObject_SelfIter,
+    .tp_iternext  = (iternextfunc)ProgramIter_next,
+};
+
+/* Program_iter () {{{2 */
+static PyObject *
+Program_iter(PyObject *prog)
+{
+    ProgramIterObject *restrict self =
+	PyObject_New(ProgramIterObject, &ProgramIterType);
+
+    if (self == NULL) {
+	return NULL;
+    }
+
+    Py_INCREF(prog);
+    self->prog = (Program *)prog;
+
+    return (PyObject *)self;
+}
+/* Program {{{1 */
+/* Program_bt_get () {{{2 */
+static PyObject *
+Program_bt_get(Program *restrict self)
+{
+    if (sam_es_bt_get(self->es)) {
+	Py_RETURN_TRUE;
+    }
+    Py_RETURN_FALSE;
+}
+
+/* Program_bt_set () {{{2 */
+static int
+Program_bt_set(Program *restrict self, PyObject *v)
+{
+    if (v == NULL) {
+	PyErr_SetString(PyExc_TypeError,
+			"Could not delete Program.bt.");
+	return -1;
+    }
+    if (!PyBool_Check(v)) {
+	PyErr_SetString(PyExc_TypeError,
+			"Program.bt must be set to a Bool.");
+	return -1;
+    }
+    sam_es_bt_set(self->es, v == Py_True);
+
+    return 0;
+}
+
+/* Program_fbr_get () {{{2 */
+static PyObject *
+Program_fbr_get(Program *restrict self)
+{
+    return PyLong_FromUnsignedLong(sam_es_fbr_get(self->es));
+}
+
+/* Program_fbr_get () {{{2 */
+static int
+Program_fbr_set(Program *restrict self, PyObject *v)
+{
+    if (v == NULL) {
+	PyErr_SetString(PyExc_TypeError,
+			"Could not delete Program.fbr.");
+	return -1;
+    }
+    if (!PyLong_Check(v)) {
+	PyErr_SetString(PyExc_TypeError,
+			"Program.fbr must be set to a long integer.");
+	return -1;
+    }
+    sam_es_fbr_set(self->es, PyLong_AsLong(v));
+
+    return 0;
+}
+
+/* Program_pc_get () {{{2 */
+static PyObject *
+Program_pc_get(Program *restrict self)
+{
+    return PyLong_FromUnsignedLong(sam_es_pc_get(self->es));
+}
+
+/* Program_pc_set () {{{2 */
+static int
+Program_pc_set(Program *restrict self, PyObject *v)
+{
+    if (v == NULL) {
+	PyErr_SetString(PyExc_TypeError,
+			"Could not delete Program.pc.");
+	return -1;
+    }
+    if (!PyLong_Check(v)) {
+	PyErr_SetString(PyExc_TypeError,
+			"Program.pc must be set to a long integer.");
+	return -1;
+    }
+    sam_es_pc_set(self->es, PyLong_AsLong(v));
+
+    return 0;
+}
+
+/* Program_sp_get () {{{2 */
+static PyObject *
+Program_sp_get(Program *restrict self)
+{
+    return PyLong_FromUnsignedLong(sam_es_sp_get(self->es));
+}
+
+/* PyGetSetDef Program_getset {{{2 */
+static PyGetSetDef Program_getset[] = {
+    {"bt", (getter)Program_bt_get, (setter)Program_bt_set,
+	"bt -- back trace bit.", NULL},
+    {"fbr", (getter)Program_fbr_get, (setter)Program_fbr_set,
+	"fbr -- frame base register.", NULL},
+    {"pc", (getter)Program_pc_get, (setter)Program_pc_set,
+	"pc -- program counter.", NULL},
+    {"sp", (getter)Program_sp_get, NULL,
+	"sp -- stack pointer.", NULL},
+};
+
+/* Program_dealloc () {{{2 */
 static void
 Program_dealloc(Program *self)
 {
@@ -99,6 +267,12 @@ Program_dealloc(Program *self)
     self->ob_type->tp_free((PyObject *)self);
 }
 
+/* PyMethodDef Program_methods {{{2 */
+static PyMethodDef Program_methods[] = {
+    {0, 0, 0, 0}, /* Sentinel */
+};
+
+/* Program_init () {{{2 */
 static int
 Program_init(Program *self, PyObject *args, PyObject *kwds)
 {
@@ -120,104 +294,7 @@ Program_init(Program *self, PyObject *args, PyObject *kwds)
     return 0;
 }
 
-static PyObject *
-Program_bt_get(Program *restrict self)
-{
-    if (sam_es_bt_get(self->es)) {
-	Py_RETURN_TRUE;
-    }
-    Py_RETURN_FALSE;
-}
-
-static int
-Program_bt_set(Program *restrict self, PyObject *v)
-{
-    if (v == NULL) {
-	PyErr_SetString(PyExc_TypeError,
-			"Could not delete Program.bt.");
-	return -1;
-    }
-    if (!PyBool_Check(v)) {
-	PyErr_SetString(PyExc_TypeError,
-			"Program.bt must be set to a Bool.");
-	return -1;
-    }
-    sam_es_bt_set(self->es, v == Py_True);
-
-    return 0;
-}
-
-static PyObject *
-Program_fbr_get(Program *restrict self)
-{
-    return PyLong_FromUnsignedLong(sam_es_fbr_get(self->es));
-}
-
-static int
-Program_fbr_set(Program *restrict self, PyObject *v)
-{
-    if (v == NULL) {
-	PyErr_SetString(PyExc_TypeError,
-			"Could not delete Program.fbr.");
-	return -1;
-    }
-    if (!PyLong_Check(v)) {
-	PyErr_SetString(PyExc_TypeError,
-			"Program.fbr must be set to a long integer.");
-	return -1;
-    }
-    sam_es_fbr_set(self->es, PyLong_AsLong(v));
-
-    return 0;
-}
-
-static PyObject *
-Program_pc_get(Program *restrict self)
-{
-    return PyLong_FromUnsignedLong(sam_es_pc_get(self->es));
-}
-
-static int
-Program_pc_set(Program *restrict self, PyObject *v)
-{
-    if (v == NULL) {
-	PyErr_SetString(PyExc_TypeError,
-			"Could not delete Program.pc.");
-	return -1;
-    }
-    if (!PyLong_Check(v)) {
-	PyErr_SetString(PyExc_TypeError,
-			"Program.pc must be set to a long integer.");
-	return -1;
-    }
-    sam_es_pc_set(self->es, PyLong_AsLong(v));
-
-    return 0;
-}
-
-static PyObject *
-Program_sp_get(Program *restrict self)
-{
-    return PyLong_FromUnsignedLong(sam_es_sp_get(self->es));
-}
-
-static PyMethodDef Program_methods[] = {
-    {0, 0, 0, 0}, /* Sentinel */
-};
-
-static PyObject *Program_iter(PyObject *es);
-
-static PyGetSetDef Program_getset[] = {
-    {"bt", (getter)Program_bt_get, (setter)Program_bt_set,
-	"bt -- back trace bit.", NULL},
-    {"fbr", (getter)Program_fbr_get, (setter)Program_fbr_set,
-	"fbr -- frame base register.", NULL},
-    {"pc", (getter)Program_pc_get, (setter)Program_pc_set,
-	"pc -- program counter.", NULL},
-    {"sp", (getter)Program_sp_get, NULL,
-	"sp -- stack pointer.", NULL},
-};
-
+/* PyTypeObject ProgramType {{{2 */
 static PyTypeObject ProgramType = {
     PyObject_HEAD_INIT(NULL)
     .tp_name	  = "sam.Program",
@@ -236,10 +313,14 @@ static PyTypeObject ProgramType = {
 # define PyMODINIT_FUNC void
 #endif
 
+
+/* module {{{1 */
+/* PyMethodDef module_methods {{{2 */
 static PyMethodDef module_methods[] = {
     {0, 0, 0, 0}
 };
 
+/* initsam () {{{2 */
 PyMODINIT_FUNC
 initsam(void)
 {
@@ -265,84 +346,4 @@ initsam(void)
     Py_INCREF(&ProgramType);
     PyModule_AddObject(m, "Program",
 		       (PyObject *)&ProgramType);
-}
-
-typedef struct {
-    PyObject_HEAD
-    Program *es;
-} ProgramIterObject;
-
-static void
-ProgramIter_dealloc(ProgramIterObject *restrict self)
-{
-    Py_DECREF(self->es);
-
-#ifndef NDEBUG
-    printf("self:\t%p\n", (void *)self);
-    printf("ob_type:\t%p\n", (void *)self->ob_type);
-    printf("tp_free:\t%p\n", (void *)self->ob_type->tp_free);
-#endif
-
-    self->ob_type->tp_free((PyObject *)self);
-}
-
-static PyObject *
-ProgramIter_next(ProgramIterObject *restrict self)
-{
-#ifndef NDEBUG
-    printf("self:\t\t%p\n"
-	   "self->es:\t%p\n"
-	   "self->es->es:\t%p\n",
-	   (void *)self,
-	   (void *)self->es,
-	   (void *)self->es->es);
-#endif
-
-    if (sam_es_pc_get(self->es->es) >=
-	sam_es_instructions_len(self->es->es)) {
-	return NULL;
-    }
-
-#ifndef NDEBUG
-    sam_instruction *restrict cur = sam_es_instructions_cur(self->es->es);
-    printf("instruction:\t%p\n"
-	   "handler:\t%p\n",
-	   (void *)cur,
-	   (void *)cur->handler);
-#endif
-
-    long err = sam_es_instructions_cur(self->es->es)->handler(self->es->es);
-
-    PyObject *restrict rv = PyLong_FromLong(err);
-    sam_es_pc_pp(self->es->es);
-
-    return rv;
-}
-
-PyTypeObject ProgramIterType = {
-    PyObject_HEAD_INIT(&PyType_Type)
-    .tp_name	  = "programiterator",
-    .tp_basicsize = sizeof (ProgramIterObject),
-    .tp_dealloc	  = (destructor)ProgramIter_dealloc,
-    .tp_free	  = PyObject_Free,
-    .tp_getattro  = PyObject_GenericGetAttr,
-    .tp_flags	  = Py_TPFLAGS_DEFAULT,
-    .tp_iter	  = PyObject_SelfIter,
-    .tp_iternext  = (iternextfunc)ProgramIter_next,
-};
-
-static PyObject *
-Program_iter(PyObject *es)
-{
-    ProgramIterObject *restrict self =
-	PyObject_New(ProgramIterObject, &ProgramIterType);
-
-    if (self == NULL) {
-	return NULL;
-    }
-
-    Py_INCREF(es);
-    self->es = (Program *)es;
-
-    return (PyObject *)self;
 }
