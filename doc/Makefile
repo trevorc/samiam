@@ -3,12 +3,15 @@
 RM=rm -f
 XSLTPROC=xsltproc
 PREFIX=/usr/share/xml/docbook/stylesheet/nwalsh
-OUT=samiam.1
+OUT=samiam.1 libsam.html
 
 all: $(OUT)
 
 clean:
 	$(RM) $(OUT)
 
-%: %.xml
-	$(XSLTPROC) -nonet $(PREFIX)/manpages/docbook.xsl $<
+%.1: %.1.xml
+	$(XSLTPROC) -o $@ -nonet $(PREFIX)/manpages/docbook.xsl $<
+
+%.html: %.xml
+	$(XSLTPROC) -o $@ -nonet $(PREFIX)/xhtml/docbook.xsl $<
