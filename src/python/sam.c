@@ -5,7 +5,7 @@
 
 /* Exceptions {{{1 */
 /* PyTypeObject ExecutionStateType {{{2 */
-static PyTypeObject ExecutionStateTypez
+static PyTypeObject ExecutionStateTypez;
 
 /* PyObject SamError {{{2 */
 static PyObject *SamError;
@@ -19,6 +19,7 @@ typedef struct {
     PyObject_HEAD
     sam_es *es;
 } EsRefObj;
+
 
 /* typedef Program {{{2 */
 typedef struct {
@@ -35,7 +36,7 @@ typedef struct {
 } ProgRefType;
 
 /* ProgRefType_dealloc () {{{2 */
-/* Deallocator for types which keep track of a Program. */
+/* Deallocator for non-iterator types which keep track of a Program. */
 static void
 ProgRefType_dealloc(ProgRefType *restrict self)
 {
@@ -51,6 +52,23 @@ typedef struct {
     size_t idx;
 } ProgRefIterType;
 
+/* ProgRefIterType_dealloc () {{{2 */
+/* Deallocator for iterator types which keep track of a Program. */
+static void
+ProgRefType_dealloc(ProgRefIterType *restrict self)
+{
+    Py_DECREF(self->prog);
+    self->ob_type->tp_free((PyObject *)self);
+}
+
+/* Instruction {{{1 */
+/* typedef Instruction {{{2 */
+typedef struct {
+    PyObject_HEAD
+    char *inst;
+    PyObject *labels; /* tuple */
+} Instruction;
+
 /* InstructionsIter {{{1 */
 /* typedef InstructionsIterObject {{{2 */
 typedef ProgRefIterType InstructionsIterObject;
@@ -59,39 +77,32 @@ typedef ProgRefIterType InstructionsIterObject;
 static PyObject *
 InstructionsIter_next(InstructionsIterObject *restrict self)
 {
-    /* TODO */
-    if (sam_es_pc_get(self->prog->es) >=
-	sam_es_instructions_len(self->prog->es)) {
+    if (self->idx >= sam_es_instructions_len(self->prog->es)) {
 	return NULL;
     }
 
-    long err = sam_es_instructions_cur(self->prog->es)->handler(self->prog->es);
-
-    PyObject *restrict rv = PyLong_FromLong(err);
-    sam_es_pc_pp(self->prog->es);
-
-    return rv;
+    // TODO get and make Instruction object
 }
 
 /* PyTypeObject InstructionsIterType {{{2 */
 PyTypeObject InstructionsIterType = {
     PyObject_HEAD_INIT(&PyType_Type)
-    .tp_name	  = "programiterator",
-    .tp_basicsize = sizeof (ProgramIterObject),
-    .tp_dealloc	  = (destructor)ProgRefType_dealloc,
+    .tp_name	  = "instructionsiterator",
+    .tp_basicsize = sizeof (InstructionsIterObject),
+    .tp_dealloc	  = (destructor)ProgRefIterType_dealloc,
     .tp_free	  = PyObject_Free,
     .tp_getattro  = PyObject_GenericGetAttr,
     .tp_flags	  = Py_TPFLAGS_DEFAULT,
     .tp_iter	  = PyObject_SelfIter,
-    .tp_iternext  = (iternextfunc)ProgramIter_next,
+    .tp_iternext  = (iternextfunc)InstructionsIter_next,
 };
 
 /* Instructions_iter () {{{2 */
 static PyObject *
 Instructions_iter(PyObject *prog)
 {
-    ProgramIterObject *restrict self =
-	PyObject_New(ProgramIterObject, &ProgramIterType);
+    InstructionsIterObject *restrict self =
+	PyObject_New(InstructionsIterObject, &InstructionsIterType);
 
     if (self == NULL) {
 	return NULL;
@@ -103,16 +114,47 @@ Instructions_iter(PyObject *prog)
     return (PyObject *)self;
 }
 /* Instructions {{{1 */
-/* typedef Instruction {{{2 */
-typedef struct {
-    PyObject_HEAD
-    char *inst;
-    PyObject *labels; /* tuple */
-} Instruction;
-
 /* typedef Instructions {{{2 */
 /* Sequence of the SaM program code */
 typedef EsRefObj Instructions;
+
+/* Instructions_length {{{2 */
+static long
+Instructions_length(Instructions *self)
+{
+    unsigned long len = 
+	(unsigned long) sam_es_instructions_len(self->prog->es);
+    PyObject *restrict rv = PyLong_FromUnsignedLong(len);
+
+    return rv;
+}
+
+static PyObject *
+Instructions_item(Instructions *self, int i)
+{
+    if(i < 0 || i >= sam_es_instructions_len(self->prog->es))
+    {
+	PyErr_SetNone(PyExc_IndexError);
+	return NULL;
+    }
+
+    // TODO make Instruction object here?
+    // TODO can we just cast to sam_pa?
+    sam_instruction *inst = sam_es_instructions_get(self-es, (sam_pa) i);
+    const char *name = sam_instruction_name(inst);
+
+}
+
+/* PySquenceMethods Instructions_sequence_methods {{{2 */
+static PySequenceMethods Instructions_sequence_methods = {
+    .sq_length = (inquery)Instructions_length,
+    /*(binaryfunc)*/0,			/*sq_concat*/
+    /*(intargfunc)*/0,		/*sq_repeat*/
+    /*(intargfunc)*/0,			/*sq_item*/
+    /*(intintargfunc)*/0,		/*sq_slice*/
+    /*(intobjargproc)*/0,		/*sq_ass_item*/
+    /*(intintobjargproc)*/0,	/*sq_ass_slice*/
+}
 
 /* PyTypeObject InstructionsType {{{2 */
 static PyTypeObject InstructionsType = {
@@ -129,14 +171,171 @@ static PyTypeObject InstructionsType = {
     .tp_new	  = PyType_GenericNew,
 };
 
+/* Type {{{1 */
+/* typedef Type {{{2 */
+typedef struct {
+    PyObject_HEAD
+    sam_ml_type type;
+} Type;
+
+/* Type_str {{{2 */
+static PyObject *
+Type_str(Type *restrict self)
+{
+    switch(self->type)
+    {
+	case SAM_ML_TYPE_NONE:
+	    return PyString_FromString("None");
+	case SAM_ML_TYPE_INT:
+	    return PyString_FromString("Int");
+	case SAM_ML_TYPE_FLOAT:
+	    return PyString_FromString("Float");
+	case SAM_ML_TYPE_SA:
+	    return PyString_FromString("SA");
+	case SAM_ML_TYPE_HA:
+	    return PyString_FromString("HA");
+	case SAM_ML_TYPE_PA:
+	    return PyString_FromString("PA");
+	default:
+	    // TODO correct error procedure?
+	    return NULL;
+    }
+}
+
+/* Type_asChar {{{2 */
+static PyObject *
+Type_asChar(Type *restrict self)
+{
+    switch(self->type)
+    {
+	case SAM_ML_TYPE_NONE:
+	    return PyString_FromString("N");
+	case SAM_ML_TYPE_INT:
+	    return PyString_FromString("I");
+	case SAM_ML_TYPE_FLOAT:
+	    return PyString_FromString("F");
+	case SAM_ML_TYPE_SA:
+	    return PyString_FromString("S");
+	case SAM_ML_TYPE_HA:
+	    return PyString_FromString("H");
+	case SAM_ML_TYPE_PA:
+	    return PyString_FromString("P");
+	default:
+	    // TODO correct error procedure?
+	    return NULL;
+    }
+}
+
+/* PyMethodDef Type_methods {{{2 */
+static PyMethodDef Type_methods[] {
+    {"asChar", (PyCFunction)Type_asChar, METH_NOARGS,
+	"Returns a single character string representing the type"},
+    {NULL}  /* Sentinel */
+};
+// TODO Does type need more helper methods? We will see when using it.
+
+/* PyTypeObject TypeType {{{2 */
+static PyTypeObject TypeType = {
+    PyObject_HEAD_INIT(NULL)
+    .tp_name	  = "sam.Type"
+    .tp_basicsize = sizeof (Type),
+    .tp_flags     = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    .tp_doc	  = "Sam memory value type",
+    .tp_str	  = Type_str,
+    .tp_methods   = Type_methods,
+    .tp_new	  = PyType_GenericNew,
+};
+
+/* Type_create {{{2 */
+static Type *
+Type_create(sam_ml_type type)
+{
+    Type *rv = PyObject_New(Type, TypeType);
+    rv->type = type;
+
+    return rv;
+}
+
+/* Value {{{1 */
+/* typedef Value {{{2 */
+typedef struct {
+    PyObject_HEAD
+    sam_ml value;
+} Value;
+
+/* Value_value_get () {{{2 */
+static PyObject *
+Value_value_get(Value *restrict self)
+{
+    switch(self->value->type)
+    {
+	case SAM_ML_TYPE_INT:
+	    return PyLong_FromLong(self->value->i);
+	case SAM_ML_TYPE_FLOAT:
+	    return PyFloat_FromDouble(self->value->f);
+	case SAM_ML_TYPE_SA:
+	    return PyLong_FromLong(self->value->pa);
+	case SAM_ML_TYPE_HA:
+	    return PyLong_FromLong(self->value->ha);
+	case SAM_ML_TYPE_PA:
+	    return PyLong_FromLong(self->value->sa);
+	default:
+	    // TODO is this an exception?
+	    return NULL;
+    }
+}
+
+/* Value_type_get () {{{2 */
+static PyObject *
+Value_type_get(Value *restrict self)
+{
+    // TODO reference counting?
+    switch(self->type)
+    {
+	case SAM_ML_TYPE_NONE:
+	    return PyObject_GetAttrString(TypeType, "none");
+	case SAM_ML_TYPE_INT:
+	    return PyObject_GetAttrString(TypeType, "int");
+	case SAM_ML_TYPE_FLOAT:
+	    return PyObject_GetAttrString(TypeType, "float");
+	case SAM_ML_TYPE_SA:
+	    return PyObject_GetAttrString(TypeType, "sa");
+	case SAM_ML_TYPE_HA:
+	    return PyObject_GetAttrString(TypeType, "ha");
+	case SAM_ML_TYPE_PA:
+	    return PyObject_GetAttrString(TypeType, "pa");
+	default:
+	    // TODO correct error procedure?
+	    return NULL;
+    }
+}
+
+/* PyGetSetDef Value_getset {{{2 */
+static PyGetSetDef Value_getset[] = {
+    {"value", (getter)Value_value_get, NULL,
+	"value -- numerical value (PyLong or PyFloat).", NULL},
+    {"type", (getter)Value_type_get, NULL,
+	"type -- type of value.", NULL}
+};
+
+/* PyTypeObject ValueType {{{2 */
+static PyTypeObject ValueType = {
+    PyObject_HEAD_INIT(NULL)
+    .tp_name	  = "sam.Value",
+    .tp_basicsize = sizeof (Value),
+    .tp_flags     = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    .tp_doc	  = "Sam memory value (one Sam word)",
+    .tp_getset	  = Value_getset,
+    .tp_new	  = PyType_GenericNew,
+};
+
+
 /* Stack {{{1 */
 /* typedef Stack {{{2 */
 typedef EsRefObj Stack;
 
 /* PyTypeObject StackType {{{2 */
 static PyTypeObject StackType = {
-    PyObject_HEAD_INIT(NULL)
-    .tp_name	  = "sam.Stack",
     .tp_basicsize = sizeof (Stack),
     .tp_flags	  = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
     .tp_doc	  = "Sam stack",
@@ -146,6 +345,32 @@ static PyTypeObject StackType = {
     .tp_getset	  = Stack_getset,
     .tp_init	  = (initproc)Stack_init,
     .tp_new	  = PyType_GenericNew,
+};
+
+/* HeapIter {{{1*/
+/* typedef HeapIterObject {{{2 */
+typedef ProgRefIterType HeapIterObject;
+
+static PyObject *
+{
+    if (self->idx >= sam_es_heap_len(self->prog->es)) {
+	return NULL;
+    }
+
+    // TODO make sam memory value (sam_ml) object
+}
+
+/* PyTypeObject HeapIterType {{{2 */
+PyTypeObject HeapIterType = {
+    PyObject_HEAD_INIT(&PyType_Type)
+    .tp_name	  = "heapiterator",
+    .tp_basicsize = sizeof (HeapIterObject),
+    .tp_dealloc	  = (destructor)ProgRefIterType_dealloc,
+    .tp_free	  = PyObject_Free,
+    .tp_getattro  = PyObject_GenericGetAttr,
+    .tp_flags	  = Py_TPFLAGS_DEFAULT,
+    .tp_iter	  = PyObject_SelfIter,
+    .tp_iternext  = (iternextfunc)HeapIter_next,
 };
 
 /* Heap {{{1 */
@@ -176,6 +401,7 @@ typedef ProgRefType ProgramIterObject;
 static PyObject *
 ProgramIter_next(ProgramIterObject *restrict self)
 {
+    /* TODO: Does this work? If it should, yell at Trevor.*/
     if (sam_es_pc_get(self->prog->es) >=
 	sam_es_instructions_len(self->prog->es)) {
 	return NULL;
@@ -388,6 +614,50 @@ static PyMethodDef module_methods[] = {
 PyMODINIT_FUNC
 initsam(void)
 {
+    if (PyType_Ready(&TypeType) < 0) {
+	return;
+    }
+    // TODO right way to do types?
+    PyObject_SetAttrString(TypeType, "none",
+			   Type_create(SAM_ML_TYPE_NONE));
+    PyObject_SetAttrString(TypeType, "int", 
+			   Type_create(SAM_ML_TYPE_INT));
+    PyObject_SetAttrString(TypeType, "float", 
+			   Type_create(SAM_ML_TYPE_FLOAT));
+    PyObject_SetAttrString(TypeType, "sa", 
+			   Type_create(SAM_ML_TYPE_SA));
+    PyObject_SetAttrString(TypeType, "ha", 
+			   Type_create(SAM_ML_TYPE_HA));
+    PyObject_SetAttrString(TypeType, "pa", 
+			   Type_create(SAM_ML_TYPE_PA));
+
+    if (PyType_Ready(&ValueType) < 0) {
+	return;
+    }
+    if (PyType_Ready(&InstructionType) < 0) {
+	return;
+    }
+    if (PyType_Ready(&InstructionsIterType) < 0) {
+	return;
+    }
+    if (PyType_Ready(&InstructionsType) < 0) {
+	return;
+    }
+    if (PyType_Ready(&StackIterType) < 0) {
+	return;
+    }
+    if (PyType_Ready(&StackType) < 0) {
+	return;
+    }
+    if (PyType_Ready(&HeapIterType) < 0) {
+	return;
+    }
+    if (PyType_Ready(&HeapType) < 0) {
+	return;
+    }
+    if (PyType_Ready(&ProgramIterType) < 0) {
+	return;
+    }
     if (PyType_Ready(&ProgramType) < 0) {
 	return;
     }
