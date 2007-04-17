@@ -55,7 +55,7 @@ typedef struct {
 /* ProgRefIterType_dealloc () {{{2 */
 /* Deallocator for iterator types which keep track of a Program. */
 static void
-ProgRefType_dealloc(ProgRefIterType *restrict self)
+ProgRefIterType_dealloc(ProgRefIterType *restrict self)
 {
     Py_DECREF(self->prog);
     self->ob_type->tp_free((PyObject *)self);
@@ -68,6 +68,17 @@ typedef struct {
     char *inst;
     PyObject *labels; /* tuple */
 } Instruction;
+
+/* PyTypeObject InstructionType {{{2 */
+static PyTypeObject InstructionType = {
+    PyObject_HEAD_INIT(NULL)
+    .tp_name	  = "sam.Instruction",
+    .tp_basicsize = sizeof (Instruction),
+    .tp_flags     = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    .tp_doc	  = "Sam instruction (one line of a program)",
+    .tp_getset	  = Instruction_getset,
+    .tp_new	  = PyType_GenericNew,
+};
 
 /* InstructionsIter {{{1 */
 /* typedef InstructionsIterObject {{{2 */
@@ -122,27 +133,24 @@ typedef EsRefObj Instructions;
 static long
 Instructions_length(Instructions *self)
 {
-    unsigned long len = 
-	(unsigned long) sam_es_instructions_len(self->prog->es);
-    PyObject *restrict rv = PyLong_FromUnsignedLong(len);
-
-    return rv;
+    return sam_es_instructions_len(self->es);
 }
 
-static PyObject *
-Instructions_item(Instructions *self, int i)
+static Instruction *
+Instructions_item(Instructions *self, unsigned i)
 {
-    if(i < 0 || i >= sam_es_instructions_len(self->prog->es))
+    /* i is unsigned, no check for i < 0 */
+    if(i >= sam_es_instructions_len(self->es))
     {
 	PyErr_SetNone(PyExc_IndexError);
 	return NULL;
     }
 
     // TODO can we just cast to sam_pa?
-    sam_instruction *inst = sam_es_instructions_get(self-es, (sam_pa) i);
+    sam_instruction *inst = sam_es_instructions_get(self->es, (sam_pa) i);
 
-    Instruction *rv = PyObject_New(Instruction, InstructionInstruction);
-    rv->name = inst->name;
+    Instruction *rv = PyObject_New(Instruction, InstructionType);
+    rv->inst = inst->name;
     // TODO get labels
     rv->labels = PyTuple_New(0);
     return rv;
