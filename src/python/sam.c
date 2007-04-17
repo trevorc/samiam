@@ -138,11 +138,14 @@ Instructions_item(Instructions *self, int i)
 	return NULL;
     }
 
-    // TODO make Instruction object here?
     // TODO can we just cast to sam_pa?
     sam_instruction *inst = sam_es_instructions_get(self-es, (sam_pa) i);
-    const char *name = sam_instruction_name(inst);
 
+    Instruction *rv = PyObject_New(Instruction, InstructionInstruction);
+    rv->name = inst->name;
+    // TODO get labels
+    rv->labels = PyTuple_New(0);
+    return rv;
 }
 
 /* PySquenceMethods Instructions_sequence_methods {{{2 */
@@ -318,6 +321,16 @@ static PyGetSetDef Value_getset[] = {
 	"type -- type of value.", NULL}
 };
 
+/* Value_create () {{{2 */
+static Value *
+Value_create(sam_ml val)
+{
+    Value *rv = PyObject_New(Value, ValueValue);
+    rv->value = val;
+
+    return rv;
+}
+
 /* PyTypeObject ValueType {{{2 */
 static PyTypeObject ValueType = {
     PyObject_HEAD_INIT(NULL)
@@ -330,20 +343,77 @@ static PyTypeObject ValueType = {
 };
 
 
+/* StackIter {{{1*/
+/* typedef StackIterObject {{{2 */
+typedef ProgRefIterType StackIterObject;
+
+static Value *
+StackIter_next(StackIter *self)
+{
+    if (self->idx >= sam_es_stack_len(self->prog->es)) {
+	return NULL;
+    }
+
+    return Value_create(*sam_es_stack_get(self->prog->es, self->idx));
+}
+
+/* PyTypeObject StackIterType {{{2 */
+PyTypeObject StackIterType = {
+    PyObject_HEAD_INIT(&PyType_Type)
+    .tp_name	  = "heapiterator",
+    .tp_basicsize = sizeof (StackIterObject),
+    .tp_dealloc	  = (destructor)ProgRefIterType_dealloc,
+    .tp_free	  = PyObject_Free,
+    .tp_getattro  = PyObject_GenericGetAttr,
+    .tp_flags	  = Py_TPFLAGS_DEFAULT,
+    .tp_iter	  = PyObject_SelfIter,
+    .tp_iternext  = (iternextfunc)StackIter_next,
+};
+
 /* Stack {{{1 */
 /* typedef Stack {{{2 */
+/* Sequence of the SaM heap */
 typedef EsRefObj Stack;
+
+/* Stack_length {{{2 */
+static long
+Stack_length(Stack *self)
+{
+    return sam_es_stack_len(self->prog>es);
+}
+
+/* Stack_item {{{2 */
+static Value *
+Stack_item(Stack *self, Py_ssize_t i)
+{
+    if (i < 0 || i >= sam_es_stack_len(self->prog>es)) {
+	return NULL;
+    }
+
+    return Value_create(*sam_es_stack_get(self->prog->es, i));
+}
+
+/* PySquenceMethods Stack_sequence_methods {{{2 */
+static PySequenceMethods Stack_sequence_methods = {
+    .sq_length = (inquery)Stack_length,
+    /*(binaryfunc)*/0,			/*sq_concat*/
+    /*(intargfunc)*/0,		/*sq_repeat*/
+    .sq_item = (intargfunc)Stack_item,
+    /*(intintargfunc)*/0,		/*sq_slice*/
+    /*(intobjargproc)*/0,		/*sq_ass_item*/
+    /*(intintobjargproc)*/0,	/*sq_ass_slice*/
+}
 
 /* PyTypeObject StackType {{{2 */
 static PyTypeObject StackType = {
+    PyObject_HEAD_INIT(NULL)
+    .tp_name	  = "sam.Stack",
     .tp_basicsize = sizeof (Stack),
-    .tp_flags	  = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
-    .tp_doc	  = "Sam stack",
+    .tp_flags     = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    .tp_doc	  = "Sam execution state",
     .tp_iter	  = (getiterfunc)Stack_iter,
     .tp_as_sequence = Stack_sequence_methods,
-    .tp_methods	  = Stack_methods,
-    .tp_getset	  = Stack_getset,
-    .tp_init	  = (initproc)Stack_init,
+    .tp_methods   = Stack_methods,
     .tp_new	  = PyType_GenericNew,
 };
 
@@ -351,13 +421,14 @@ static PyTypeObject StackType = {
 /* typedef HeapIterObject {{{2 */
 typedef ProgRefIterType HeapIterObject;
 
-static PyObject *
+static Value *
+HeapIter_next(HeapIter *self)
 {
     if (self->idx >= sam_es_heap_len(self->prog->es)) {
 	return NULL;
     }
 
-    // TODO make sam memory value (sam_ml) object
+    return Value_create(*sam_es_heap_get(self->prog->es, self->idx));
 }
 
 /* PyTypeObject HeapIterType {{{2 */
@@ -378,6 +449,35 @@ PyTypeObject HeapIterType = {
 /* Sequence of the SaM heap */
 typedef EsRefObj Heap;
 
+/* Heap_length {{{2 */
+static long
+Heap_length(Heap *self)
+{
+    return sam_es_heap_len(self->prog>es);
+}
+
+/* Heap_item {{{2 */
+static Value *
+Heap_item(Heap *self, Py_ssize_t i)
+{
+    if (i < 0 || i >= sam_es_heap_len(self->prog>es)) {
+	return NULL;
+    }
+
+    return Value_create(*sam_es_heap_get(self->prog->es, i));
+}
+
+/* PySquenceMethods Heap_sequence_methods {{{2 */
+static PySequenceMethods Heap_sequence_methods = {
+    .sq_length = (inquery)Heap_length,
+    /*(binaryfunc)*/0,			/*sq_concat*/
+    /*(intargfunc)*/0,		/*sq_repeat*/
+    .sq_item = (intargfunc)Heap_item,
+    /*(intintargfunc)*/0,		/*sq_slice*/
+    /*(intobjargproc)*/0,		/*sq_ass_item*/
+    /*(intintobjargproc)*/0,	/*sq_ass_slice*/
+}
+
 /* PyTypeObject HeapType {{{2 */
 static PyTypeObject HeapType = {
     PyObject_HEAD_INIT(NULL)
@@ -388,8 +488,6 @@ static PyTypeObject HeapType = {
     .tp_iter	  = (getiterfunc)Heap_iter,
     .tp_as_sequence = Heap_sequence_methods,
     .tp_methods   = Heap_methods,
-    .tp_getset	  = Heap_getset,
-    .tp_init	  = (initproc)Heap_init,
     .tp_new	  = PyType_GenericNew,
 };
 
