@@ -86,7 +86,6 @@ Instruction_assembly_get(Instruction *restrict self)
 static PyObject *
 Instruction_labels_get(Instruction *restrict self)
 {
-    // TODO are tuples immutable?
     Py_INCREF(self->labels);
 
     return self->labels;
@@ -97,9 +96,9 @@ static PyGetSetDef Instruction_getset[] = {
     /* TODO call this assembly? Something better? */
     /* TODO setters... later? */
     {"assembly", (getter)Instruction_assembly_get, NULL,
-	"assembly -- the line of SaM code for this.", NULL},
+	"the line of SaM code for this.", NULL},
     {"labels", (getter)Instruction_labels_get, NULL,
-	"labels -- the labels for this.", NULL}
+	"the labels for this.", NULL}
 };
 
 /* PyTypeObject InstructionType {{{2 */
@@ -223,8 +222,7 @@ typedef struct {
 static PyObject *
 Type_str(Type *restrict self)
 {
-    switch(self->type)
-    {
+    switch (self->type) {
 	case SAM_ML_TYPE_NONE:
 	    return PyString_FromString("None");
 	case SAM_ML_TYPE_INT:
@@ -247,8 +245,7 @@ Type_str(Type *restrict self)
 static PyObject *
 Type_asChar(Type *restrict self)
 {
-    switch(self->type)
-    {
+    switch (self->type) {
 	case SAM_ML_TYPE_NONE:
 	    return PyString_FromString("N");
 	case SAM_ML_TYPE_INT:
@@ -308,8 +305,7 @@ typedef struct {
 static PyObject *
 Value_value_get(Value *restrict self)
 {
-    switch(self->value.type)
-    {
+    switch (self->value.type) {
 	case SAM_ML_TYPE_INT:
 	    return PyLong_FromLong(self->value.value.i);
 	case SAM_ML_TYPE_FLOAT:
@@ -331,8 +327,7 @@ static PyObject *
 Value_type_get(Value *restrict self)
 {
     // TODO reference counting?
-    switch(self->value.type)
-    {
+    switch (self->value.type) {
 	case SAM_ML_TYPE_NONE:
 	    return PyObject_GetAttrString(&TypeType, "none");
 	case SAM_ML_TYPE_INT:
@@ -673,13 +668,13 @@ Program_sp_get(Program *restrict self)
 /* PyGetSetDef Program_getset {{{2 */
 static PyGetSetDef Program_getset[] = {
     {"bt", (getter)Program_bt_get, (setter)Program_bt_set,
-	"bt -- back trace bit.", NULL},
+	"back trace bit.", NULL},
     {"fbr", (getter)Program_fbr_get, (setter)Program_fbr_set,
-	"fbr -- frame base register.", NULL},
+	"frame base register.", NULL},
     {"pc", (getter)Program_pc_get, (setter)Program_pc_set,
-	"pc -- program counter.", NULL},
+	"program counter.", NULL},
     {"sp", (getter)Program_sp_get, NULL,
-	"sp -- stack pointer.", NULL},
+	"stack pointer.", NULL},
 };
 
 /* Program_dealloc () {{{2 */
@@ -754,18 +749,12 @@ initsam(void)
 	return;
     }
     // TODO right way to do types?
-    PyObject_SetAttrString(&TypeType, "none",
-			   Type_create(SAM_ML_TYPE_NONE));
-    PyObject_SetAttrString(&TypeType, "int", 
-			   Type_create(SAM_ML_TYPE_INT));
-    PyObject_SetAttrString(&TypeType, "float", 
-			   Type_create(SAM_ML_TYPE_FLOAT));
-    PyObject_SetAttrString(&TypeType, "sa", 
-			   Type_create(SAM_ML_TYPE_SA));
-    PyObject_SetAttrString(&TypeType, "ha", 
-			   Type_create(SAM_ML_TYPE_HA));
-    PyObject_SetAttrString(&TypeType, "pa", 
-			   Type_create(SAM_ML_TYPE_PA));
+    PyObject_SetAttrString(&TypeType, "none", Type_create(SAM_ML_TYPE_NONE));
+    PyObject_SetAttrString(&TypeType, "int", Type_create(SAM_ML_TYPE_INT));
+    PyObject_SetAttrString(&TypeType, "float", Type_create(SAM_ML_TYPE_FLOAT));
+    PyObject_SetAttrString(&TypeType, "sa", Type_create(SAM_ML_TYPE_SA));
+    PyObject_SetAttrString(&TypeType, "ha", Type_create(SAM_ML_TYPE_HA));
+    PyObject_SetAttrString(&TypeType, "pa", Type_create(SAM_ML_TYPE_PA));
 
     if (PyType_Ready(&ValueType) < 0) {
 	return;
