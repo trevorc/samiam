@@ -5,7 +5,7 @@
 
 /* Exceptions {{{1 */
 /* PyTypeObject ExecutionStateType {{{2 */
-static PyTypeObject ExecutionStateTypez;
+static PyTypeObject ExecutionStateType;
 
 /* PyObject SamError {{{2 */
 static PyObject *SamError;
@@ -25,7 +25,7 @@ typedef struct {
     PyObject_HEAD
     sam_es *es;
     size_t idx;
-} EsRefIterObj;
+} EsRefIterType;
 
 /* typedef Program {{{2 */
 typedef struct {
@@ -156,6 +156,7 @@ Instructions_iter(PyObject *prog)
 
     return (PyObject *)self;
 }
+
 /* Instructions {{{1 */
 /* typedef Instructions {{{2 */
 /* Sequence of the SaM program code */
@@ -377,17 +378,17 @@ Value_create(sam_ml val)
 
 /* StackIter {{{1*/
 /* typedef StackIter {{{2 */
-typedef ProgRefIterType StackIter;
+typedef EsRefIterType StackIter;
 
 /* StackIter_next () {{{2 */
 static Value *
 StackIter_next(StackIter *restrict self)
 {
-    if (self->idx >= sam_es_stack_len(self->prog->es)) {
+    if (self->idx >= sam_es_stack_len(self->es)) {
 	return NULL;
     }
 
-    return Value_create(*sam_es_stack_get(self->prog->es, self->idx));
+    return Value_create(*sam_es_stack_get(self->es, self->idx));
 }
 
 /* PyTypeObject StackIterType {{{2 */
@@ -395,13 +396,29 @@ PyTypeObject StackIterType = {
     PyObject_HEAD_INIT(&PyType_Type)
     .tp_name	  = "heapiterator",
     .tp_basicsize = sizeof (StackIter),
-    .tp_dealloc	  = (destructor)ProgRefIterType_dealloc,
     .tp_free	  = PyObject_Free,
     .tp_getattro  = PyObject_GenericGetAttr,
     .tp_flags	  = Py_TPFLAGS_DEFAULT,
     .tp_iter	  = PyObject_SelfIter,
     .tp_iternext  = (iternextfunc)StackIter_next,
 };
+
+/* Stack_iter () {{{2 */
+static PyObject *
+Stack_iter(PyObject *prog)
+{
+    StackIter *restrict self =
+	PyObject_New(StackIter, &StackIterType);
+
+    if (self == NULL) {
+	return NULL;
+    }
+
+    Py_INCREF(prog);
+    self->es = ((Program *)prog)->es;
+
+    return (PyObject *)self;
+}
 
 /* Stack {{{1 */
 /* typedef Stack {{{2 */
@@ -445,7 +462,7 @@ static PyTypeObject StackType = {
     .tp_flags     = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
     .tp_doc	  = "Sam execution state",
     .tp_iter	  = (getiterfunc)Stack_iter,
-    .tp_as_sequence = Stack_sequence_methods,
+    .tp_as_sequence = &Stack_sequence_methods,
     .tp_new	  = PyType_GenericNew,
 };
 
@@ -469,13 +486,29 @@ PyTypeObject HeapIterType = {
     PyObject_HEAD_INIT(&PyType_Type)
     .tp_name	  = "heapiterator",
     .tp_basicsize = sizeof (HeapIter),
-    .tp_dealloc	  = (destructor)ProgRefIterType_dealloc,
     .tp_free	  = PyObject_Free,
     .tp_getattro  = PyObject_GenericGetAttr,
     .tp_flags	  = Py_TPFLAGS_DEFAULT,
     .tp_iter	  = PyObject_SelfIter,
     .tp_iternext  = (iternextfunc)HeapIter_next,
 };
+
+/* Heap_iter () {{{2 */
+static PyObject *
+Heap_iter(PyObject *prog)
+{
+    HeapIter *restrict self =
+	PyObject_New(HeapIter, &HeapIterType);
+
+    if (self == NULL) {
+	return NULL;
+    }
+
+    Py_INCREF(prog);
+    self->es = ((Program *)prog)->es;
+
+    return (PyObject *)self;
+}
 
 /* Heap {{{1 */
 /* typedef Heap {{{2 */
@@ -519,8 +552,7 @@ static PyTypeObject HeapType = {
     .tp_flags     = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
     .tp_doc	  = "Sam execution state",
     .tp_iter	  = (getiterfunc)Heap_iter,
-    .tp_as_sequence = Heap_sequence_methods,
-    .tp_methods   = Heap_methods,
+    .tp_as_sequence = &Heap_sequence_methods,
     .tp_new	  = PyType_GenericNew,
 };
 
