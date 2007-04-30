@@ -25,3 +25,12 @@ Extend sam_es to keep a list of ha's that are automatically memory managed.
 
 .import calls sam_es_import():
 	
+
+sam_es changes:
+	* changes to program counter:
+	    * make it a struct:
+		.module
+		.line
+	    * change addition
+	    * 
+	* make 
