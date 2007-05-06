@@ -1,36 +1,44 @@
 Write a control file parser.
 
 Change parse.c to understand the following directives:
-	.ro
-	.global
-	.export
-	.import
+    .ro
+    .global
+    .export
+    .import
 
 Extend sam_es to keep a list of ha's that are automatically memory managed.
 
 .ro calls sam_es_ro_alloc():
-	* appends to list of automatic ha's
-	* mallocs the appropriate amount
-	* sets the value
-	* adds symbol to symbol table
+    * appends to list of automatic ha's
+    * mallocs the appropriate amount
+    * sets the value
+    * adds symbol to symbol table
 
 .global calls sam_es_global_alloc():
-	* appends to list of automatic ha's
-	* mallocs the appropriate amount
-	* adds symbol to symbol table
+    * appends to list of automatic ha's
+    * mallocs the appropriate amount
+    * adds symbol to symbol table
 
 .export calls sam_es_export():
-	* appends symbol to list of things we want to export after the
-	  program has run
+    * appends symbol to list of things we want to export after the
+      program has run
 
 .import calls sam_es_import():
-	
+    
 
 sam_es changes:
-	* changes to program counter:
-	    * make it a struct:
-		.module
-		.line
-	    * change addition
-	    * 
-	* make 
+    * changes to program counter:
+	* make it a struct:
+	    .module
+	    .line
+	* change addition
+	* 
+    * make module-specific data structure
+	* allocs
+	* instructions
+	* labels
+
+symbol resolving:
+    * new opcodes
+	* PUSHIMMHA
+	    
