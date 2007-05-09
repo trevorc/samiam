@@ -20,7 +20,7 @@ typedef struct {
     sam_es *es;
 } EsRefObj;
 
-/* typedef EsRefIterObj {{{2 */
+/* typedef EsRefIterType {{{2 */
 typedef struct {
     PyObject_HEAD
     sam_es *es;
@@ -114,13 +114,13 @@ static PyTypeObject InstructionType = {
 
 /* InstructionsIter {{{1 */
 /* typedef InstructionsIterObject {{{2 */
-typedef ProgRefIterType InstructionsIterObject;
+typedef EsRefIterType InstructionsIterObject;
 
 /* InstructionsIter_next () {{{2 */
 static PyObject *
 InstructionsIter_next(InstructionsIterObject *restrict self)
 {
-    if (self->idx >= sam_es_instructions_len(self->prog->es)) {
+    if (self->idx >= sam_es_instructions_len(self->es)) {
 	return NULL;
     }
 
@@ -132,7 +132,6 @@ PyTypeObject InstructionsIterType = {
     PyObject_HEAD_INIT(&PyType_Type)
     .tp_name	  = "instructionsiterator",
     .tp_basicsize = sizeof (InstructionsIterObject),
-    .tp_dealloc	  = (destructor)ProgRefIterType_dealloc,
     .tp_free	  = PyObject_Free,
     .tp_getattro  = PyObject_GenericGetAttr,
     .tp_flags	  = Py_TPFLAGS_DEFAULT,
@@ -140,27 +139,25 @@ PyTypeObject InstructionsIterType = {
     .tp_iternext  = (iternextfunc)InstructionsIter_next,
 };
 
-/* Instructions_iter () {{{2 */
-static PyObject *
-Instructions_iter(PyObject *prog)
-{
-    InstructionsIterObject *restrict self =
-	PyObject_New(InstructionsIterObject, &InstructionsIterType);
-
-    if (self == NULL) {
-	return NULL;
-    }
-
-    Py_INCREF(prog);
-    self->prog = (Program *)prog;
-
-    return (PyObject *)self;
-}
-
 /* Instructions {{{1 */
 /* typedef Instructions {{{2 */
 /* Sequence of the SaM program code */
 typedef EsRefObj Instructions;
+
+/* Instructions_iter () {{{2 */
+static PyObject *
+Instructions_iter(Instructions *restrict self)
+{
+    InstructionsIterObject *restrict iter =
+	PyObject_New(InstructionsIterObject, &InstructionsIterType);
+
+    if (iter == NULL) {
+	return NULL;
+    }
+
+    iter->es = self->es;
+    return (PyObject *)iter;
+}
 
 /* Instructions_length {{{2 */
 static long
@@ -212,88 +209,146 @@ static PyTypeObject InstructionsType = {
     .tp_new	  = PyType_GenericNew,
 };
 
-/* Type {{{1 */
-/* typedef Type {{{2 */
-typedef struct {
-    PyObject_HEAD
-    sam_ml_type type;
-} Type;
+/* Module {{{1 */
+typedef EsRefObj Module;
 
-/* Type_str {{{2 */
+/* Module_instructions_get () {{{2 */
 static PyObject *
-Type_str(Type *restrict self)
+Module_instructions_get(Module *restrict self)
 {
-    switch (self->type) {
-	case SAM_ML_TYPE_NONE:
-	    return PyString_FromString("None");
-	case SAM_ML_TYPE_INT:
-	    return PyString_FromString("Int");
-	case SAM_ML_TYPE_FLOAT:
-	    return PyString_FromString("Float");
-	case SAM_ML_TYPE_SA:
-	    return PyString_FromString("SA");
-	case SAM_ML_TYPE_HA:
-	    return PyString_FromString("HA");
-	case SAM_ML_TYPE_PA:
-	    return PyString_FromString("PA");
-	default:
-	    // TODO correct error procedure?
-	    return NULL;
+    // TODO assumes single module
+    Instructions *restrict insts =
+	PyObject_New(Instructions, &InstructionsType);
+
+    if (insts == NULL) {
+	return NULL;
     }
+
+    insts->es = self->es;
+    return (PyObject *) insts;
 }
 
-/* Type_asChar {{{2 */
+/* Module_filename_get () {{{2 */
 static PyObject *
-Type_asChar(Type *restrict self)
+Module_filename_get(Module *restrict self)
 {
-    switch (self->type) {
-	case SAM_ML_TYPE_NONE:
-	    return PyString_FromString("N");
-	case SAM_ML_TYPE_INT:
-	    return PyString_FromString("I");
-	case SAM_ML_TYPE_FLOAT:
-	    return PyString_FromString("F");
-	case SAM_ML_TYPE_SA:
-	    return PyString_FromString("S");
-	case SAM_ML_TYPE_HA:
-	    return PyString_FromString("H");
-	case SAM_ML_TYPE_PA:
-	    return PyString_FromString("P");
-	default:
-	    // TODO correct error procedure?
-	    return NULL;
-    }
+    // TODO Need to get filename somehow.
+    return Py_BuildValue("s", "(ERROR: Filename unknown.)");
 }
 
-/* PyMethodDef Type_methods {{{2 */
-static PyMethodDef Type_methods[] = {
-    {"asChar", (PyCFunction)Type_asChar, METH_NOARGS,
-	"Returns a single character string representing the type"},
-    {NULL, NULL, 0, NULL}  /* Sentinel */
+/* PyGetSetDef Module_getset {{{2 */
+static PyGetSetDef Module_getset[] = {
+    {"instructions", (getter)Module_instructions_get, NULL,
+	"instructions -- the program code of this module.", NULL},
+    {"filename", (getter)Module_filename_get, NULL,
+	"filename", NULL}
 };
-// TODO Does type need more helper methods? We will see when using it.
 
-/* PyTypeObject TypeType {{{2 */
-static PyTypeObject TypeType = {
+/* PyTypeObject ModuleType {{{2 */
+static PyTypeObject ModuleType = {
     PyObject_HEAD_INIT(NULL)
-    .tp_name	  = "sam.Type",
-    .tp_basicsize = sizeof (Type),
+    .tp_name	  = "sam.Module",
+    .tp_basicsize = sizeof (Module),
     .tp_flags     = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
-    .tp_doc	  = "Sam memory value type",
-    .tp_str	  = (reprfunc)Type_str,
-    .tp_methods   = Type_methods,
+    .tp_doc	  = "Sam module (file)",
+    .tp_getset	  = Module_getset,
     .tp_new	  = PyType_GenericNew,
 };
 
-/* Type_create {{{2 */
-static Type *
-Type_create(sam_ml_type type)
-{
-    Type *rv = PyObject_New(Type, &TypeType);
-    rv->type = type;
+/* ModulesIter {{{1 */
+/* typedef ModulesIterObject {{{2 */
+typedef EsRefIterType ModulesIterObject;
 
-    return rv;
+/* ModulesIter_next () {{{2 */
+static PyObject *
+ModulesIter_next(ModulesIterObject *restrict self)
+{
+    // TODO this is hackish because libsam lacks module support
+    if (self->idx != 0)
+	return NULL;
+
+    // TODO get and make Module object
 }
+
+/* PyTypeObject ModulesIterType {{{2 */
+PyTypeObject ModulesIterType = {
+    PyObject_HEAD_INIT(&PyType_Type)
+    .tp_name	  = "instructionsiterator",
+    .tp_basicsize = sizeof (ModulesIterObject),
+    .tp_free	  = PyObject_Free,
+    .tp_getattro  = PyObject_GenericGetAttr,
+    .tp_flags	  = Py_TPFLAGS_DEFAULT,
+    .tp_iter	  = PyObject_SelfIter,
+    .tp_iternext  = (iternextfunc)ModulesIter_next,
+};
+
+
+/* Modules {{{1 */
+/* typedef Modules {{{2 */
+/* Sequence of the SaM program code */
+typedef EsRefObj Modules;
+
+/* Modules_iter () {{{2 */
+static PyObject *
+Modules_iter(Modules *restrict self)
+{
+    ModulesIterObject *restrict iter =
+	PyObject_New(ModulesIterObject, &ModulesIterType);
+
+    if (iter == NULL) {
+	return NULL;
+    }
+
+    iter->es = self->es;
+    return (PyObject *)iter;
+}
+
+/* Modules_length {{{2 */
+static long
+Modules_length(Modules *restrict self)
+{
+    // TODO this is hackish because libsam lacks module support
+    return 1;
+}
+
+/* Modules_item {{{2 */
+static PyObject *
+Modules_item(Modules *restrict self, unsigned i)
+{
+    // TODO this is hackish because libsam lacks module support
+    if(i != 0)
+    {
+	PyErr_SetNone(PyExc_IndexError);
+	return NULL;
+    }
+
+    Module *rv = PyObject_New(Module, &ModuleType);
+    rv->es = self->es;
+    return (PyObject *) rv;
+}
+
+/* PySquenceMethods Modules_sequence_methods {{{2 */
+static PySequenceMethods Modules_sequence_methods = {
+    .sq_length = (inquiry)Modules_length,
+//    /*(binaryfunc)*/0,			/*sq_concat*/
+//    /*(intargfunc)*/0,		/*sq_repeat*/
+    .sq_item = (intargfunc)Modules_item,
+//    /*(intintargfunc)*/0,		/*sq_slice*/
+//    /*(intobjargproc)*/0,		/*sq_ass_item*/
+//    /*(intintobjargproc)*/0,	/*sq_ass_slice*/
+};
+
+/* PyTypeObject ModulesType {{{2 */
+static PyTypeObject ModulesType = {
+    PyObject_HEAD_INIT(NULL)
+    .tp_name	  = "sam.Modules",
+    .tp_basicsize = sizeof (Modules),
+    .tp_flags     = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    .tp_doc	  = "Sam program code",
+    .tp_iter	  = (getiterfunc)Modules_iter,
+    .tp_as_sequence = &Modules_sequence_methods,
+    .tp_new	  = PyType_GenericNew,
+};
 
 /* Value {{{1 */
 /* typedef Value {{{2 */
@@ -307,6 +362,8 @@ static PyObject *
 Value_value_get(Value *restrict self)
 {
     switch (self->value.type) {
+	case SAM_ML_TYPE_NONE:
+	    return PyLong_FromLong(0); // TODO is this right?
 	case SAM_ML_TYPE_INT:
 	    return PyLong_FromLong(self->value.value.i);
 	case SAM_ML_TYPE_FLOAT:
@@ -327,24 +384,7 @@ Value_value_get(Value *restrict self)
 static PyObject *
 Value_type_get(Value *restrict self)
 {
-    // TODO reference counting?
-    switch (self->value.type) {
-	case SAM_ML_TYPE_NONE:
-	    return PyObject_GetAttrString(&TypeType, "none");
-	case SAM_ML_TYPE_INT:
-	    return PyObject_GetAttrString(&TypeType, "int");
-	case SAM_ML_TYPE_FLOAT:
-	    return PyObject_GetAttrString(&TypeType, "float");
-	case SAM_ML_TYPE_SA:
-	    return PyObject_GetAttrString(&TypeType, "sa");
-	case SAM_ML_TYPE_HA:
-	    return PyObject_GetAttrString(&TypeType, "ha");
-	case SAM_ML_TYPE_PA:
-	    return PyObject_GetAttrString(&TypeType, "pa");
-	default:
-	    // TODO correct error procedure?
-	    return NULL;
-    }
+    return PyLong_FromUnsignedLong(self->value.type);
 }
 
 /* PyGetSetDef Value_getset {{{2 */
@@ -352,7 +392,7 @@ static PyGetSetDef Value_getset[] = {
     {"value", (getter)Value_value_get, NULL,
 	"value -- numerical value (PyLong or PyFloat).", NULL},
     {"type", (getter)Value_type_get, NULL,
-	"type -- type of value.", NULL}
+	"type -- type of value; index into sam.Types.", NULL}
 };
 
 /* PyTypeObject ValueType {{{2 */
@@ -388,7 +428,7 @@ StackIter_next(StackIter *restrict self)
 	return NULL;
     }
 
-    return Value_create(*sam_es_stack_get(self->es, self->idx));
+    return Value_create(*sam_es_stack_get(self->es, self->idx++));
 }
 
 /* PyTypeObject StackIterType {{{2 */
@@ -414,8 +454,8 @@ Stack_iter(PyObject *prog)
 	return NULL;
     }
 
-    Py_INCREF(prog);
     self->es = ((Program *)prog)->es;
+    self->idx = 0;
 
     return (PyObject *)self;
 }
@@ -504,9 +544,7 @@ Heap_iter(PyObject *prog)
 	return NULL;
     }
 
-    Py_INCREF(prog);
     self->es = ((Program *)prog)->es;
-
     return (PyObject *)self;
 }
 
@@ -571,6 +609,8 @@ ProgramIter_next(ProgramIterObject *restrict self)
     }
 
     long err = sam_es_instructions_cur(self->prog->es)->handler(self->prog->es);
+    if(err != SAM_OK)
+	return NULL;
 
     PyObject *restrict rv = PyLong_FromLong(err);
     sam_es_pc_pp(self->prog->es);
@@ -697,6 +737,48 @@ Program_sp_get(Program *restrict self)
     return PyLong_FromUnsignedLong(sam_es_sp_get(self->es));
 }
 
+/* Program_stack_get () {{{2 */
+static PyObject *
+Program_stack_get(Program *restrict self)
+{
+    Stack *restrict stack = PyObject_New(Stack, &StackType);
+
+    if (stack == NULL) {
+	return NULL;
+    }
+
+    stack->es = self->es;
+    return (PyObject *) stack;
+}
+
+/* Program_heap_get () {{{2 */
+static PyObject *
+Program_heap_get(Program *restrict self)
+{
+    Heap *restrict heap = PyObject_New(Heap, &HeapType);
+
+    if (heap == NULL) {
+	return NULL;
+    }
+
+    heap->es = self->es;
+    return (PyObject *) heap;
+}
+
+/* Program_modules_get () {{{2 */
+static PyObject *
+Program_modules_get(Program *restrict self)
+{
+    Modules *restrict modules = PyObject_New(Modules, &ModulesType);
+
+    if (modules == NULL) {
+	return NULL;
+    }
+
+    modules->es = self->es;
+    return (PyObject *) modules;
+}
+
 /* PyGetSetDef Program_getset {{{2 */
 static PyGetSetDef Program_getset[] = {
     {"bt", (getter)Program_bt_get, (setter)Program_bt_set,
@@ -707,6 +789,12 @@ static PyGetSetDef Program_getset[] = {
 	"program counter.", NULL},
     {"sp", (getter)Program_sp_get, NULL,
 	"stack pointer.", NULL},
+    {"stack", (getter)Program_stack_get, NULL,
+	"stack.", NULL},
+    {"heap", (getter)Program_heap_get, NULL,
+	"heap.", NULL},
+    {"modules", (getter)Program_modules_get, NULL,
+	"the SaM files.", NULL},
 };
 
 /* Program_dealloc () {{{2 */
@@ -777,17 +865,6 @@ static PyMethodDef module_methods[] = {
 PyMODINIT_FUNC
 initsam(void)
 {
-    if (PyType_Ready(&TypeType) < 0) {
-	return;
-    }
-    // TODO right way to do types?
-    PyObject_SetAttrString(&TypeType, "none", Type_create(SAM_ML_TYPE_NONE));
-    PyObject_SetAttrString(&TypeType, "int", Type_create(SAM_ML_TYPE_INT));
-    PyObject_SetAttrString(&TypeType, "float", Type_create(SAM_ML_TYPE_FLOAT));
-    PyObject_SetAttrString(&TypeType, "sa", Type_create(SAM_ML_TYPE_SA));
-    PyObject_SetAttrString(&TypeType, "ha", Type_create(SAM_ML_TYPE_HA));
-    PyObject_SetAttrString(&TypeType, "pa", Type_create(SAM_ML_TYPE_PA));
-
     if (PyType_Ready(&ValueType) < 0) {
 	return;
     }
@@ -837,4 +914,9 @@ initsam(void)
     Py_INCREF(&ProgramType);
     PyModule_AddObject(m, "Program",
 		       (PyObject *)&ProgramType);
+    
+    PyObject *Types = Py_BuildValue("(ssssss)", "none", "int", "float", "sa", "ha", "pa");
+    Py_INCREF(Types);
+    PyModule_AddObject(m, "Types", Types);
+
 }
