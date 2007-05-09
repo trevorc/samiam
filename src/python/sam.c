@@ -124,7 +124,17 @@ InstructionsIter_next(InstructionsIterObject *restrict self)
 	return NULL;
     }
 
-    // TODO get and make Instruction object
+    Instruction *restrict inst =
+	PyObject_New(Instruction, &InstructionType);
+
+    if (inst == NULL) {
+	return NULL;
+    }
+
+    // TODO How do a get I line of SaMcode?
+    inst->inst = "";
+    inst->labels = Py_BuildValue("()");
+    return (PyObject *) inst;
 }
 
 /* PyTypeObject InstructionsIterType {{{2 */
@@ -267,7 +277,14 @@ ModulesIter_next(ModulesIterObject *restrict self)
     if (self->idx != 0)
 	return NULL;
 
-    // TODO get and make Module object
+    Module *restrict module = PyObject_New(Module, &ModuleType);
+
+    if (module == NULL) {
+	return NULL;
+    }
+
+    module->es = self->es;
+    return (PyObject *) module;
 }
 
 /* PyTypeObject ModulesIterType {{{2 */
@@ -324,6 +341,7 @@ Modules_item(Modules *restrict self, unsigned i)
 
     Module *rv = PyObject_New(Module, &ModuleType);
     rv->es = self->es;
+    Py_INCREF(rv); // TODO Why is this required?
     return (PyObject *) rv;
 }
 
@@ -776,6 +794,7 @@ Program_modules_get(Program *restrict self)
     }
 
     modules->es = self->es;
+    Py_INCREF(modules); // TODO Why is this required?
     return (PyObject *) modules;
 }
 
