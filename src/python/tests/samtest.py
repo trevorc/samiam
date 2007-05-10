@@ -4,8 +4,8 @@ import sam
 import sys
 
 prog = sam.Program(file = sys.argv[1])
-#for module in prog.modules:
-#    print help(module)
+for module in prog.modules:
+    print module.foo
 
 while prog.step():
     pass
