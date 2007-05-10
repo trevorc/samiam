@@ -62,7 +62,8 @@ static PyGetSetDef Instruction_getset[] = {
     {"assembly", (getter)Instruction_assembly_get, NULL,
 	"the line of SaM code for this.", NULL},
     {"labels", (getter)Instruction_labels_get, NULL,
-	"the labels for this.", NULL}
+	"the labels for this.", NULL},
+    {NULL, NULL, NULL, NULL, NULL}
 };
 
 /* PyTypeObject InstructionType {{{2 */
@@ -94,9 +95,11 @@ InstructionsIter_next(InstructionsIterObject *restrict self)
     if (inst == NULL) {
 	return NULL;
     }
+    sam_instruction *si =
+	sam_es_instructions_get(self->es, (sam_pa) self->idx++);
 
     // TODO How do a get I line of SaMcode?
-    inst->inst = "";
+    inst->inst = si->name;
     inst->labels = Py_BuildValue("()");
     return (PyObject *) inst;
 }
@@ -130,6 +133,7 @@ Instructions_iter(Instructions *restrict self)
     }
 
     iter->es = self->es;
+    iter->idx = 0;
     return (PyObject *)iter;
 }
 
@@ -140,6 +144,7 @@ Instructions_length(Instructions *self)
     return sam_es_instructions_len(self->es);
 }
 
+/* Instructions_item {{{2 */
 static Instruction *
 Instructions_item(Instructions *self, unsigned i)
 {
@@ -156,7 +161,7 @@ Instructions_item(Instructions *self, unsigned i)
     Instruction *rv = PyObject_New(Instruction, &InstructionType);
     rv->inst = inst->name;
     // TODO get labels
-    rv->labels = PyTuple_New(0);
+    rv->labels = Py_BuildValue("()");
     return rv;
 }
 
@@ -225,7 +230,8 @@ static PyGetSetDef Module_getset[] = {
     {"instructions", (getter)Module_instructions_get, NULL,
 	"instructions -- the program code of this module.", NULL},
     {"filename", (getter)Module_filename_get, NULL,
-	"filename", NULL}
+	"filename", NULL},
+    {NULL, NULL, NULL, NULL, NULL}
 };
 
 /* PyTypeObject ModuleType {{{2 */
@@ -389,7 +395,8 @@ static PyGetSetDef Value_getset[] = {
     {"value", (getter)Value_value_get, NULL,
 	"value -- numerical value (PyLong or PyFloat).", NULL},
     {"type", (getter)Value_type_get, NULL,
-	"type -- type of value; index into sam.Types.", NULL}
+	"type -- type of value; index into sam.Types.", NULL},
+    {NULL, NULL, NULL, NULL, NULL}
 };
 
 /* PyTypeObject ValueType {{{2 */
@@ -739,6 +746,7 @@ static PyGetSetDef Program_getset[] = {
 	"heap.", NULL},
     {"modules", (getter)Program_modules_get, NULL,
 	"the SaM files.", NULL},
+    {NULL, NULL, NULL, NULL, NULL}
 };
 
 /* Program_dealloc () {{{2 */
