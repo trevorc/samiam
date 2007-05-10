@@ -921,30 +921,6 @@ initsam(void)
 	PyModule_AddObject(m, "ParseError", ParseError);
     }
 
-    Py_INCREF(&ValueType);
-    PyModule_AddObject(m, "Value", (PyObject *)&ValueType);
-    Py_INCREF(&InstructionType);
-    PyModule_AddObject(m, "Instruction",
-			    (PyObject *)&InstructionType);
-    Py_INCREF(&InstructionsType);
-    PyModule_AddObject(m, "Instructions",
-			     (PyObject *)&InstructionsType);
-    PyModule_AddObject(m, "InstructionsIter",
-			     (PyObject *)&InstructionsIterType);
-    Py_INCREF(&HeapType);
-    PyModule_AddObject(m, "Heap", (PyObject *)&HeapType);
-    Py_INCREF(&HeapIterType);
-    PyModule_AddObject(m, "HeapIter", (PyObject *)&HeapIterType);
-    Py_INCREF(&StackType);
-    PyModule_AddObject(m, "Stack", (PyObject *)&StackType);
-    Py_INCREF(&StackIterType);
-    PyModule_AddObject(m, "StackIter", (PyObject *)&StackIterType);
-    Py_INCREF(&ModuleType);
-    PyModule_AddObject(m, "Module", (PyObject *)&ModuleType);
-    Py_INCREF(&ModulesIterType);
-    PyModule_AddObject(m, "ModulesIter", (PyObject *)&ModulesIterType);
-    Py_INCREF(&ModulesType);
-    PyModule_AddObject(m, "Modules", (PyObject *)&ModulesType);
     Py_INCREF(&ProgramType);
     PyModule_AddObject(m, "Program", (PyObject *)&ProgramType);
     
