@@ -24,13 +24,6 @@ typedef struct {
     size_t idx;
 } EsRefIterType;
 
-/* typedef Program {{{2 */
-typedef struct {
-    PyObject_HEAD
-    sam_es *es;
-    char *file;
-} Program;
-
 /* Instruction {{{1 */
 /* typedef Instruction {{{2 */
 typedef struct {
@@ -77,6 +70,19 @@ static PyTypeObject InstructionType = {
     .tp_new	  = PyType_GenericNew,
 };
 
+/* Instruction_create {{{2 */
+static PyObject *
+Instruction_create(sam_instruction *restrict si)
+{
+    Instruction *restrict rv = PyObject_New(Instruction, &InstructionType);
+    rv->inst = si->name;
+    // XXX TODO handle operand
+    // TODO get labels
+    rv->labels = Py_BuildValue("()");
+    return (PyObject *) rv;
+
+}
+
 /* InstructionsIter {{{1 */
 /* typedef InstructionsIterObject {{{2 */
 typedef EsRefIterType InstructionsIterObject;
@@ -98,10 +104,7 @@ InstructionsIter_next(InstructionsIterObject *restrict self)
     sam_instruction *si =
 	sam_es_instructions_get(self->es, (sam_pa) self->idx++);
 
-    // TODO How do a get I line of SaMcode?
-    inst->inst = si->name;
-    inst->labels = Py_BuildValue("()");
-    return (PyObject *) inst;
+    return Instruction_create(si);
 }
 
 /* PyTypeObject InstructionsIterType {{{2 */
@@ -158,11 +161,7 @@ Instructions_item(Instructions *self, unsigned i)
     // TODO can we just cast to sam_pa?
     sam_instruction *inst = sam_es_instructions_get(self->es, (sam_pa) i);
 
-    Instruction *rv = PyObject_New(Instruction, &InstructionType);
-    rv->inst = inst->name;
-    // TODO get labels
-    rv->labels = Py_BuildValue("()");
-    return rv;
+    return Instruction_create(inst);
 }
 
 /* PySquenceMethods Instructions_sequence_methods {{{2 */
@@ -460,9 +459,14 @@ PyTypeObject StackIterType = {
     .tp_iternext  = (iternextfunc)StackIter_next,
 };
 
+/* Stack {{{1 */
+/* typedef Stack {{{2 */
+/* Sequence of the SaM heap */
+typedef EsRefObj Stack;
+
 /* Stack_iter () {{{2 */
 static PyObject *
-Stack_iter(PyObject *prog)
+Stack_iter(Stack *restrict st)
 {
     StackIter *restrict self =
 	PyObject_New(StackIter, &StackIterType);
@@ -471,16 +475,11 @@ Stack_iter(PyObject *prog)
 	return NULL;
     }
 
-    self->es = ((Program *)prog)->es;
+    self->es = st->es;
     self->idx = 0;
 
     return (PyObject *)self;
 }
-
-/* Stack {{{1 */
-/* typedef Stack {{{2 */
-/* Sequence of the SaM heap */
-typedef EsRefObj Stack;
 
 /* Stack_length {{{2 */
 static long
@@ -550,9 +549,14 @@ PyTypeObject HeapIterType = {
     .tp_iternext  = (iternextfunc)HeapIter_next,
 };
 
+/* Heap {{{1 */
+/* typedef Heap {{{2 */
+/* Sequence of the SaM heap */
+typedef EsRefObj Heap;
+
 /* Heap_iter () {{{2 */
 static PyObject *
-Heap_iter(PyObject *prog)
+Heap_iter(Heap *restrict heap)
 {
     HeapIter *restrict self =
 	PyObject_New(HeapIter, &HeapIterType);
@@ -561,14 +565,11 @@ Heap_iter(PyObject *prog)
 	return NULL;
     }
 
-    self->es = ((Program *)prog)->es;
+    self->es = heap->es;
+    self->idx = 0;
+
     return (PyObject *)self;
 }
-
-/* Heap {{{1 */
-/* typedef Heap {{{2 */
-/* Sequence of the SaM heap */
-typedef EsRefObj Heap;
 
 /* Heap_length {{{2 */
 static long
@@ -612,6 +613,13 @@ static PyTypeObject HeapType = {
 };
 
 /* Program {{{1 */
+/* typedef Program {{{2 */
+typedef struct {
+    PyObject_HEAD
+    sam_es *es;
+    char *file;
+} Program;
+
 /* Program_bt_get () {{{2 */
 static PyObject *
 Program_bt_get(Program *restrict self)
@@ -759,6 +767,9 @@ static PyGetSetDef Program_getset[] = {
 	"heap.", NULL},
     {"modules", (getter)Program_modules_get, NULL,
 	"the SaM files.", NULL},
+    // TODO DEBUG remove this
+    {"instructions", (getter)Module_instructions_get, NULL,
+	"the program code", NULL},
     {NULL, NULL, NULL, NULL, NULL}
 };
 
