@@ -4,9 +4,6 @@
 #include <libsam/sdk.h>
 
 /* Exceptions {{{1 */
-/* PyTypeObject ExecutionStateType {{{2 */
-static PyTypeObject ExecutionStateType;
-
 /* PyObject SamError {{{2 */
 static PyObject *SamError;
 
@@ -33,39 +30,6 @@ typedef struct {
     sam_es *es;
     char *file;
 } Program;
-
-/* ProgRefType {{{1 */
-/* typedef ProgRefType {{{2 */
-typedef struct {
-    PyObject_HEAD
-    Program *prog;
-} ProgRefType;
-
-/* ProgRefType_dealloc () {{{2 */
-/* Deallocator for non-iterator types which keep track of a Program. */
-static void
-ProgRefType_dealloc(ProgRefType *restrict self)
-{
-    Py_DECREF(self->prog);
-    self->ob_type->tp_free((PyObject *)self);
-}
-
-/* ProgRefIterType {{{1 */
-/* typedef ProgRefIterType {{{2 */
-typedef struct {
-    PyObject_HEAD
-    Program *prog;
-    size_t idx;
-} ProgRefIterType;
-
-/* ProgRefIterType_dealloc () {{{2 */
-/* Deallocator for iterator types which keep track of a Program. */
-static void
-ProgRefIterType_dealloc(ProgRefIterType *restrict self)
-{
-    Py_DECREF(self->prog);
-    self->ob_type->tp_free((PyObject *)self);
-}
 
 /* Instruction {{{1 */
 /* typedef Instruction {{{2 */
@@ -627,60 +591,6 @@ static PyTypeObject HeapType = {
     .tp_new	  = PyType_GenericNew,
 };
 
-/* ProgramIter {{{1 */
-/* typedef ProgramIterObject {{{2 */
-typedef ProgRefType ProgramIterObject;
-
-/* ProgramIter_next () {{{2 */
-static PyObject *
-ProgramIter_next(ProgramIterObject *restrict self)
-{
-    /* TODO: Does this work? If it should, yell at Trevor.*/
-    if (sam_es_pc_get(self->prog->es) >=
-	sam_es_instructions_len(self->prog->es)) {
-	return NULL;
-    }
-
-    long err = sam_es_instructions_cur(self->prog->es)->handler(self->prog->es);
-    if(err != SAM_OK)
-	return NULL;
-
-    PyObject *restrict rv = PyLong_FromLong(err);
-    sam_es_pc_pp(self->prog->es);
-
-    return rv;
-}
-
-
-/* PyTypeObject ProgramIterType {{{2 */
-PyTypeObject ProgramIterType = {
-    PyObject_HEAD_INIT(&PyType_Type)
-    .tp_name	  = "programiterator",
-    .tp_basicsize = sizeof (ProgramIterObject),
-    .tp_dealloc	  = (destructor)ProgRefType_dealloc,
-    .tp_free	  = PyObject_Free,
-    .tp_getattro  = PyObject_GenericGetAttr,
-    .tp_flags	  = Py_TPFLAGS_DEFAULT,
-    .tp_iter	  = PyObject_SelfIter,
-    .tp_iternext  = (iternextfunc)ProgramIter_next,
-};
-
-/* Program_iter () {{{2 */
-static PyObject *
-Program_iter(PyObject *prog)
-{
-    ProgramIterObject *restrict self =
-	PyObject_New(ProgramIterObject, &ProgramIterType);
-
-    if (self == NULL) {
-	return NULL;
-    }
-
-    Py_INCREF(prog);
-    self->prog = (Program *)prog;
-
-    return (PyObject *)self;
-}
 /* Program {{{1 */
 /* Program_bt_get () {{{2 */
 static PyObject *
@@ -842,14 +752,70 @@ Program_dealloc(Program *self)
     self->ob_type->tp_free((PyObject *)self);
 }
 
+/* Program_step () {{{2 */
+static PyObject *
+Program_step(Program *restrict self)
+{
+    if (sam_es_pc_get(self->es) >=
+	sam_es_instructions_len(self->es)) {
+	Py_RETURN_FALSE;
+    }
+
+    long err = sam_es_instructions_cur(self->es)->handler(self->es);
+    if(err != SAM_OK)
+	Py_RETURN_FALSE;
+
+    sam_es_pc_pp(self->es);
+
+    Py_RETURN_TRUE;
+}
+
+/* Program_get_changes () {{{2 */
+static PyObject *
+Program_get_changes(Program *restrict self)
+{
+    return NULL; // XXX TODO
+}
+
+/* Program_load () {{{2 */
+static int
+Program_load(Program *restrict self)
+{
+    self->es = sam_es_new(1, NULL);
+    if (!sam_parse(self->es, self->file)) {
+	PyErr_SetString(ParseError, "couldn't parse input file.");
+	return -1;
+    }
+
+    return 0;
+}
+
+/* Program_reset () {{{2 */
+static PyObject *
+Program_reset(Program *restrict self)
+{
+    /* TODO is there a better way to reset than reloading? */
+    if(Program_load(self) == 0)
+	Py_RETURN_TRUE;
+    else
+	return NULL;
+}
+
 /* PyMethodDef Program_methods {{{2 */
 static PyMethodDef Program_methods[] = {
+    {"step", (PyCFunction)Program_step, METH_NOARGS,
+	"Steps one instruction; returns true if the program continues"},
+    {"get_changes", (PyCFunction)Program_get_changes, METH_NOARGS,
+	"Returns all changes to the memory state since this function "
+	"was last called"},
+    {"reset", (PyCFunction)Program_reset, METH_NOARGS,
+	"Resets program to the beginning. Note this also resets changes."},
     {0, 0, 0, 0}, /* Sentinel */
 };
 
 /* Program_init () {{{2 */
 static int
-Program_init(Program *self, PyObject *args, PyObject *kwds)
+Program_init(Program *restrict self, PyObject *args, PyObject *kwds)
 {
     static char *kwlist[] = {"file", NULL};
     char *file;
@@ -857,16 +823,9 @@ Program_init(Program *self, PyObject *args, PyObject *kwds)
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "s", kwlist, &file)) {
 	return -1; 
     }
-
-    self->es = sam_es_new(1, NULL);
-
     self->file = strdup(file);
-    if (!sam_parse(self->es, file)) {
-	PyErr_SetString(ParseError, "couldn't parse input file.");
-	return -1;
-    }
 
-    return 0;
+    return Program_load(self);
 }
 
 /* PyTypeObject ProgramType {{{2 */
@@ -877,7 +836,6 @@ static PyTypeObject ProgramType = {
     .tp_dealloc   = (destructor)Program_dealloc,
     .tp_flags     = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
     .tp_doc	  = "Sam execution state",
-    .tp_iter	  = (getiterfunc)Program_iter,
     .tp_methods   = Program_methods,
     .tp_getset	  = Program_getset,
     .tp_init	  = (initproc)Program_init,
@@ -921,9 +879,6 @@ initsam(void)
 	return;
     }
     if (PyType_Ready(&HeapType) < 0) {
-	return;
-    }
-    if (PyType_Ready(&ProgramIterType) < 0) {
 	return;
     }
     if (PyType_Ready(&ProgramType) < 0) {

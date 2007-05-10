@@ -1,11 +1,13 @@
+#!/usr/bin/env python
+
 import sam
 import sys
 
 prog = sam.Program(file = sys.argv[1])
-for module in prog.modules:
-    print help(module)
+#for module in prog.modules:
+#    print help(module)
 
-for change in prog:
+while prog.step():
     pass
 #    if len(prog.stack) > 0:
 #	print help(prog.stack[0])
