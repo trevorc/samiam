@@ -220,6 +220,7 @@ static PyTypeObject InstructionsType = {
 };
 
 /* Module {{{1 */
+/* typedef Module {{{2 */
 typedef EsRefObj Module;
 
 /* Module_instructions_get () {{{2 */
@@ -246,8 +247,17 @@ Module_filename_get(Module *restrict self)
     return Py_BuildValue("s", "(ERROR: Filename unknown.)");
 }
 
+/* Module_foo_get () {{{2 */
+// XXX DEBUG
+static PyObject *
+Module_foo_get(Module *restrict self)
+{
+    return PyLong_FromLong(4);
+}
+
 /* PyGetSetDef Module_getset {{{2 */
 static PyGetSetDef Module_getset[] = {
+    {"foo", (getter)Module_foo_get, NULL, "foo", NULL},
     {"instructions", (getter)Module_instructions_get, NULL,
 	"instructions -- the program code of this module.", NULL},
     {"filename", (getter)Module_filename_get, NULL,
@@ -276,6 +286,8 @@ ModulesIter_next(ModulesIterObject *restrict self)
     // TODO this is hackish because libsam lacks module support
     if (self->idx != 0)
 	return NULL;
+    else
+	self->idx++;
 
     Module *restrict module = PyObject_New(Module, &ModuleType);
 
@@ -284,6 +296,7 @@ ModulesIter_next(ModulesIterObject *restrict self)
     }
 
     module->es = self->es;
+    Py_INCREF(module);
     return (PyObject *) module;
 }
 
@@ -317,6 +330,8 @@ Modules_iter(Modules *restrict self)
     }
 
     iter->es = self->es;
+    iter->idx = 0;
+    Py_INCREF(iter);
     return (PyObject *)iter;
 }
 

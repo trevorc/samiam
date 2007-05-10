@@ -2,14 +2,19 @@ import sam;
 import sys;
 
 prog = sam.Program(file = sys.argv[1])
-#print prog.modules[0].filename
+for module in prog.modules:
+    print help(module)
+
 for change in prog:
-    print "PC:", prog.pc, " -- instruction: '" , \
-	    prog.modules[0], \
-	    "'", "-- Stack size:", len(prog.stack)
-    for val in prog.stack:
-	print "PC:", prog.pc, "-- Stack value type:", sam.Types[val.type], \
-		"value:", val.value
+    pass
+#    if len(prog.stack) > 0:
+#	print help(prog.stack[0])
+#    print "PC:", prog.pc, " -- instruction: '" , \
+#	    prog.modules[0], \
+#	    "'", "-- Stack size:", len(prog.stack)
+#    for val in prog.stack:
+#	print "PC:", prog.pc, "-- Stack value type:", sam.Types[val.type], \
+#		"value:", val.value
 #    pass # print prog.pc
 print "Final PC:", prog.pc
 if len(prog.stack) == 0:
