@@ -861,7 +861,7 @@ sam_op_malloc(/*@in@*/ sam_es *restrict es)
     sam_ml_value v;
     sam_ml *restrict m = sam_es_stack_pop(es);
 
-    if (es == NULL) {
+    if (m == NULL) {
 	return sam_error_stack_underflow(es);
     }
     if (m->type != SAM_ML_TYPE_INT) {
