@@ -226,12 +226,23 @@ Module_foo_get(Module *restrict self)
 
 /* PyGetSetDef Module_getset {{{2 */
 static PyGetSetDef Module_getset[] = {
-    {"foo", (getter)Module_foo_get, NULL, "foo", NULL},
+    {"foo", (getter)Module_foo_get, NULL, "foo -- the constant 4", NULL},
     {"instructions", (getter)Module_instructions_get, NULL,
 	"instructions -- the program code of this module.", NULL},
     {"filename", (getter)Module_filename_get, NULL,
 	"filename", NULL},
     {NULL, NULL, NULL, NULL, NULL}
+};
+
+/* PyMethodDef Module_methods {{{2 */
+static PyMethodDef Module_methods[] = {
+    {"get_foo", (PyCFunction)Module_foo_get, METH_NOARGS,
+	"foo -- the constant 4"},
+    {"get_instructions", (PyCFunction)Module_instructions_get, METH_NOARGS,
+	"gets the program code of this module"},
+    {"get_filename", (PyCFunction)Module_filename_get, METH_NOARGS,
+	"gets the filename of this module"},
+    {0, 0, 0, 0}, /* Sentinel */
 };
 
 /* PyTypeObject ModuleType {{{2 */
@@ -241,6 +252,7 @@ static PyTypeObject ModuleType = {
     .tp_basicsize = sizeof (Module),
     .tp_flags     = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
     .tp_doc	  = "Sam module (file)",
+    .tp_methods	  = Module_methods,
     .tp_getset	  = Module_getset,
     .tp_new	  = PyType_GenericNew,
 };
@@ -275,6 +287,7 @@ PyTypeObject ModulesIterType = {
     PyObject_HEAD_INIT(&PyType_Type)
     .tp_name	  = "instructionsiterator",
     .tp_basicsize = sizeof (ModulesIterObject),
+    .tp_doc	  = "SaM files iterator",
     .tp_free	  = PyObject_Free,
     .tp_getattro  = PyObject_GenericGetAttr,
     .tp_flags	  = Py_TPFLAGS_DEFAULT,
@@ -285,7 +298,7 @@ PyTypeObject ModulesIterType = {
 
 /* Modules {{{1 */
 /* typedef Modules {{{2 */
-/* Sequence of the SaM program code */
+/* Sequence of the SaM modules */
 typedef EsRefObj Modules;
 
 /* Modules_iter () {{{2 */
@@ -347,7 +360,7 @@ static PyTypeObject ModulesType = {
     .tp_name	  = "sam.Modules",
     .tp_basicsize = sizeof (Modules),
     .tp_flags     = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
-    .tp_doc	  = "Sam program code",
+    .tp_doc	  = "Sam modules (files)",
     .tp_iter	  = (getiterfunc)Modules_iter,
     .tp_as_sequence = &Modules_sequence_methods,
     .tp_new	  = PyType_GenericNew,
@@ -438,7 +451,7 @@ StackIter_next(StackIter *restrict self)
 /* PyTypeObject StackIterType {{{2 */
 PyTypeObject StackIterType = {
     PyObject_HEAD_INIT(&PyType_Type)
-    .tp_name	  = "heapiterator",
+    .tp_name	  = "stackiterator",
     .tp_basicsize = sizeof (StackIter),
     .tp_free	  = PyObject_Free,
     .tp_getattro  = PyObject_GenericGetAttr,

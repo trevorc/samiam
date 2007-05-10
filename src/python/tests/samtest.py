@@ -5,18 +5,17 @@ import sys
 
 prog = sam.Program(file = sys.argv[1])
 for module in prog.modules:
-    print module.foo
+    print module.get_foo()
 
 while prog.step():
-    pass
 #    if len(prog.stack) > 0:
 #	print help(prog.stack[0])
-#    print "PC:", prog.pc, " -- instruction: '" , \
-#	    prog.modules[0], \
-#	    "'", "-- Stack size:", len(prog.stack)
-#    for val in prog.stack:
-#	print "PC:", prog.pc, "-- Stack value type:", sam.Types[val.type], \
-#		"value:", val.value
+    print "PC:", prog.pc, " -- instruction: '" , \
+	    prog.modules[0].instructions[prog.pc].assembly, \
+	    "'", "-- Stack size:", len(prog.stack)
+    for val in prog.stack:
+	print "PC:", prog.pc, "-- Stack value type:", sam.Types[val.type], \
+		"value:", val.value
 #    pass # print prog.pc
 print "Final PC:", prog.pc
 if len(prog.stack) == 0:
