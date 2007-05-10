@@ -1,5 +1,5 @@
-import sam;
-import sys;
+import sam
+import sys
 
 prog = sam.Program(file = sys.argv[1])
 for module in prog.modules:
