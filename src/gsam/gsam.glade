@@ -2,7 +2,7 @@
 <!DOCTYPE glade-interface SYSTEM "glade-2.0.dtd">
 <!--*- mode: xml -*-->
 <glade-interface>
-  <widget class="GtkWindow" id="window1">
+  <widget class="GtkWindow" id="main_window">
     <property name="width_request">640</property>
     <property name="height_request">480</property>
     <property name="visible">True</property>
@@ -15,12 +15,12 @@
           <widget class="GtkMenuBar" id="menubar1">
             <property name="visible">True</property>
             <child>
-              <widget class="GtkMenuItem" id="menuitem1">
+              <widget class="GtkMenuItem" id="file_menu_item">
                 <property name="visible">True</property>
                 <property name="label" translatable="yes">_File</property>
                 <property name="use_underline">True</property>
                 <child>
-                  <widget class="GtkMenu" id="menuitem1_menu">
+                  <widget class="GtkMenu" id="file_menu">
                     <child>
                       <widget class="GtkImageMenuItem" id="open">
                         <property name="visible">True</property>
@@ -31,8 +31,8 @@
                       </widget>
                     </child>
                     <child>
-                      <widget class="GtkImageMenuItem" id="save1">
-                        <property name="visible">True</property>
+                      <widget class="GtkImageMenuItem" id="save">
+                        <property name="sensitive">False</property>
                         <property name="label">gtk-save</property>
                         <property name="use_underline">True</property>
                         <property name="use_stock">True</property>
@@ -40,17 +40,26 @@
                       </widget>
                     </child>
                     <child>
-                      <widget class="GtkImageMenuItem" id="save_as1">
-                        <property name="visible">True</property>
+                      <widget class="GtkImageMenuItem" id="save_as">
+                        <property name="sensitive">False</property>
                         <property name="label">gtk-save-as</property>
                         <property name="use_underline">True</property>
                         <property name="use_stock">True</property>
-                        <signal name="activate" handler="on_save_as1_activate"/>
+                        <signal name="activate" handler="on_save_as_activate"/>
                       </widget>
                     </child>
                     <child>
                       <widget class="GtkSeparatorMenuItem" id="separatormenuitem1">
                         <property name="visible">True</property>
+                      </widget>
+                    </child>
+                    <child>
+                      <widget class="GtkImageMenuItem" id="close">
+                        <property name="visible">True</property>
+                        <property name="label">gtk-close</property>
+                        <property name="use_underline">True</property>
+                        <property name="use_stock">True</property>
+                        <signal name="activate" handler="on_close_activate"/>
                       </widget>
                     </child>
                     <child>
@@ -67,34 +76,37 @@
               </widget>
             </child>
             <child>
-              <widget class="GtkMenuItem" id="menuitem3">
+              <widget class="GtkMenuItem" id="view_menu_item">
                 <property name="visible">True</property>
                 <property name="label" translatable="yes">_View</property>
                 <property name="use_underline">True</property>
                 <child>
-                  <widget class="GtkMenu" id="menuitem3_menu">
+                  <widget class="GtkMenu" id="view_menu">
                     <child>
-                      <widget class="GtkCheckMenuItem" id="show_program1">
+                      <widget class="GtkCheckMenuItem" id="show_code">
                         <property name="visible">True</property>
                         <property name="label" translatable="yes">Show _Program</property>
                         <property name="use_underline">True</property>
-                        <signal name="activate" handler="on_show_program1_activate"/>
+                        <property name="active">True</property>
+                        <signal name="activate" handler="on_show_code_activate"/>
                       </widget>
                     </child>
                     <child>
-                      <widget class="GtkCheckMenuItem" id="show_stack1">
+                      <widget class="GtkCheckMenuItem" id="show_stack">
                         <property name="visible">True</property>
                         <property name="label" translatable="yes">Show _Stack</property>
                         <property name="use_underline">True</property>
-                        <signal name="activate" handler="on_show_stack1_activate"/>
+                        <property name="active">True</property>
+                        <signal name="activate" handler="on_show_stack_activate"/>
                       </widget>
                     </child>
                     <child>
-                      <widget class="GtkCheckMenuItem" id="show_heap1">
+                      <widget class="GtkCheckMenuItem" id="show_heap">
                         <property name="visible">True</property>
                         <property name="label" translatable="yes">Show _Heap</property>
                         <property name="use_underline">True</property>
-                        <signal name="activate" handler="on_show_heap1_activate"/>
+                        <property name="active">True</property>
+                        <signal name="activate" handler="on_show_heap_activate"/>
                       </widget>
                     </child>
                     <child>
@@ -117,15 +129,15 @@
               </widget>
             </child>
             <child>
-              <widget class="GtkMenuItem" id="options1">
+              <widget class="GtkMenuItem" id="run_menu_item">
                 <property name="visible">True</property>
                 <property name="label" translatable="yes">_Run</property>
                 <property name="use_underline">True</property>
                 <signal name="activate" handler="on_options1_activate"/>
                 <child>
-                  <widget class="GtkMenu" id="options1_menu">
+                  <widget class="GtkMenu" id="run_menu">
                     <child>
-                      <widget class="GtkImageMenuItem" id="start1">
+                      <widget class="GtkImageMenuItem" id="start">
                         <property name="visible">True</property>
                         <property name="label" translatable="yes">_Start</property>
                         <property name="use_underline">True</property>
@@ -145,7 +157,7 @@
                         <property name="label">gtk-media-pause</property>
                         <property name="use_underline">True</property>
                         <property name="use_stock">True</property>
-                        <signal name="activate" handler="on_pause1_activate"/>
+                        <signal name="activate" handler="on_pause_activate"/>
                       </widget>
                     </child>
                     <child>
@@ -153,7 +165,7 @@
                         <property name="visible">True</property>
                         <property name="label" translatable="yes">_Reset</property>
                         <property name="use_underline">True</property>
-                        <signal name="activate" handler="on_reset1_activate"/>
+                        <signal name="activate" handler="on_reset_clicked"/>
                         <child internal-child="image">
                           <widget class="GtkImage" id="image118">
                             <property name="visible">True</property>
@@ -173,7 +185,7 @@
                         <property name="visible">True</property>
                         <property name="label" translatable="yes">Step _Into</property>
                         <property name="use_underline">True</property>
-                        <signal name="activate" handler="on_step_into1_activate"/>
+                        <signal name="activate" handler="on_step_clicked"/>
                         <accelerator key="F5" modifiers="" signal="activate"/>
                         <child internal-child="image">
                           <widget class="GtkImage" id="image119">
@@ -383,38 +395,89 @@
           <widget class="GtkHBox" id="hbox1">
             <property name="visible">True</property>
             <child>
-              <widget class="GtkTable" id="table1">
+              <widget class="GtkHBox" id="main_views">
                 <property name="visible">True</property>
-                <property name="n_rows">2</property>
-                <property name="n_columns">3</property>
-                <property name="column_spacing">4</property>
-                <property name="row_spacing">4</property>
+                <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
                 <child>
-                  <widget class="GtkVBox" id="vbox6">
+                  <widget class="GtkVBox" id="code_box">
                     <property name="visible">True</property>
                     <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
                     <child>
-                      <widget class="GtkComboBox" id="module_combobox">
+                      <widget class="GtkLabel" id="code_label">
                         <property name="visible">True</property>
-                        <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
+                        <property name="label" translatable="yes">Program</property>
+                        <property name="justify">GTK_JUSTIFY_CENTER</property>
                       </widget>
                       <packing>
                         <property name="expand">False</property>
                       </packing>
                     </child>
                     <child>
-                      <widget class="GtkScrolledWindow" id="scrolledwindow1">
+                      <widget class="GtkVBox" id="code_inner_box">
+                        <property name="visible">True</property>
+                        <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
+                        <child>
+                          <widget class="GtkComboBox" id="module_combobox1">
+                            <property name="visible">True</property>
+                            <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
+                          </widget>
+                          <packing>
+                            <property name="expand">False</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <widget class="GtkScrolledWindow" id="scrolledwindow1">
+                            <property name="visible">True</property>
+                            <property name="can_focus">True</property>
+                            <property name="hscrollbar_policy">GTK_POLICY_AUTOMATIC</property>
+                            <property name="vscrollbar_policy">GTK_POLICY_AUTOMATIC</property>
+                            <property name="shadow_type">GTK_SHADOW_IN</property>
+                            <child>
+                              <widget class="GtkTreeView" id="code_view">
+                                <property name="visible">True</property>
+                                <property name="can_focus">True</property>
+                                <property name="headers_visible">False</property>
+                                <property name="rules_hint">True</property>
+                              </widget>
+                            </child>
+                          </widget>
+                          <packing>
+                            <property name="position">1</property>
+                          </packing>
+                        </child>
+                      </widget>
+                      <packing>
+                        <property name="position">1</property>
+                      </packing>
+                    </child>
+                  </widget>
+                </child>
+                <child>
+                  <widget class="GtkVBox" id="stack_box">
+                    <property name="visible">True</property>
+                    <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
+                    <child>
+                      <widget class="GtkLabel" id="stack_label">
+                        <property name="visible">True</property>
+                        <property name="label" translatable="yes">Stack</property>
+                        <property name="justify">GTK_JUSTIFY_CENTER</property>
+                      </widget>
+                      <packing>
+                        <property name="expand">False</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <widget class="GtkScrolledWindow" id="stack_inner_box">
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="hscrollbar_policy">GTK_POLICY_AUTOMATIC</property>
                         <property name="vscrollbar_policy">GTK_POLICY_AUTOMATIC</property>
                         <property name="shadow_type">GTK_SHADOW_IN</property>
                         <child>
-                          <widget class="GtkTreeView" id="code_view">
+                          <widget class="GtkTreeView" id="stack_view">
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
                             <property name="headers_visible">False</property>
-                            <property name="rules_hint">True</property>
                           </widget>
                         </child>
                       </widget>
@@ -424,91 +487,45 @@
                     </child>
                   </widget>
                   <packing>
-                    <property name="top_attach">1</property>
-                    <property name="bottom_attach">2</property>
+                    <property name="position">1</property>
                   </packing>
                 </child>
                 <child>
-                  <widget class="GtkLabel" id="label3">
+                  <widget class="GtkVBox" id="heap_box">
                     <property name="visible">True</property>
-                    <property name="label" translatable="yes">Program</property>
-                    <property name="justify">GTK_JUSTIFY_CENTER</property>
-                  </widget>
-                  <packing>
-                    <property name="x_options">GTK_FILL</property>
-                    <property name="y_options"></property>
-                  </packing>
-                </child>
-                <child>
-                  <widget class="GtkLabel" id="label5">
-                    <property name="visible">True</property>
-                    <property name="label" translatable="yes">Heap</property>
-                    <property name="justify">GTK_JUSTIFY_CENTER</property>
-                  </widget>
-                  <packing>
-                    <property name="left_attach">2</property>
-                    <property name="right_attach">3</property>
-                    <property name="x_options">GTK_FILL</property>
-                    <property name="y_options"></property>
-                  </packing>
-                </child>
-                <child>
-                  <widget class="GtkLabel" id="label4">
-                    <property name="visible">True</property>
-                    <property name="label" translatable="yes">Stack</property>
-                    <property name="justify">GTK_JUSTIFY_CENTER</property>
-                  </widget>
-                  <packing>
-                    <property name="left_attach">1</property>
-                    <property name="right_attach">2</property>
-                    <property name="x_options">GTK_FILL</property>
-                    <property name="y_options"></property>
-                  </packing>
-                </child>
-                <child>
-                  <widget class="GtkScrolledWindow" id="scrolledwindow5">
-                    <property name="visible">True</property>
-                    <property name="can_focus">True</property>
-                    <property name="hscrollbar_policy">GTK_POLICY_AUTOMATIC</property>
-                    <property name="vscrollbar_policy">GTK_POLICY_AUTOMATIC</property>
-                    <property name="shadow_type">GTK_SHADOW_IN</property>
+                    <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
                     <child>
-                      <widget class="GtkTreeView" id="heap_view">
+                      <widget class="GtkLabel" id="heap_label">
+                        <property name="visible">True</property>
+                        <property name="label" translatable="yes">Heap</property>
+                        <property name="justify">GTK_JUSTIFY_CENTER</property>
+                      </widget>
+                      <packing>
+                        <property name="expand">False</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <widget class="GtkScrolledWindow" id="heap_inner_box">
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
-                        <property name="headers_visible">False</property>
+                        <property name="hscrollbar_policy">GTK_POLICY_AUTOMATIC</property>
+                        <property name="vscrollbar_policy">GTK_POLICY_AUTOMATIC</property>
+                        <property name="shadow_type">GTK_SHADOW_IN</property>
+                        <child>
+                          <widget class="GtkTreeView" id="heap_view">
+                            <property name="visible">True</property>
+                            <property name="can_focus">True</property>
+                            <property name="headers_visible">False</property>
+                          </widget>
+                        </child>
                       </widget>
+                      <packing>
+                        <property name="position">1</property>
+                      </packing>
                     </child>
                   </widget>
                   <packing>
-                    <property name="left_attach">2</property>
-                    <property name="right_attach">3</property>
-                    <property name="top_attach">1</property>
-                    <property name="bottom_attach">2</property>
-                    <property name="y_options">GTK_FILL</property>
-                  </packing>
-                </child>
-                <child>
-                  <widget class="GtkScrolledWindow" id="scrolledwindow4">
-                    <property name="visible">True</property>
-                    <property name="can_focus">True</property>
-                    <property name="hscrollbar_policy">GTK_POLICY_AUTOMATIC</property>
-                    <property name="vscrollbar_policy">GTK_POLICY_AUTOMATIC</property>
-                    <property name="shadow_type">GTK_SHADOW_IN</property>
-                    <child>
-                      <widget class="GtkTreeView" id="stack_view">
-                        <property name="visible">True</property>
-                        <property name="can_focus">True</property>
-                        <property name="headers_visible">False</property>
-                      </widget>
-                    </child>
-                  </widget>
-                  <packing>
-                    <property name="left_attach">1</property>
-                    <property name="right_attach">2</property>
-                    <property name="top_attach">1</property>
-                    <property name="bottom_attach">2</property>
-                    <property name="y_options">GTK_FILL</property>
+                    <property name="position">2</property>
                   </packing>
                 </child>
               </widget>
@@ -524,7 +541,7 @@
             <property name="visible">True</property>
             <property name="homogeneous">True</property>
             <child>
-              <widget class="GtkLabel" id="label13">
+              <widget class="GtkLabel" id="pc_label">
                 <property name="visible">True</property>
                 <property name="label" translatable="yes">PC: 0</property>
               </widget>
@@ -534,7 +551,7 @@
               </packing>
             </child>
             <child>
-              <widget class="GtkLabel" id="label14">
+              <widget class="GtkLabel" id="fbr_label">
                 <property name="visible">True</property>
                 <property name="label" translatable="yes">FBR: 0</property>
               </widget>
@@ -545,7 +562,7 @@
               </packing>
             </child>
             <child>
-              <widget class="GtkLabel" id="label15">
+              <widget class="GtkLabel" id="sp_label">
                 <property name="visible">True</property>
                 <property name="label" translatable="yes">SP: 0</property>
               </widget>
@@ -587,7 +604,7 @@
             <property name="visible">True</property>
             <property name="layout_style">GTK_BUTTONBOX_SPREAD</property>
             <child>
-              <widget class="GtkButton" id="button3">
+              <widget class="GtkButton" id="start_pause">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="can_default">True</property>
@@ -630,10 +647,11 @@
               </widget>
             </child>
             <child>
-              <widget class="GtkButton" id="button4">
+              <widget class="GtkButton" id="step">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="can_default">True</property>
+                <signal name="clicked" handler="on_step_clicked"/>
                 <signal name="activate" handler="on_step_activate"/>
                 <child>
                   <widget class="GtkAlignment" id="alignment7">
@@ -676,11 +694,11 @@
               </packing>
             </child>
             <child>
-              <widget class="GtkButton" id="button5">
+              <widget class="GtkButton" id="reset">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="can_default">True</property>
-                <signal name="activate" handler="on_reset_activate"/>
+                <signal name="clicked" handler="on_reset_clicked"/>
                 <child>
                   <widget class="GtkAlignment" id="alignment4">
                     <property name="visible">True</property>
