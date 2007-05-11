@@ -42,16 +42,18 @@ class GSam:
 	if response == gtk.RESPONSE_OK:
 	    if self._file:
 		self._file.close()
-	    init_program_display(filechooser.get_filename())
+	    self.init_program_display(filechooser.get_filename())
 	filechooser.destroy()
 
-    def update_code_display(self)
+    def update_code_display(self):
 	pass
 #	TODO self._code_view
 
-    def init_program_display(self, filename)
+    def init_program_display(self, filename):
 	self._file = filename
 	self._prog = sam.Program(filename)
+
+	self.update_code_display()
 
     def gtk_main_quit(*self):
 	gtk.main_quit()

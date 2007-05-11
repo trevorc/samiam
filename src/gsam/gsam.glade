@@ -572,6 +572,7 @@
               <widget class="GtkTextView" id="console_view">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
+                <property name="editable">False</property>
                 <property name="wrap_mode">GTK_WRAP_CHAR</property>
               </widget>
             </child>
