@@ -516,6 +516,16 @@ sam_es_heap_alloc(/*@in@*/ sam_es *restrict es,
 		sam_array_ins(&es->heap.a,
 			      sam_ml_new(v, SAM_ML_TYPE_NONE));
 	    }
+	    puts("buffered one change");
+	    sam_es_change ch = {
+		.stack = 0,
+		.add = 1,
+		.ma = {
+		    .ha = start
+		},
+		.size = size,
+	    };
+	    sam_es_change_register(es, &ch);
 	    es->heap.used_list =
 		sam_es_heap_pointer_update(es->heap.used_list, start, size);
 	    return start;
@@ -539,6 +549,15 @@ sam_es_heap_alloc(/*@in@*/ sam_es *restrict es,
 		es->heap.free_list->start += size;
 		es->heap.free_list->size -= size;
 	    }
+	    sam_es_change ch = {
+		.stack = 0,
+		.add = 1,
+		.ma = {
+		    .ha = start
+		},
+		.size = size,
+	    };
+	    sam_es_change_register(es, &ch);
 	    return start;
 	}
 	last = es->heap.free_list;
@@ -572,6 +591,15 @@ sam_es_heap_dealloc(sam_es *restrict es,
 		free(m);
 		es->heap.a.arr[ha + i] = NULL;
 	    }
+	    sam_es_change ch = {
+		.stack = 0,
+		.add = 1,
+		.ma = {
+		    .ha = u->start
+		},
+		.size = u->size,
+	    };
+	    sam_es_change_register(es, &ch);
 	    es->heap.free_list =
 		sam_es_heap_pointer_update(es->heap.free_list,
 					   u->start, u->size);

@@ -44,8 +44,9 @@ typedef struct {
     unsigned stack: 1;
     unsigned add: 1;
     unsigned remove: 1;
-    sam_ma ma;
-    const sam_ml *ml;
+    sam_ma ma;		    /* point of removal/addition */
+    const sam_ml *ml;	    /* item added */
+    size_t size;	    /* size of allocation */
 } __attribute__((packed))
 sam_es_change;
 
