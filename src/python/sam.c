@@ -75,8 +75,38 @@ static PyObject *
 Instruction_create(sam_instruction *restrict si)
 {
     Instruction *restrict rv = PyObject_New(Instruction, &InstructionType);
-    rv->inst = si->name;
-    // XXX TODO handle operand
+    ///rv->inst = si->name;
+    // TODO we malloc, when do we free?
+    char *tmp;
+    switch(si->optype)
+    {
+	case SAM_OP_TYPE_INT:
+	    tmp = (char *) malloc(sizeof(char) * (20 + strlen(si->name)));
+	    /* TODO how big do ints get? */
+	    sprintf(tmp, "%s %i", si->name, si->operand.i);
+	    rv->inst = tmp;
+	    break;
+	case SAM_OP_TYPE_FLOAT:
+	    tmp = (char *) malloc(sizeof(char) * (20 + strlen(si->name)));
+	    /* TODO how big do floats get? */
+	    sprintf(tmp, "%s %f", si->name, si->operand.f);
+	    rv->inst = tmp;
+	    break;
+	case SAM_OP_TYPE_CHAR:
+	    tmp = (char *) malloc(sizeof(char) * (4 + strlen(si->name)));
+	    /* TODO are sam_char's really chars? */
+	    sprintf(tmp, "%s '%c'", si->name, si->operand.c);
+	    rv->inst = tmp;
+	    break;
+	case SAM_OP_TYPE_LABEL:
+	    tmp = (char *) malloc(sizeof(char) * 
+			(strlen(si->name) + 1 + strlen(si->operand.s)));
+	    sprintf(tmp, "%s %s", si->name, si->operand.s);
+	    rv->inst = tmp;
+	    break;
+	default:
+	    rv->inst = si->name;
+    }
     // TODO get labels
     rv->labels = Py_BuildValue("()");
     return (PyObject *) rv;

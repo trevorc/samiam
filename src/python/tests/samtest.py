@@ -12,9 +12,9 @@ print "dir(sam.?)", dir(sam.Program)
 while prog.step():
 #    if len(prog.stack) > 0:
 #	print help(prog.stack[0])
-    print "PC:", prog.pc, " -- instruction: '" , \
+    print "PC:", prog.pc, " -- instruction:" , \
 	    prog.instructions[prog.pc].assembly, \
-	    "'", "-- Stack size:", len(prog.stack)
+	    "-- Stack size:", len(prog.stack)
 #    for val in prog.stack:
 #	print "PC:", prog.pc, "-- Stack value type:", sam.Types[val.type], \
 #		"value:", val.value
