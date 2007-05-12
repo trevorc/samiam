@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import pygtk
-import gtk, gtk.glade
+import gtk, gtk.glade, gobject
 import sam
 
 class CodeTreeModel(gtk.GenericTreeModel):
@@ -117,13 +117,19 @@ class GSam:
 	self._file = None
 	self._prog = None
 
-	# create the TreeViewColumns to display the data
 	column_names = ['Current', 'Line', 'Breakpoint', 'Code', 'Labels']
 	for n in range(0, len(column_names)):
 	    cell = gtk.CellRendererText()
 	    tvcolumn = gtk.TreeViewColumn(column_names[n], cell, text=n)
 	    self._code_view.append_column(tvcolumn)
 	self._code_view.set_search_column(3)
+
+	column_names = ['Address', 'Type', 'Value']
+	for n in range(0, len(column_names)):
+	    renderer = gtk.CellRendererText()
+	    column = gtk.TreeViewColumn(column_names[n], renderer, text=n)
+	    self._stack_view.append_column(column)
+	self._stack_view.set_search_column(1)
 
     def _filechooser_factory(self, title, p):
 	dialog = gtk.FileChooserDialog(title=title, \
@@ -189,8 +195,9 @@ class GSam:
 
     # TODO
     def reset_memory_display(self):
-	self._stack_view.set_model(None)
-	self._heap_view.set_model(None)
+	self._stack_view.set_model(gtk.ListStore(gobject.TYPE_LONG,\
+	    gobject.TYPE_STRING, gobject.TYPE_LONG))
+	self._heap_view.set_model(None) # TODO heap
 
     def init_program_display(self, filename):
 	self._file = filename
@@ -216,10 +223,43 @@ class GSam:
 	    self._code_view.scroll_to_cell(nPath)
 	    self._code_view.queue_draw() # TODO better way to do this?
 
+    def value_to_row(self, addr, v):
+	return (addr, sam.TypeChars[v.type], v.value)
+
+    def set_row_to_value(self, model, iter, v):
+	row = self.value_to_row(model.get_path(iter)[0], v)
+	for i in range(0, len(row)):
+	    model.set(iter, i, row[i])
+
+    def get_nth_iter(self, model, n):
+	return model.iter_nth_child(None, n)
+
+    def get_nth_path(self, model, n):
+	return model.get_path(self.get_nth_iter(model, n))
+
+    def handle_changes(self):
+	for change in self._prog.changes:
+	    ctype = sam.ChangeTypes[change.type]
+	    if ctype[0:5] == "stack":
+		model = self._stack_view.get_model()
+	    else:
+		model = self._heap_view.get_model()
+	    if ctype == "stack_push":
+		model.append(self.value_to_row(change.start, change.value))
+		self._stack_view.scroll_to_cell(\
+			self.get_nth_path(model, change.start))
+	    elif ctype == "stack_pop":
+		end_iter = model.iter_nth_child(None, model.iter_n_children(\
+			None)-1)
+		model.remove(end_iter)
+	    elif ctype == "stack_change":
+		iter = model.iter_nth_child(None, change.start)
+		self.set_row_to_value(model, iter, change.value)
+
     def update_display(self):
 	self.update_registers()
 	self.scroll_code_view()
-	# TODO more to update (stack, heap)
+	self.handle_changes()
 
     def on_step_clicked(self, p):
 	if self._prog:
