@@ -101,6 +101,8 @@ struct _sam_es {
     sam_array instructions; /**< A shallow copy of the instructions
 			     *   array allocated in main and initialized
 			     *   in sam_parse(). */
+    sam_array locs;	    /**< An array of sam_es_locs ordered
+			         by pa. */
     sam_hash_table labels;  /**< A shallow copy of the labels hash
 			     *   table allocated in main and initialized
 			     *   in sam_parse(). */
@@ -215,6 +217,34 @@ sam_es_change_register(sam_es *restrict es,
     es->last_change = new;
     if (es->first_change == NULL) {
 	es->first_change = new;
+    }
+}
+
+static sam_es_loc *
+sam_es_loc_new(sam_pa pa, char *label)
+{
+    sam_es_loc *loc = sam_malloc(sizeof (sam_es_loc));
+
+    loc->pa = pa;
+    sam_array_init(&loc->labels);
+    sam_array_ins(&loc->labels, label);
+
+    return loc;
+}
+
+/* Assumes that you will insert them in order! */
+static void
+sam_es_loc_ins(sam_es *restrict es,
+	       sam_pa line_no,
+	       char *label)
+{
+    sam_es_loc **restrict locs = (sam_es_loc **)es->locs.arr;
+
+    if (locs == NULL || locs[es->locs.len - 1]->pa != line_no) {
+	sam_array_ins(&es->locs,
+		      sam_es_loc_new(line_no, label));
+    } else {
+	sam_array_ins(&locs[es->locs.len - 1]->labels, label);
     }
 }
 
@@ -431,10 +461,15 @@ sam_es_heap_set(sam_es *restrict es,
 
 bool
 sam_es_labels_ins(sam_es *restrict es,
-		  const char *restrict label,
+		  char *restrict label,
 		  sam_pa line_no)
 {
-    return sam_hash_table_ins(&es->labels, label, line_no);
+    if (sam_hash_table_ins(&es->labels, label, line_no)) {
+	sam_es_loc_ins(es, line_no, label);
+	return true;
+    } else {
+	return false;
+    }
 }
 
 inline bool
@@ -443,6 +478,12 @@ sam_es_labels_get(/*@in@*/ sam_es *restrict es,
 		  const char *restrict name)
 {
     return sam_hash_table_get(&es->labels, name, pa);
+}
+
+inline sam_array *
+sam_es_locs_get(sam_es *restrict es)
+{
+    return &es->locs;
 }
 
 #if 0
@@ -702,6 +743,7 @@ sam_es_new(sam_options options,
     sam_array_init(&es->stack);
     sam_array_init(&es->heap.a);
     sam_array_init(&es->instructions);
+    sam_array_init(&es->locs);
     sam_hash_table_init(&es->labels);
     es->heap.used_list = NULL;
     es->heap.free_list = NULL;
@@ -733,6 +775,7 @@ sam_es_free(/*@in@*/ /*@only@*/ sam_es *restrict es)
     sam_array_free(&es->stack);
     sam_es_heap_free(es);
     sam_array_free(&es->instructions);
+    sam_array_free(&es->locs);
     sam_hash_table_free(&es->labels);
     while (sam_es_change_get(es, NULL));
 #if defined(SAM_EXTENSIONS) && defined(HAVE_DLFCN_H)

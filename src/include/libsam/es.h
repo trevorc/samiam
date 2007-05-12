@@ -32,6 +32,7 @@
 
 #include <stdbool.h>
 
+#include "array.h"
 #include "config.h"
 #include "error.h"
 #include "execute_types.h"
@@ -49,6 +50,14 @@ typedef struct {
     size_t size;	    /* size of allocation */
 } __attribute__((packed))
 sam_es_change;
+
+/**
+ * The list of labels corresponding to a line of code.
+ */
+typedef struct {
+    sam_pa pa;
+    sam_array labels;
+} sam_es_loc;
 
 typedef sam_error	   (*sam_library_fn)	     (sam_es *restrict es);
 
@@ -89,11 +98,12 @@ extern inline bool	     sam_es_heap_leak_check  (const sam_es *restrict es,
 						      unsigned long *restrict block_count,
 						      unsigned long *restrict leak_size);
 extern bool		     sam_es_labels_ins	     (sam_es *restrict es,
-						      const char *restrict label,
+						      char *restrict label,
 						      sam_pa line_no);
 extern bool		     sam_es_labels_get	     (sam_es *restrict es,
 						      sam_pa *restrict pa,
 						      const char *restrict name);
+extern inline sam_array	    *sam_es_locs_get	     (sam_es *restrict es);
 extern inline void	     sam_es_instructions_ins (sam_es *restrict es,
 						      sam_instruction *restrict i);
 extern inline sam_instruction *sam_es_instructions_get(const sam_es *restrict es,
