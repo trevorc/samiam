@@ -731,6 +731,14 @@ Program_pc_set(Program *restrict self, PyObject *v)
     return 0;
 }
 
+/* Program_mc_get () {{{2 */
+static PyObject *
+Program_mc_get(Program *restrict self)
+{
+    // TODO Multiple modules support
+    return PyLong_FromUnsignedLong(0);
+}
+
 /* Program_sp_get () {{{2 */
 static PyObject *
 Program_sp_get(Program *restrict self)
@@ -789,6 +797,8 @@ static PyGetSetDef Program_getset[] = {
 	"frame base register.", NULL},
     {"pc", (getter)Program_pc_get, (setter)Program_pc_set,
 	"program counter.", NULL},
+    {"mc", (getter)Program_mc_get, NULL,
+	"module counter.", NULL},
     {"sp", (getter)Program_sp_get, NULL,
 	"stack pointer.", NULL},
     {"stack", (getter)Program_stack_get, NULL,

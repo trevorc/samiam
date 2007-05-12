@@ -236,6 +236,7 @@ class GSam:
 	    self.update_registers()
 	    self.scroll_code_view()
 	    self.reset_memory_display()
+	    self._finished = False
     
     def on_show_code_activate(self, p):
 	if self._show_code.get_active():
