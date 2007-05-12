@@ -1,2 +1,2 @@
 #!/bin/sh
-CFLAGS='-std=c99 -Wall -W' python setup.py build
+CFLAGS='-std=c99 -Wall -W -g -ggdb' python setup.py build

@@ -2,4 +2,4 @@
 
 . env.sh
 
-(exec python)
+(exec python -ic'import sam')
