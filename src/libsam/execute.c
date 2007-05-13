@@ -37,7 +37,7 @@
 #include <libsam/es.h>
 #include <libsam/io.h>
 
-#include "sam_execute.h"
+#include "execute.h"
 
 /**
  * The stop instruction was not found when there were no more
