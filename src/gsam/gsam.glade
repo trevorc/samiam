@@ -665,7 +665,7 @@
                         <child>
                           <widget class="GtkLabel" id="label9">
                             <property name="visible">True</property>
-                            <property name="label" translatable="yes">Reset</property>
+                            <property name="label" translatable="yes">_Reset</property>
                             <property name="use_underline">True</property>
                           </widget>
                           <packing>
@@ -709,7 +709,7 @@
                         <child>
                           <widget class="GtkLabel" id="label12">
                             <property name="visible">True</property>
-                            <property name="label" translatable="yes">_Step</property>
+                            <property name="label" translatable="yes">S_tep</property>
                             <property name="use_underline">True</property>
                           </widget>
                           <packing>
