@@ -118,8 +118,8 @@ class GSam:
 
 	self._input_box = self._xml.get_widget('program_entry_box')
 	self._input = self._xml.get_widget('program_entry')
-	### 4}}}
-
+	
+	# Set default values {{{4
 	self._file = None
 	self._prog = None
 
@@ -173,9 +173,8 @@ class GSam:
 	    column.set_cell_data_func(renderer, mem_color_code);
 	    self._heap_view.append_column(column)
 	self._heap_view.set_search_column(1)
-	# 4}}}
 
-    ### open/close file methods {{{2
+    ### Open/close file methods {{{2
     # _filechooser_factory () {{{3
     def _filechooser_factory(self, title, p):
 	dialog = gtk.FileChooserDialog(title=title, \
@@ -196,7 +195,7 @@ class GSam:
 
 	return dialog
 
-    # _on_close_activate () {{{3
+    # on_close_activate () {{{3
     def on_close_activate(self, p):
 	if self._file:
 	    self._file = None
@@ -208,7 +207,7 @@ class GSam:
 	self._stack_view.get_model().clear()
 	self._heap_view.get_model().clear()
 
-    # _on_open_activate () {{{3
+    # on_open_activate () {{{3
     def on_open_activate(self, p):
 	filechooser = self._filechooser_factory("Select a SaM file", p)
 	response = filechooser.run()
@@ -217,6 +216,20 @@ class GSam:
 	    self.on_close_activate(p)
 	    self.init_program_display(filechooser.get_filename())
 	filechooser.destroy()
+
+    # init_program_display () {{{3
+    def init_program_display(self, filename):
+	self._file = filename
+	self._main_window.set_title("%(title)s - %(file)s" %
+		{'title': self._default_title, 'file': filename})
+	self._prog = sam.Program(filename)
+	self._prog.print_func = self.sam_print
+	self._prog.input_func = self.sam_string_input
+	self._finished = False
+
+	self._code_models = [None for i in range(0, self.get_n_modules())]
+	self.update_code_display()
+	self.reset_memory_display()
 
     ### Code display handling {{{2
     def get_n_modules(self):
@@ -255,17 +268,6 @@ class GSam:
     def reset_memory_display(self):
 	self._stack_view.get_model().clear()
 	self._heap_view.get_model().clear()
-
-    def init_program_display(self, filename):
-	self._file = filename
-	self._main_window.set_title("%(title)s - %(file)s" %
-		{'title': self._default_title, 'file': filename})
-	self._prog = sam.Program(filename)
-	self._finished = False
-
-	self._code_models = [None for i in range(0, self.get_n_modules())]
-	self.update_code_display()
-	self.reset_memory_display()
 
     def update_registers(self):
 	self._pc_label.set_text("PC: %d" % self._prog.pc)
@@ -371,6 +373,7 @@ class GSam:
 		if self._finished:
 		    self.append_to_console(\
 			    "Final Result: %d" % self._prog.stack[0].value)
+		    self._timer_id = None
 		self.update_display()
 	    return not self._finished
 
@@ -402,6 +405,7 @@ class GSam:
 	    self.scroll_code_view()
 	    self.reset_memory_display()
 	    self._finished = False
+	    self._timer_id = None
 
     # GTK handlers {{{3
     def on_step_clicked(self, p):
