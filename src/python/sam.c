@@ -269,7 +269,7 @@ static PyTypeObject ModuleType = {
     .tp_basicsize = sizeof (Module),
     .tp_flags     = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
     .tp_doc	  = "Sam module (file)",
-//    .tp_methods	  = Module_methods,
+    .tp_methods	  = Module_methods,
     .tp_getset	  = Module_getset,
     .tp_new	  = PyType_GenericNew,
 };
