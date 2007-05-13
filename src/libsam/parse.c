@@ -39,7 +39,8 @@
 #include <libsam/string.h>
 #include <libsam/main.h>
 #include <libsam/opcode.h>
-#include <libsam/parse.h>
+
+#include "parse.h"
 
 #if defined(HAVE_MMAN_H)
 # include <sys/stat.h>

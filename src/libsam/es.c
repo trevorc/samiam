@@ -38,6 +38,8 @@
 #include <libsam/string.h>
 #include <libsam/util.h>
 
+#include "parse.h"
+
 #if defined(HAVE_MMAN_H)
 # include <sys/mman.h>
 #endif
@@ -557,7 +559,6 @@ sam_es_heap_alloc(/*@in@*/ sam_es *restrict es,
 		sam_array_ins(&es->heap.a,
 			      sam_ml_new(v, SAM_ML_TYPE_NONE));
 	    }
-	    puts("buffered one change");
 	    sam_es_change ch = {
 		.stack = 0,
 		.add = 1,
@@ -732,7 +733,8 @@ sam_es_change_get(sam_es *restrict es,
 }
 
 /*@only@*/ sam_es *
-sam_es_new(sam_options options,
+sam_es_new(const char *restrict file,
+	   sam_options options,
 	   /*@in@*/ sam_io_dispatcher io_dispatcher)
 {
     sam_es *restrict es = sam_malloc(sizeof (sam_es));
@@ -754,6 +756,11 @@ sam_es_new(sam_options options,
 #if defined(SAM_EXTENSIONS) && defined(HAVE_DLFCN_H)
     sam_array_init(&es->dlhandles);
 #endif /* SAM_EXTENSIONS && HAVE_DLFCN_H */
+
+    if (!sam_parse(es, file)) {
+	sam_es_free(es);
+	return NULL;
+    }
 
     return es;
 }
