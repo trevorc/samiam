@@ -128,7 +128,7 @@ class GSam:
 	self._speeds = {'full': 0, 'fast': 10, 'medium': 100, 'slow': 1000}
 	self._timeout_interval = self._speeds['full']
 
-	# Code/heap display setup {{{4
+	# Code/stack/heap display setup {{{4
 	column_names = ['Current', 'Line', 'Breakpoint', 'Code', 'Labels']
 	for n in range(0, len(column_names)):
 	    cell = gtk.CellRendererText()
@@ -137,20 +137,40 @@ class GSam:
 	self._code_view.set_search_column(3)
 
 	self._stack_view.set_model(gtk.ListStore(gobject.TYPE_LONG,\
-	    gobject.TYPE_STRING, gobject.TYPE_LONG))
+	    gobject.TYPE_STRING, gobject.TYPE_LONG, gobject.TYPE_LONG))
+
+	self._type_colors = {'none': ('lightgray'),\
+			    'int':   ('white'),\
+			    'float': ('yellow'),\
+			    'sa':    ('pink'),\
+			    'ha':    ('purple'),\
+			    'pa':    ('green'),\
+			    'alloc': ('black')}
+
+	def mem_color_code(column, cell, model, iter):
+	    type_num = model.get_value(iter, 3)
+	    if type_num in range(0, len(sam.Types)):
+		row_color = self._type_colors[sam.Types[type_num]]
+	    else:
+		row_color = self._type_colors['alloc']
+		cell.set_property('foreground', 'white')
+	    cell.set_property('cell-background', row_color)
 
 	column_names = ['Address', 'Type', 'Value']
 	for n in range(0, len(column_names)):
 	    renderer = gtk.CellRendererText()
 	    column = gtk.TreeViewColumn(column_names[n], renderer, text=n)
+	    column.set_cell_data_func(renderer, mem_color_code);
 	    self._stack_view.append_column(column)
 	self._stack_view.set_search_column(1)
 
+	# TODO heap done?
 	self._heap_view.set_model(gtk.TreeStore(gobject.TYPE_LONG,\
-	    gobject.TYPE_STRING, gobject.TYPE_LONG)) # TODO heap done?
+	    gobject.TYPE_STRING, gobject.TYPE_LONG, gobject.TYPE_LONG))
 	for n in range(0, len(column_names)):
 	    renderer = gtk.CellRendererText()
 	    column = gtk.TreeViewColumn(column_names[n], renderer, text=n)
+	    column.set_cell_data_func(renderer, mem_color_code);
 	    self._heap_view.append_column(column)
 	self._heap_view.set_search_column(1)
 	# 4}}}
@@ -259,7 +279,10 @@ class GSam:
 
     ### Stack/Heap display handling {{{2
     def value_to_row(self, addr, v):
-	return (addr, sam.TypeChars[v.type], v.value)
+	return (addr, sam.TypeChars[v.type], v.value, v.type)
+
+    def none_value_row(self, addr):
+	return (addr, 'N', 0, 0)
 
     def set_row_to_value(self, model, iter, addr, v):
 	row = self.value_to_row(addr, v)
@@ -319,13 +342,13 @@ class GSam:
 	    elif ctype == "heap_alloc":
 		iter = self.get_heap_allocation_near_iter(change.start)
 		# TODO heap allocation rows?
-		row = (change.start, "", change.size)
+		row = (change.start, "", change.size, -1)
 		if iter is None:
 		    ai = model.insert_before(None, None, row)
 		else:
 		    ai = model.insert_after(None, iter, row)
 		for i in [x + change.start for x in range(0, change.size)]:
-		    model.append(ai, (i, "N", 0))
+		    model.append(ai, self.none_value_row(i))
 	    elif ctype == "heap_free":
 		iter = self.get_heap_allocation_iter(change.start)
 		# iter None here is an error
