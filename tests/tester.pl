@@ -82,7 +82,7 @@ while (<DB>) {
 	if ($? == -1) {
 	    print "couldn't execute $app: $!.\n";
 	} elsif ($? & 127) {
-	    printf "child died with signal %d.\n", ($? & 127);
+	    printf "$test died with signal %d.\n", ($? & 127);
 	} elsif (($? >> 8) != ($rv & 0xff)) {
 	    printf "%d\t%d\t\t$test\n", ($? >> 8), ($rv & 0xff);
 	}
