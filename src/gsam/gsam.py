@@ -4,6 +4,7 @@ import pygtk
 import gtk, gtk.glade, gobject
 import sam
 
+# class CodeTreeModel {{{1
 class CodeTreeModel(gtk.GenericTreeModel):
     column_types = (str, int, str, str, str) # TODO Last two may become images
     column_names = ['Current', 'Line', 'Breakpoint', 'Code', 'Labels']
@@ -24,11 +25,9 @@ class CodeTreeModel(gtk.GenericTreeModel):
     def on_get_column_type(self, n):
 	return self.column_types[n]
 
-    # TODO What is this method?
     def on_get_iter(self, path):
 	return path[0]
 
-    # TODO What is this method?
     def on_get_path(self, rowref):
 	return rowref
 
@@ -87,11 +86,14 @@ class CodeTreeModel(gtk.GenericTreeModel):
     def on_iter_parent(child):
 	return None
 
+# class GSam {{{1
 class GSam:
+    # __init__ () {{{2
     def __init__(self):
 	self._xml = gtk.glade.XML('gsam.glade')
 	self._xml.signal_autoconnect(self)
 
+	# Getting gtk object handles {{{4
 	self._main_window = self._xml.get_widget('main_window')
 	self._default_title = self._main_window.get_title()
 	self._module_combobox = self._xml.get_widget('module_combobox')
@@ -106,7 +108,7 @@ class GSam:
 
 	self._show_code = self._xml.get_widget('show_code')
 	self._show_stack = self._xml.get_widget('show_stack')
-	self._show_heap = self._xml.get_widget('show_heap')
+	self._show_heap = self._xml.get_widget('eshow_heap')
 
 	self._pc_label = self._xml.get_widget('pc_label')
 	self._fbr_label = self._xml.get_widget('fbr_label')
@@ -116,13 +118,17 @@ class GSam:
 
 	self._input_box = self._xml.get_widget('program_entry_box')
 	self._input = self._xml.get_widget('program_entry')
+	### 4}}}
 
 	self._file = None
 	self._prog = None
 
 	self._timer_id = None
-	self._timeout_interval = 0 # TODO default timeout?
+	# TODO decide on best default speeds?
+	self._speeds = {'full': 0, 'fast': 10, 'medium': 100, 'slow': 1000}
+	self._timeout_interval = self._speeds['full']
 
+	# Code/heap display setup {{{4
 	column_names = ['Current', 'Line', 'Breakpoint', 'Code', 'Labels']
 	for n in range(0, len(column_names)):
 	    cell = gtk.CellRendererText()
@@ -147,7 +153,10 @@ class GSam:
 	    column = gtk.TreeViewColumn(column_names[n], renderer, text=n)
 	    self._heap_view.append_column(column)
 	self._heap_view.set_search_column(1)
+	# 4}}}
 
+    ### open/close file methods {{{2
+    # _filechooser_factory () {{{3
     def _filechooser_factory(self, title, p):
 	dialog = gtk.FileChooserDialog(title=title, \
 		parent=self._main_window,\
@@ -167,6 +176,7 @@ class GSam:
 
 	return dialog
 
+    # _on_close_activate () {{{3
     def on_close_activate(self, p):
 	if self._file:
 	    self._file = None
@@ -178,6 +188,7 @@ class GSam:
 	self._stack_view.get_model().clear()
 	self._heap_view.get_model().clear()
 
+    # _on_open_activate () {{{3
     def on_open_activate(self, p):
 	filechooser = self._filechooser_factory("Select a SaM file", p)
 	response = filechooser.run()
@@ -187,6 +198,7 @@ class GSam:
 	    self.init_program_display(filechooser.get_filename())
 	filechooser.destroy()
 
+    ### Code display handling {{{2
     def get_n_modules(self):
 	return len(self._prog.modules)
 
@@ -211,6 +223,15 @@ class GSam:
 		    self.get_current_module()))
 	self._code_view.set_model(self.get_current_code_model())
 
+    def scroll_code_view(self):
+	if self._prog.mc == self.get_current_module_num():
+	    model = self._code_view.get_model()
+	    nIter = model.iter_nth_child(None, self._prog.pc)
+	    nPath = model.get_path(nIter)
+	    self._code_view.scroll_to_cell(nPath)
+	    self._code_view.queue_draw() # TODO better way to do this?
+
+    ### General display updating {{{2
     def reset_memory_display(self):
 	self._stack_view.get_model().clear()
 	self._heap_view.get_model().clear()
@@ -231,14 +252,12 @@ class GSam:
 	self._fbr_label.set_text("FBR: %d" % self._prog.fbr)
 	self._sp_label.set_text("SP: %d" % self._prog.sp)
 
-    def scroll_code_view(self):
-	if self._prog.mc == self.get_current_module_num():
-	    model = self._code_view.get_model()
-	    nIter = model.iter_nth_child(None, self._prog.pc)
-	    nPath = model.get_path(nIter)
-	    self._code_view.scroll_to_cell(nPath)
-	    self._code_view.queue_draw() # TODO better way to do this?
+    def update_display(self):
+	self.update_registers()
+	self.scroll_code_view()
+	self.handle_changes()
 
+    ### Stack/Heap display handling {{{2
     def value_to_row(self, addr, v):
 	return (addr, sam.TypeChars[v.type], v.value)
 
@@ -318,12 +337,11 @@ class GSam:
 		riter = model.iter_nth_child(iter, n)
 		self.set_row_to_value(model, riter, change.start, change.value)
 
-    def update_display(self):
-	self.update_registers()
-	self.scroll_code_view()
-	self.handle_changes()
-
-    def on_step_clicked(self, p):
+    ### Sam program execution {{{2
+    # Non-GUI specific implementations {{{3
+    # Regular step, ignores breakpoints because it only gets called directly
+    # if the user requests a single step
+    def step(self):
 	if self._prog:
 	    if not self._finished:
 		self._finished = not self._prog.step()
@@ -332,31 +350,54 @@ class GSam:
 			    "Final Result: %d" % self._prog.stack[0].value)
 		self.update_display()
 	    return not self._finished
-    
-    def on_pause_activated(self, p):
+
+    # Step for while running. Supports breakpoints, etc.
+    def run_step(self):
+	return self.step() # TODO debug support
+
+    def pause(self):
 	if self._timer_id:
 	    gobject.source_remove(self._timer_id)
+	    self._timer_id = None
 
-    def on_start_activated(self, p):
+    def start(self):
 	if self._prog and self._timer_id is None:
-	    gobject.timeout_add(self._timeout_interval,\
-		    self.on_step_clicked, p)
+	    self._timer_id =\
+		    gobject.timeout_add(self._timeout_interval, self.run_step)
 
-    def on_start_pause_clicked(self, p):
+    def start_pause(self):
 	if self._prog:
 	    if self._timer_id:
-		self.on_pause_activated(p)
+		self.pause()
 	    else:
-		self.on_start_activated(p)
-    
-    def on_reset_clicked(self, p):
+		self.start()
+
+    def reset(self):
 	if self._prog:
 	    self._prog.reset()
 	    self.update_registers()
 	    self.scroll_code_view()
 	    self.reset_memory_display()
 	    self._finished = False
+
+    # GTK handlers {{{3
+    def on_step_clicked(self, p):
+	if not self._timer_id:
+	    self.step()
+
+    def on_start_activate(self, p):
+	self.start()
+
+    def on_pause_activate(self, p):
+	self.pause()
+
+    def on_start_pause_clicked(self, p):
+	self.start_pause()
     
+    def on_reset_clicked(self, p):
+	self.reset()
+
+    ### View menu handling {{{2
     def on_show_code_activate(self, p):
 	if self._show_code.get_active():
 	    self._code_box.show_all()
@@ -375,11 +416,39 @@ class GSam:
 	else:
 	    self._heap_box.hide_all()
     
+    # append_to_console () {{{2
     def append_to_console(self, str):
 	buf = self._console.get_buffer()
 	buf.insert(buf.get_end_iter(), "%s\n" % str)
 
-    ### IO Funcs
+    ### Speed change handlers {{{2
+    # Requires: newSpeed >= 0
+    def change_speed(self, newSpeed):
+	self._timeout_interval = newSpeed
+	if self._prog and self._timer_id:
+	    self.pause()
+	    self.start()
+
+    def change_to_def_speed(self, newSpeedIndex):
+	self.change_speed(self._speeds[newSpeedIndex])
+
+    def on_full_speed_activate(self, p):
+	self.change_to_def_speed('full')
+
+    def on_fast_speed_activate(self, p):
+	self.change_to_def_speed('fast')
+
+    def on_medium_speed_activate(self, p):
+	self.change_to_def_speed('medium')
+
+    def on_slow_speed_activate(self, p):
+	self.change_to_def_speed('slow')
+
+    def on_custom_speed_activate(self, p):
+	pass # TODO custom speeds
+	#self.change_speed(customSpeed)
+
+    ### IO Funcs {{{2
 
     def sam_string_input(self):
 	self._input.set_text("")
@@ -403,9 +472,11 @@ class GSam:
 	# TODO timestamp?
 	self.append_to_console("Program output: %s" % str)
 
+    # gtk_main_quit () {{{2
     def gtk_main_quit(*self):
 	gtk.main_quit()
 
+# main {{{1
 if __name__ == '__main__':
     gsam = GSam()
 
