@@ -113,13 +113,15 @@ extern sam_io_vfprintf_func  sam_es_io_func_vfprintf (const sam_es *restrict es)
 extern sam_io_vfscanf_func   sam_es_io_func_vfscanf  (const sam_es *restrict es);
 extern sam_io_afgets_func    sam_es_io_func_afgets   (const sam_es *restrict es);
 extern sam_io_bt_func	     sam_es_io_func_bt	     (const sam_es *restrict es);
+extern void		    *sam_es_io_data_get	     (const sam_es *restrict es);
 extern bool		     sam_es_options_get	     (const sam_es *restrict es,
 						      sam_options option);
 extern sam_string	    *sam_es_input_get	     (sam_es *restrict es);
 
 extern sam_es		    *sam_es_new		     (const char *restrict file,
 						      sam_options options,
-						      /*@null@*/ sam_io_dispatcher dispatcher);
+						      /*@null@*/ sam_io_dispatcher dispatcher,
+						      /*@null@*/ void *io_data);
 extern void		     sam_es_free	     (sam_es *restrict es);
 extern void		     sam_es_reset	     (sam_es *restrict es);
 extern bool		     sam_es_change_get	     (sam_es *restrict es,

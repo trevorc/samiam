@@ -111,6 +111,7 @@ struct _sam_es {
     sam_es_change_list *first_change;
     sam_es_change_list *last_change;
     sam_io_dispatcher io_dispatcher;
+    void *io_data;
     sam_options options;
 #if defined(SAM_EXTENSIONS) && defined(HAVE_DLFCN_H)
     sam_array dlhandles;    /**< Handles returned from dlopen(). */
@@ -694,6 +695,12 @@ sam_es_io_func_bt(const sam_es *restrict es)
     return es->io_dispatcher == NULL? NULL: es->io_dispatcher(SAM_IO_BT).bt;
 }
 
+void *
+sam_es_io_data_get(const sam_es *restrict es)
+{
+    return es->io_data;
+}
+
 bool
 sam_es_options_get(const sam_es *restrict es, sam_options option)
 {
@@ -769,7 +776,8 @@ sam_es_clear(sam_es *restrict es)
 /*@only@*/ sam_es *
 sam_es_new(const char *restrict file,
 	   sam_options options,
-	   /*@in@*/ sam_io_dispatcher io_dispatcher)
+	   /*@in@*/ sam_io_dispatcher io_dispatcher,
+	   void *io_data)
 {
     sam_es *restrict es = sam_malloc(sizeof (sam_es));
     sam_es_init(es);
@@ -777,8 +785,9 @@ sam_es_new(const char *restrict file,
     sam_array_init(&es->instructions);
     sam_array_init(&es->locs);
     sam_hash_table_init(&es->labels);
-    es->io_dispatcher = io_dispatcher;
     es->options = options;
+    es->io_dispatcher = io_dispatcher;
+    es->io_data = io_data;
 
     if (!sam_parse(es, file)) {
 	sam_es_free(es);
