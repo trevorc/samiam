@@ -80,26 +80,25 @@ Instruction_create(sam_instruction *restrict si)
     char *tmp;
     switch(si->optype) {
 	case SAM_OP_TYPE_INT:
-	    tmp = (char *) malloc(sizeof(char) * (20 + strlen(si->name)));
+	    tmp = malloc(20 + strlen(si->name));
 	    /* TODO how big do ints get? */
-	    sprintf(tmp, "%s %li", si->name, (long) si->operand.i);
+	    sprintf(tmp, "%s %li", si->name, (long)si->operand.i);
 	    rv->inst = tmp;
 	    break;
 	case SAM_OP_TYPE_FLOAT:
-	    tmp = (char *) malloc(sizeof(char) * (20 + strlen(si->name)));
+	    tmp = malloc(20 + strlen(si->name));
 	    /* TODO how big do floats get? */
 	    sprintf(tmp, "%s %f", si->name, si->operand.f);
 	    rv->inst = tmp;
 	    break;
 	case SAM_OP_TYPE_CHAR:
-	    tmp = (char *) malloc(sizeof(char) * (4 + strlen(si->name)));
+	    tmp = malloc(4 + strlen(si->name));
 	    /* TODO are sam_char's really chars? */
 	    sprintf(tmp, "%s '%c'", si->name, si->operand.c);
 	    rv->inst = tmp;
 	    break;
 	case SAM_OP_TYPE_LABEL:
-	    tmp = (char *) malloc(sizeof(char) * 
-			(strlen(si->name) + 1 + strlen(si->operand.s)));
+	    tmp = malloc(strlen(si->name) + 1 + strlen(si->operand.s));
 	    sprintf(tmp, "%s %s", si->name, si->operand.s);
 	    rv->inst = tmp;
 	    break;
