@@ -74,7 +74,8 @@ typedef enum {
     SAM_IO_BT,
 } sam_io_func_name;
 
-typedef sam_io_func (*sam_io_dispatcher)(sam_io_func_name io_func);
+typedef sam_io_func (*sam_io_dispatcher)(sam_io_func_name io_func,
+					 void *io_data);
 
 extern FILE *sam_ios_to_file   (sam_io_stream ios);
 extern void  sam_io_bt         (const sam_es *restrict es);

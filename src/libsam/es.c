@@ -674,25 +674,29 @@ sam_es_heap_leak_check(const sam_es *restrict es,
 sam_io_vfprintf_func
 sam_es_io_func_vfprintf(const sam_es *restrict es)
 {
-    return es->io_dispatcher == NULL? NULL: es->io_dispatcher(SAM_IO_VFPRINTF).vfprintf;
+    return es->io_dispatcher == NULL?
+	NULL: es->io_dispatcher(SAM_IO_VFPRINTF, es->io_data).vfprintf;
 }
 
 sam_io_vfscanf_func
 sam_es_io_func_vfscanf(const sam_es *restrict es)
 {
-    return es->io_dispatcher == NULL? NULL: es->io_dispatcher(SAM_IO_VFSCANF).vfscanf;
+    return es->io_dispatcher == NULL?
+	NULL: es->io_dispatcher(SAM_IO_VFSCANF, es->io_data).vfscanf;
 }
 
 sam_io_afgets_func
 sam_es_io_func_afgets(const sam_es *restrict es)
 {
-    return es->io_dispatcher == NULL? NULL: es->io_dispatcher(SAM_IO_AFGETS).afgets;
+    return es->io_dispatcher == NULL?
+	NULL: es->io_dispatcher(SAM_IO_AFGETS, es->io_data).afgets;
 }
 
 sam_io_bt_func
 sam_es_io_func_bt(const sam_es *restrict es)
 {
-    return es->io_dispatcher == NULL? NULL: es->io_dispatcher(SAM_IO_BT).bt;
+    return es->io_dispatcher == NULL?
+	NULL: es->io_dispatcher(SAM_IO_BT, es->io_data).bt;
 }
 
 void *
