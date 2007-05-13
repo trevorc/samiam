@@ -277,7 +277,7 @@ sam_io_printf(const sam_es *restrict es,
     va_start(ap, fmt);
     int len = sam_es_io_func_vfprintf(es) == NULL?
 	sam_io_vfprintf(SAM_IOS_OUT, fmt, ap):
-	sam_es_io_func_vfprintf(es)(SAM_IOS_OUT, fmt, ap);
+	sam_es_io_func_vfprintf(es)(SAM_IOS_OUT, NULL, fmt, ap);
     va_end(ap);
 
     return len;
@@ -294,7 +294,7 @@ sam_io_fprintf(const sam_es *restrict es,
     va_start(ap, fmt);
     int len = sam_es_io_func_vfprintf(es) == NULL?
 	sam_io_vfprintf(ios, fmt, ap):
-	sam_es_io_func_vfprintf(es)(ios, fmt, ap);
+	sam_es_io_func_vfprintf(es)(ios, NULL, fmt, ap);
     va_end(ap);
 
     return len;
@@ -310,7 +310,7 @@ sam_io_scanf(const sam_es *restrict es,
     va_start(ap, fmt);
     int len = sam_es_io_func_vfscanf(es) == NULL?
 	sam_io_vfscanf(SAM_IOS_IN, fmt, ap):
-	sam_es_io_func_vfscanf(es)(SAM_IOS_IN, fmt, ap);
+	sam_es_io_func_vfscanf(es)(SAM_IOS_IN, NULL, fmt, ap);
     va_end(ap);
 
     return len;
@@ -328,7 +328,7 @@ sam_io_afgets(const sam_es *restrict es,
 	sam_string str;
 	return *s = sam_string_get(sam_ios_to_file(ios), &str);
     }
-    return *s = sam_es_io_func_afgets(es)(s, ios);
+    return *s = sam_es_io_func_afgets(es)(s, ios, NULL);
 }
 
 void
@@ -336,5 +336,5 @@ sam_io_bt(const sam_es *restrict es)
 {
     sam_es_io_func_bt(es) == NULL?
 	sam_io_bt_default(es):
-	sam_es_io_func_bt(es)(es);
+	sam_es_io_func_bt(es)(es, NULL);
 }
