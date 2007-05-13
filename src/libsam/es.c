@@ -634,7 +634,7 @@ sam_es_heap_dealloc(sam_es *restrict es,
 	    }
 	    sam_es_change ch = {
 		.stack = 0,
-		.add = 1,
+		.remove = 1,
 		.ma = {
 		    .ha = u->start
 		},
