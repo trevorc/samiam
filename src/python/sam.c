@@ -796,6 +796,9 @@ typedef struct {
     PyObject_HEAD
     sam_es *es;
     char *file;
+    Stack *stack;
+    Heap *heap;
+    Modules *modules;
     // TODO There's 4 sam io functions...
     PyObject *print_func;
     PyObject *input_func;
@@ -901,43 +904,53 @@ Program_sp_get(Program *restrict self)
 static PyObject *
 Program_stack_get(Program *restrict self)
 {
-    Stack *restrict stack = PyObject_New(Stack, &StackType);
+    if (self->stack == NULL) {
+	Stack *restrict stack = PyObject_New(Stack, &StackType);
 
-    if (stack == NULL) {
-	return NULL;
+	if (stack == NULL) {
+	    return NULL;
+	}
+
+	stack->es = self->es;
+	self->stack = stack;
     }
-
-    stack->es = self->es;
-    return (PyObject *) stack;
+    return (PyObject *)self->stack;
 }
 
 /* Program_heap_get () {{{2 */
 static PyObject *
 Program_heap_get(Program *restrict self)
 {
-    Heap *restrict heap = PyObject_New(Heap, &HeapType);
+    if (self->heap == NULL) {
+	Heap *restrict heap = PyObject_New(Heap, &HeapType);
 
-    if (heap == NULL) {
-	return NULL;
+	if (heap == NULL) {
+	    return NULL;
+	}
+
+	heap->es = self->es;
+	self->heap = heap;
     }
-
-    heap->es = self->es;
-    return (PyObject *)heap;
+    return (PyObject *)self->heap;
 }
 
 /* Program_modules_get () {{{2 */
 static PyObject *
 Program_modules_get(Program *restrict self)
 {
-    Modules *restrict modules = PyObject_New(Modules, &ModulesType);
+    if (self->modules == NULL)
+    {
+	Modules *restrict modules = PyObject_New(Modules, &ModulesType);
 
-    if (modules == NULL) {
-	return NULL;
+	if (modules == NULL) {
+	    return NULL;
+	}
+
+	modules->es = self->es;
+	self->modules = modules;
     }
-
-    modules->es = self->es;
-    Py_INCREF(modules); // TODO Why is this required?
-    return (PyObject *)modules;
+    Py_INCREF(self->modules); // TODO Why is this required?
+    return (PyObject *)self->modules;
 }
 
 /* Program_changes_get () {{{2 */
@@ -1108,12 +1121,14 @@ Program_io_dispatcher(Program *restrict self, sam_io_func_name io_func)
     switch(io_func) {
 	case SAM_IO_VFPRINTF:
 	    return self->print_func == NULL?
-		NULL: (sam_io_func){.vfprintf = Program_io_vfprintf};
+		(sam_io_func){ NULL }:
+		(sam_io_func){.vfprintf = Program_io_vfprintf};
 	case SAM_IO_AFGETS:
 	    return self->input_func == NULL?
-		NULL: (sam_io_func){.vfprintf = Program_io_afgets};
+		(sam_io_func){ NULL }:
+		(sam_io_func){.vfprintf = Program_io_afgets};
 	default:
-	    return NULL;
+	    return (sam_io_func){ NULL };
     }
 }
 
