@@ -118,7 +118,8 @@ extern bool		     sam_es_options_get	     (const sam_es *restrict es,
 						      sam_options option);
 extern sam_string	    *sam_es_input_get	     (sam_es *restrict es);
 
-extern sam_es		    *sam_es_new		     (sam_options options,
+extern sam_es		    *sam_es_new		     (const char *restrict file,
+						      sam_options options,
 						      /*@null@*/ sam_io_dispatcher dispatcher);
 extern void		     sam_es_free	     (sam_es *restrict es);
 extern bool		     sam_es_change_get	     (sam_es *restrict es,
