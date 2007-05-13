@@ -6,8 +6,8 @@ import sys
 prog = sam.Program(file = sys.argv[1])
 print "dir(sam):", dir(sam)
 print "dir(sam.?)", dir(sam.Program)
-#for module in prog.modules:
-#    print module.get_foo()
+for module in prog.modules:
+    print module.foo
 
 while prog.step():
 #    if len(prog.stack) > 0:
