@@ -98,7 +98,7 @@ Instruction_create(sam_instruction *restrict si)
 	    rv->inst = tmp;
 	    break;
 	case SAM_OP_TYPE_LABEL:
-	    tmp = malloc(strlen(si->name) + 1 + strlen(si->operand.s));
+	    tmp = malloc(strlen(si->name) + 2 + strlen(si->operand.s));
 	    sprintf(tmp, "%s %s", si->name, si->operand.s);
 	    rv->inst = tmp;
 	    break;
@@ -231,7 +231,7 @@ Module_instructions_get(Module *restrict self)
     }
 
     insts->es = self->es;
-    return (PyObject *) insts;
+    return (PyObject *)insts;
 }
 
 /* Module_filename_get () {{{2 */
@@ -239,20 +239,11 @@ static PyObject *
 Module_filename_get(Module *restrict self)
 {
     // TODO Need to get filename somehow.
-    return Py_BuildValue("s", "(ERROR: Filename unknown.)");
-}
-
-/* Module_foo_get () {{{2 */
-// XXX DEBUG
-static PyObject *
-Module_foo_get(Module *restrict self)
-{
-    return PyLong_FromLong(4);
+    return PyString_FromString("(ERROR: Filename unknown.)");
 }
 
 /* PyGetSetDef Module_getset {{{2 */
 static PyGetSetDef Module_getset[] = {
-    {"foo", (getter)Module_foo_get, NULL, "foo -- the constant 4", NULL},
     {"instructions", (getter)Module_instructions_get, NULL,
 	"instructions -- the program code of this module.", NULL},
     {"filename", (getter)Module_filename_get, NULL,
@@ -278,7 +269,7 @@ static PyTypeObject ModuleType = {
     .tp_basicsize = sizeof (Module),
     .tp_flags     = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
     .tp_doc	  = "Sam module (file)",
-    .tp_methods	  = Module_methods,
+//    .tp_methods	  = Module_methods,
     .tp_getset	  = Module_getset,
     .tp_new	  = PyType_GenericNew,
 };
@@ -488,7 +479,7 @@ PyTypeObject StackIterType = {
 
 /* Stack {{{1 */
 /* typedef Stack {{{2 */
-/* Sequence of the SaM heap */
+/* Sequence of the SaM stack */
 typedef EsRefObj Stack;
 
 /* Stack_iter () {{{2 */
@@ -1220,6 +1211,9 @@ initsam(void)
 	PyType_Ready(&StackType) < 0 ||
 	PyType_Ready(&HeapIterType) < 0 ||
 	PyType_Ready(&HeapType) < 0 ||
+	PyType_Ready(&ModuleType) < 0 ||
+	PyType_Ready(&ModulesType) < 0 ||
+	PyType_Ready(&ModulesIterType) < 0 ||
 	PyType_Ready(&ChangeType) < 0 ||
 	PyType_Ready(&ChangesIterType) < 0 ||
 	PyType_Ready(&ChangesType) < 0 ||
