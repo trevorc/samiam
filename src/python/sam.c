@@ -1130,9 +1130,7 @@ Program_io_dispatcher(Program *restrict self, sam_io_func_name io_func)
 static int
 Program_load(Program *restrict self)
 {
-    printf("About to load file %s...\n", self->file);
     self->es = sam_es_new(self->file, 1, NULL/*Program_io_dispatcher, self*/);
-    printf("Loaded File.\n");
     if (self->es == NULL) {
 	PyErr_SetString(ParseError, "couldn't parse input file.");
 	return -1;
