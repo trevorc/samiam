@@ -1143,11 +1143,8 @@ Program_load(Program *restrict self)
 static PyObject *
 Program_reset(Program *restrict self)
 {
-    /* TODO is there a better way to reset than reloading? */
-    if(Program_load(self) == 0)
-	Py_RETURN_TRUE;
-    else
-	return NULL;
+    sam_es_reset(self->es);
+    Py_RETURN_TRUE;
 }
 
 /* PyMethodDef Program_methods {{{2 */
