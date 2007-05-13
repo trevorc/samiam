@@ -3,6 +3,7 @@
 import pygtk
 import gtk, gtk.glade, gobject
 import sam
+import time
 
 # class CodeTreeModel {{{1
 class CodeTreeModel(gtk.GenericTreeModel):
@@ -454,7 +455,8 @@ class GSam:
     # append_to_console () {{{2
     def append_to_console(self, str):
 	buf = self._console.get_buffer()
-	buf.insert(buf.get_end_iter(), "%s\n" % str)
+	buf.insert(buf.get_end_iter(),
+		   "[%s] %s\n" % (time.strftime('%X'), str))
 
     ### Speed change handlers {{{2
     # Requires: newSpeed >= 0
@@ -515,7 +517,6 @@ class GSam:
 	# TODO return res in on_input_requested
 
     def sam_print(self, str):
-	# TODO timestamp?
 	self.append_to_console("Program output: %s" % str)
 
     # gtk_main_quit () {{{2
