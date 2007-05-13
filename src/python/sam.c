@@ -799,7 +799,7 @@ typedef struct {
     Stack *stack;
     Heap *heap;
     Modules *modules;
-    // TODO There's 4 sam io functions...
+    Instructions *instructions; // TODO remove this and use modules
     PyObject *print_func;
     PyObject *input_func;
 } Program;
@@ -914,6 +914,7 @@ Program_stack_get(Program *restrict self)
 	stack->es = self->es;
 	self->stack = stack;
     }
+    Py_XINCREF(self->stack);
     return (PyObject *)self->stack;
 }
 
@@ -931,6 +932,7 @@ Program_heap_get(Program *restrict self)
 	heap->es = self->es;
 	self->heap = heap;
     }
+    Py_XINCREF(self->heap);
     return (PyObject *)self->heap;
 }
 
@@ -949,7 +951,7 @@ Program_modules_get(Program *restrict self)
 	modules->es = self->es;
 	self->modules = modules;
     }
-    Py_INCREF(self->modules); // TODO Why is this required?
+    Py_XINCREF(self->modules);
     return (PyObject *)self->modules;
 }
 
@@ -1103,7 +1105,7 @@ Program_io_vfprintf(sam_io_stream ios,
 
 /* Program_io_afgets_func () {{{3 */
 static char *
-Program_io_afgets(char **s,
+Program_io_afgets(char **restrict s,
 		  sam_io_stream ios,
 		  void *data)
 {
@@ -1111,13 +1113,16 @@ Program_io_afgets(char **s,
     Program *restrict self = data;
     PyObject *res = PyEval_CallObject(self->input_func, arglist);
     Py_DECREF(arglist);
-    return *s = PyString_AsString(res);
+    *s = strdup(PyString_AsString(res));
+    Py_DECREF(res);
+    return *s;
 }
 
 /* Program_io_dispatcher () {{{3 */
 static sam_io_func
-Program_io_dispatcher(Program *restrict self, sam_io_func_name io_func)
+Program_io_dispatcher(sam_io_func_name io_func, void *data)
 {
+    Program *restrict self = data;
     switch(io_func) {
 	case SAM_IO_VFPRINTF:
 	    return self->print_func == NULL?
@@ -1126,7 +1131,7 @@ Program_io_dispatcher(Program *restrict self, sam_io_func_name io_func)
 	case SAM_IO_AFGETS:
 	    return self->input_func == NULL?
 		(sam_io_func){ NULL }:
-		(sam_io_func){.vfprintf = Program_io_afgets};
+		(sam_io_func){.afgets = Program_io_afgets};
 	default:
 	    return (sam_io_func){ NULL };
     }
@@ -1136,7 +1141,7 @@ Program_io_dispatcher(Program *restrict self, sam_io_func_name io_func)
 static int
 Program_load(Program *restrict self)
 {
-    self->es = sam_es_new(self->file, 1, NULL/*Program_io_dispatcher, self*/);
+    self->es = sam_es_new(self->file, 1, Program_io_dispatcher, self);
     if (self->es == NULL) {
 	PyErr_SetString(ParseError, "couldn't parse input file.");
 	return -1;
