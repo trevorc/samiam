@@ -41,10 +41,11 @@ static int sam_io_vfprintf(sam_io_stream ios,
 			   va_list ap)
 __attribute__((format(printf, 2, 0)));
 
-static int sam_io_vfscanf(sam_io_stream ios,
+static int sam_io_vfscanf(const sam_es *restrict es,
+			  sam_io_stream ios,
 			  const char *restrict fmt,
 			  va_list ap)
-__attribute__((format(scanf, 2, 0)));
+__attribute__((format(scanf, 3, 0)));
 
 static int
 sam_io_vfprintf(sam_io_stream ios,
@@ -57,18 +58,16 @@ sam_io_vfprintf(sam_io_stream ios,
 }
 
 static int
-sam_io_vfscanf(sam_io_stream ios,
+sam_io_vfscanf(const sam_es *restrict es,
+	       sam_io_stream ios,
 	       const char *restrict fmt,
 	       va_list ap)
 {
-    sam_string s;
-    int	       rv;
+    char *s;
+    sam_io_afgets(es, &s, ios);
 
-    if (sam_string_get(sam_ios_to_file(ios), &s) == NULL) {
-	return EOF;
-    }
-    rv = vsscanf(s.data, fmt, ap);
-    sam_string_free(&s);
+    int rv = vsscanf(s, fmt, ap);
+    free(s);
     return rv;
 }
 
@@ -309,7 +308,7 @@ sam_io_scanf(const sam_es *restrict es,
 
     va_start(ap, fmt);
     int len = sam_es_io_func_vfscanf(es) == NULL?
-	sam_io_vfscanf(SAM_IOS_IN, fmt, ap):
+	sam_io_vfscanf(es, SAM_IOS_IN, fmt, ap):
 	sam_es_io_func_vfscanf(es)(SAM_IOS_IN, NULL, fmt, ap);
     va_end(ap);
 
