@@ -17,12 +17,6 @@ else
     samfile=$1
 fi
 
-sam_so_err() {
-    echo "couldn't find sam.so."
-    echo "please run ./compile.sh"
-    exit 1
-}
-
 . env.sh
 
 python_args="$pyfile $samfile"
