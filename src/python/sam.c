@@ -253,8 +253,6 @@ static PyGetSetDef Module_getset[] = {
 
 /* PyMethodDef Module_methods {{{2 */
 static PyMethodDef Module_methods[] = {
-    {"get_foo", (PyCFunction)Module_foo_get, METH_NOARGS,
-	"foo -- the constant 4"},
     {"get_instructions", (PyCFunction)Module_instructions_get, METH_NOARGS,
 	"gets the program code of this module"},
     {"get_filename", (PyCFunction)Module_filename_get, METH_NOARGS,
