@@ -72,8 +72,7 @@ extern inline size_t	     sam_es_sp_get	     (sam_es *restrict es);
 extern inline sam_sa	     sam_es_fbr_get	     (const sam_es *restrict es);
 extern inline void	     sam_es_fbr_set	     (sam_es *restrict es,
 						      sam_sa  fbr);
-extern sam_error	     sam_es_string_get	     (sam_es *restrict es,
-						      char **restrict str,
+extern sam_error	     sam_es_string_get	     (sam_es *restrict es, char **restrict str,
 						      sam_ha ha);
 extern sam_ml		    *sam_es_stack_pop	     (sam_es *restrict es);
 extern bool		     sam_es_stack_push	     (sam_es *restrict es,
@@ -122,6 +121,7 @@ extern sam_es		    *sam_es_new		     (const char *restrict file,
 						      sam_options options,
 						      /*@null@*/ sam_io_dispatcher dispatcher);
 extern void		     sam_es_free	     (sam_es *restrict es);
+extern void		     sam_es_reset	     (sam_es *restrict es);
 extern bool		     sam_es_change_get	     (sam_es *restrict es,
 						      sam_es_change *restrict ch);
 #if defined(SAM_EXTENSIONS) && defined(HAVE_DLFCN_H)

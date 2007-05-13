@@ -732,30 +732,53 @@ sam_es_change_get(sam_es *restrict es,
     return true;
 }
 
+/* The part of up setting up an execution state which is unrelated to
+ * parsing. */
+static void
+sam_es_init(sam_es *restrict es)
+{
+    es->bt = false;
+    es->pc = 0;
+    es->fbr = 0;
+    sam_array_init(&es->stack);
+    sam_array_init(&es->heap.a);
+    es->heap.used_list = NULL;
+    es->heap.free_list = NULL;
+    es->first_change = NULL;
+    es->last_change = NULL;
+
+#if defined(SAM_EXTENSIONS) && defined(HAVE_DLFCN_H)
+    sam_array_init(&es->dlhandles);
+#endif /* SAM_EXTENSIONS && HAVE_DLFCN_H */
+}
+
+/* The part of taking down an execution state which is unrelated to
+ * parsing. */
+static void
+sam_es_clear(sam_es *restrict es)
+{
+    sam_array_free(&es->stack);
+    sam_es_heap_free(es);
+
+    while (sam_es_change_get(es, NULL));
+#if defined(SAM_EXTENSIONS) && defined(HAVE_DLFCN_H)
+    sam_array_free(&es->dlhandles);
+#endif /* SAM_EXTENSIONS && HAVE_DLFCN_H */
+}
+
 /*@only@*/ sam_es *
 sam_es_new(const char *restrict file,
 	   sam_options options,
 	   /*@in@*/ sam_io_dispatcher io_dispatcher)
 {
     sam_es *restrict es = sam_malloc(sizeof (sam_es));
+    sam_es_init(es);
 
-    es->bt = false;
-    es->pc = 0;
-    es->fbr = 0;
-    sam_array_init(&es->stack);
-    sam_array_init(&es->heap.a);
     sam_array_init(&es->instructions);
     sam_array_init(&es->locs);
     sam_hash_table_init(&es->labels);
-    es->heap.used_list = NULL;
-    es->heap.free_list = NULL;
-    es->first_change = NULL;
-    es->last_change = NULL;
     es->io_dispatcher = io_dispatcher;
     es->options = options;
-#if defined(SAM_EXTENSIONS) && defined(HAVE_DLFCN_H)
-    sam_array_init(&es->dlhandles);
-#endif /* SAM_EXTENSIONS && HAVE_DLFCN_H */
 
     if (!sam_parse(es, file)) {
 	sam_es_free(es);
@@ -768,6 +791,8 @@ sam_es_new(const char *restrict file,
 void
 sam_es_free(/*@in@*/ /*@only@*/ sam_es *restrict es)
 {
+    sam_es_clear(es);
+
     if (es->input.alloc > 0) {
 #if defined(HAVE_MMAN_H)
 	if (es->input.mmapped) {
@@ -779,16 +804,17 @@ sam_es_free(/*@in@*/ /*@only@*/ sam_es *restrict es)
 	sam_string_free(&es->input);
     }
 
-    sam_array_free(&es->stack);
-    sam_es_heap_free(es);
     sam_array_free(&es->instructions);
     sam_array_free(&es->locs);
     sam_hash_table_free(&es->labels);
-    while (sam_es_change_get(es, NULL));
-#if defined(SAM_EXTENSIONS) && defined(HAVE_DLFCN_H)
-    sam_array_free(&es->dlhandles);
-#endif /* SAM_EXTENSIONS && HAVE_DLFCN_H */
     free(es);
+}
+
+void
+sam_es_reset(sam_es *restrict es)
+{
+    sam_es_clear(es);
+    sam_es_init(es);
 }
 
 #if defined(SAM_EXTENSIONS) && defined(HAVE_DLFCN_H)
