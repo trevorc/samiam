@@ -83,7 +83,7 @@ Instruction_create(sam_instruction *restrict si)
 	case SAM_OP_TYPE_INT:
 	    tmp = (char *) malloc(sizeof(char) * (20 + strlen(si->name)));
 	    /* TODO how big do ints get? */
-	    sprintf(tmp, "%s %i", si->name, si->operand.i);
+	    sprintf(tmp, "%s %li", si->name, (long) si->operand.i);
 	    rv->inst = tmp;
 	    break;
 	case SAM_OP_TYPE_FLOAT:
@@ -178,7 +178,7 @@ Instructions_length(Instructions *self)
 }
 
 /* Instructions_item {{{2 */
-static Instruction *
+static PyObject *
 Instructions_item(Instructions *self, unsigned i)
 {
     /* i is unsigned, no check for i < 0 */
@@ -636,9 +636,162 @@ static PyTypeObject HeapType = {
     .tp_name	  = "sam.Heap",
     .tp_basicsize = sizeof (Heap),
     .tp_flags     = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
-    .tp_doc	  = "Sam execution state",
+    .tp_doc	  = "Sam heap",
     .tp_iter	  = (getiterfunc)Heap_iter,
     .tp_as_sequence = &Heap_sequence_methods,
+    .tp_new	  = PyType_GenericNew,
+};
+
+/* Change {{{1 */
+/* typedef Change {{{2 */
+typedef struct {
+    PyObject_HEAD
+    sam_es_change *change;
+} Change;
+
+/* Change_type_get () {{{2 */
+static PyObject *
+Change_type_get(Change *restrict self)
+{
+    long rv = self->change->stack * 3;
+    if (self->change->add)
+	rv += 0;
+    else if (self->change->remove)
+	rv += 1;
+    else
+	rv += 2;
+    return PyLong_FromLong(rv);
+}
+
+/* Change_start_get () {{{2 */
+static PyObject *
+Change_start_get (Change *restrict self)
+{
+    if (self->change->stack)
+	return PyLong_FromLong(self->change->ma.sa);
+    else
+	return PyLong_FromLong(self->change->ma.ha);
+}
+
+/* Change_size_get () {{{2 */
+static PyObject *
+Change_size_get (Change *restrict self)
+{
+    return PyLong_FromUnsignedLong(self->change->size);
+}
+
+/* Change_value_get () {{{2 */
+static PyObject *
+Change_value_get (Change *restrict self)
+{
+    if (self->change->remove)
+    {
+	// TODO exception?
+	return NULL;
+    }
+
+    return (PyObject *) Value_create(*self->change->ml);
+}
+
+/* PyGetSetDef Change_getset {{{2 */
+static PyGetSetDef Change_getset[] = {
+    {"type", (getter)Change_type_get, NULL,
+	"type -- type of change; index into sam.ChangeTypes.", NULL},
+    {"start", (getter)Change_start_get, NULL,
+	"start -- start of change; stack or heap address", NULL},
+    {"size", (getter)Change_size_get, NULL,
+	"size -- size of change in sam words", NULL},
+    {"value", (getter)Change_value_get, NULL,
+	"value -- sam.Value of change if add or modify", NULL},
+    {NULL, NULL, NULL, NULL, NULL}
+};
+
+/* Change_dealloc () {{{2 */
+static void
+Change_dealloc(Change *self)
+{
+    if (self->change) {
+	free(self->change);
+    }
+    self->ob_type->tp_free((PyObject *)self);
+}
+
+/* PyTypeObject ChangeType {{{2 */
+static PyTypeObject ChangeType = {
+    PyObject_HEAD_INIT(NULL)
+    .tp_name	  = "sam.Change",
+    .tp_basicsize = sizeof (Change),
+    .tp_dealloc	  = (destructor)Change_dealloc,
+    .tp_flags     = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    .tp_doc	  = "One change in the sam memory state",
+    .tp_getset	  = Change_getset,
+    .tp_new	  = PyType_GenericNew,
+};
+
+/* ChangesIter {{{1 */
+/* typedef ChangesIter {{{2 */
+typedef EsRefObj ChangesIter;
+
+/* ChangesIter_next () {{{2 */
+static PyObject *
+ChangesIter_next(ChangesIter *restrict self)
+{
+    sam_es_change *ch = malloc(sizeof(sam_es_change));
+    if (sam_es_change_get(self->es, ch))
+    {
+	Change *rv = PyObject_New(Change, &ChangeType);
+	rv->change = ch;
+	
+	return (PyObject *)rv;
+    }
+    else
+    {
+	free(ch);
+	return NULL;
+    }
+}
+
+/* PyTypeObject ChangesIterType {{{2 */
+PyTypeObject ChangesIterType = {
+    PyObject_HEAD_INIT(&PyType_Type)
+    .tp_name	  = "changesiterator",
+    .tp_basicsize = sizeof (ChangesIter),
+    .tp_free	  = PyObject_Free,
+    .tp_getattro  = PyObject_GenericGetAttr,
+    .tp_flags	  = Py_TPFLAGS_DEFAULT,
+    .tp_iter	  = PyObject_SelfIter,
+    .tp_iternext  = (iternextfunc)ChangesIter_next,
+};
+
+/* Changes {{{1 */
+/* typedef Changes {{{2 */
+/* Sequence of the SaM changes */
+typedef EsRefObj Changes;
+
+/* Changes_iter () {{{2 */
+static PyObject *
+Changes_iter(Changes *restrict ch)
+{
+    ChangesIter *restrict self =
+	PyObject_New(ChangesIter, &ChangesIterType);
+
+    if (self == NULL) {
+	return NULL;
+    }
+
+    self->es = ch->es;
+
+    return (PyObject *)self;
+}
+
+/* PyTypeObject ChangesType {{{2 */
+static PyTypeObject ChangesType = {
+    PyObject_HEAD_INIT(NULL)
+    .tp_name	  = "sam.Changes",
+    .tp_basicsize = sizeof (Changes),
+    .tp_flags     = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    .tp_doc	  = "Sam memory changes",
+    .tp_iter	  = (getiterfunc)Changes_iter,
     .tp_new	  = PyType_GenericNew,
 };
 
@@ -648,6 +801,9 @@ typedef struct {
     PyObject_HEAD
     sam_es *es;
     char *file;
+    // TODO There's 4 sam io functions...
+    PyObject *print_func;
+    PyObject *input_func;
 } Program;
 
 /* Program_bt_get () {{{2 */
@@ -789,6 +945,73 @@ Program_modules_get(Program *restrict self)
     return (PyObject *) modules;
 }
 
+/* Program_changes_get () {{{2 */
+static PyObject *
+Program_changes_get(Program *restrict self)
+{
+    Changes *restrict changes = PyObject_New(Changes, &ChangesType);
+
+    if (changes == NULL) {
+	return NULL;
+    }
+
+    changes->es = self->es;
+    Py_INCREF(changes); // TODO Why is this required?
+    return (PyObject *) changes;
+}
+
+/* Program_print_func_get () {{{2 */
+static PyObject *
+Program_print_func_get(Program *restrict self)
+{
+    PyObject *restrict rv = self->print_func == NULL
+	? Py_None : self->print_func;
+    Py_INCREF(rv);
+    return rv;
+}
+
+/* Program_print_func_set () {{{2 */
+static int
+Program_print_func_set(Program *restrict self, PyObject *func)
+{
+    // If func is null, the print_func is cleared.
+    if (func != NULL && !PyCallable_Check(func)) {
+	PyErr_SetString(PyExc_TypeError, "print_func must be callable");
+	return -1;
+    }
+    Py_XDECREF(self->print_func);
+    Py_XINCREF(func);
+    self->print_func = func;
+
+    return 0;
+}
+
+/* Program_input_func_get () {{{2 */
+static PyObject *
+Program_input_func_get(Program *restrict self)
+{
+    PyObject *restrict rv = self->input_func == NULL
+	? Py_None : self->input_func;
+    Py_INCREF(rv);
+    return rv;
+}
+
+/* Program_input_func_set () {{{2 */
+static int
+Program_input_func_set(Program *restrict self, PyObject *func)
+{
+    // If func is null, the input_func is cleared.
+    if (func != NULL && !PyCallable_Check(func)) {
+	PyErr_SetString(PyExc_TypeError, "input_func must be callable");
+	return -1;
+    }
+    Py_XDECREF(self->input_func);
+    Py_XINCREF(func);
+    self->input_func = func;
+
+    return 0;
+}
+
 /* PyGetSetDef Program_getset {{{2 */
 static PyGetSetDef Program_getset[] = {
     {"bt", (getter)Program_bt_get, (setter)Program_bt_set,
@@ -806,7 +1029,15 @@ static PyGetSetDef Program_getset[] = {
     {"heap", (getter)Program_heap_get, NULL,
 	"heap.", NULL},
     {"modules", (getter)Program_modules_get, NULL,
-	"the SaM files.", NULL},
+	"the sam files.", NULL},
+    {"changes", (getter)Program_changes_get, NULL,
+	"sam memory changes.", NULL},
+    {"print_func", (getter)Program_print_func_get,
+	(setter)Program_print_func_set,
+	"function for sam program to use to print a string", NULL},
+    {"input_func", (getter)Program_input_func_get,
+	(setter)Program_input_func_set,
+	"function for sam program to use to get a string input", NULL},
     // TODO DEBUG remove this
     {"instructions", (getter)Module_instructions_get, NULL,
 	"the program code", NULL},
@@ -842,19 +1073,67 @@ Program_step(Program *restrict self)
     Py_RETURN_TRUE;
 }
 
-/* Program_get_changes () {{{2 */
-static PyObject *
-Program_get_changes(Program *restrict self)
+/* Program IO funcs {{{2 */
+/* Program_io_vfprintf_func () {{{3 */
+static int
+Program_io_vfprintf(sam_io_stream ios, Program *restrict self,
+			 const char *restrict fmt, va_list ap)
 {
-    return NULL; // XXX TODO
+    // TODO ios?
+    int len = vsnprintf(NULL, 0, fmt, ap);
+    char *str = malloc(len);
+    vsprintf(str, fmt, ap);
+    PyObject *restrict arglist = Py_BuildValue("(s)", str);
+    PyEval_CallObject(self->print_func, arglist);
+    Py_DECREF(arglist);
+    return len;
+}
+
+/* Program_io_afgets_func () {{{3 */
+static char *
+Program_io_afgets(sam_io_stream ios, Program *restrict self)
+{
+    PyObject *restrict arglist = Py_BuildValue("()");
+    PyObject *res = PyEval_CallObject(self->input_func, arglist);
+    Py_DECREF(arglist);
+    return PyString_AsString(res);
+}
+
+/* Program_io_dispatcher () {{{3 */
+static sam_io_func
+Program_io_dispatcher(Program *restrict self, sam_io_func_name io_func)
+{
+    switch(io_func)
+    {
+	case SAM_IO_VFPRINTF:
+	    if (self->print_func) {
+		sam_io_func rv = { .vfprintf = Program_io_vfprintf };
+		return rv;
+	    }
+	    else {
+		return (sam_io_func) { NULL };
+	    }
+	case SAM_IO_AFGETS:
+	    if (self->input_func) {
+		sam_io_func rv = { .afgets = Program_io_afgets };
+		return rv;
+	    }
+	    else {
+		return (sam_io_func) { NULL };
+	    }
+	default:
+	    return (sam_io_func) { NULL };
+    }
 }
 
 /* Program_load () {{{2 */
 static int
 Program_load(Program *restrict self)
 {
-    self->es = sam_es_new(1, NULL);
-    if (!sam_parse(self->es, self->file)) {
+    printf("About to load file %s...\n", self->file);
+    self->es = sam_es_new(self->file, 1, NULL/*Program_io_dispatcher, self*/);
+    printf("Loaded File.\n");
+    if (self->es == NULL) {
 	PyErr_SetString(ParseError, "couldn't parse input file.");
 	return -1;
     }
@@ -877,9 +1156,6 @@ Program_reset(Program *restrict self)
 static PyMethodDef Program_methods[] = {
     {"step", (PyCFunction)Program_step, METH_NOARGS,
 	"Steps one instruction; returns true if the program continues"},
-    {"get_changes", (PyCFunction)Program_get_changes, METH_NOARGS,
-	"Returns all changes to the memory state since this function "
-	"was last called"},
     {"reset", (PyCFunction)Program_reset, METH_NOARGS,
 	"Resets program to the beginning. Note this also resets changes."},
     {0, 0, 0, 0}, /* Sentinel */
@@ -896,6 +1172,8 @@ Program_init(Program *restrict self, PyObject *args, PyObject *kwds)
 	return -1; 
     }
     self->file = strdup(file);
+    self->print_func = NULL;
+    self->input_func = NULL;
 
     return Program_load(self);
 }
@@ -953,6 +1231,15 @@ initsam(void)
     if (PyType_Ready(&HeapType) < 0) {
 	return;
     }
+    if (PyType_Ready(&ChangeType) < 0) {
+	return;
+    }
+    if (PyType_Ready(&ChangesIterType) < 0) {
+	return;
+    }
+    if (PyType_Ready(&ChangesType) < 0) {
+	return;
+    }
     if (PyType_Ready(&ProgramType) < 0) {
 	return;
     }
@@ -975,8 +1262,20 @@ initsam(void)
     Py_INCREF(&ProgramType);
     PyModule_AddObject(m, "Program", (PyObject *)&ProgramType);
     
-    PyObject *Types = Py_BuildValue("(ssssss)", "none", "int", "float", "sa", "ha", "pa");
+    PyObject *Types = Py_BuildValue("(ssssss)", "none", "int",
+				    "float", "sa", "ha", "pa");
     Py_INCREF(Types);
     PyModule_AddObject(m, "Types", Types);
+
+    PyObject *TypeChars = Py_BuildValue("(ssssss)", "N", "I", "F", "S",
+					"H", "P");
+    Py_INCREF(TypeChars);
+    PyModule_AddObject(m, "TypeChars", TypeChars);
+
+    PyObject *ChangeTypes = Py_BuildValue("(ssssss)",
+			    "heap_alloc", "heap_free", "heap_change",
+			    "stack_push", "stack_pop", "stack_change");
+    Py_INCREF(ChangeTypes);
+    PyModule_AddObject(m, "ChangeTypes", ChangeTypes);
 
 }
