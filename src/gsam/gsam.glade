@@ -262,7 +262,6 @@
                                 <property name="visible">True</property>
                                 <property name="label" translatable="yes">F_ull</property>
                                 <property name="use_underline">True</property>
-                                <property name="active">True</property>
                                 <property name="draw_as_radio">True</property>
                                 <signal name="activate" handler="on_full_speed_activate"/>
                               </widget>
@@ -272,6 +271,7 @@
                                 <property name="visible">True</property>
                                 <property name="label" translatable="yes">_Fast</property>
                                 <property name="use_underline">True</property>
+                                <property name="active">True</property>
                                 <property name="draw_as_radio">True</property>
                                 <property name="group">full_speed</property>
                                 <signal name="activate" handler="on_fast_speed_activate"/>

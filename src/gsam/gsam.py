@@ -126,7 +126,7 @@ class GSam:
 	self._timer_id = None
 	# TODO decide on best default speeds?
 	self._speeds = {'full': 0, 'fast': 10, 'medium': 100, 'slow': 1000}
-	self._timeout_interval = self._speeds['full']
+	self._timeout_interval = self._speeds['fast']
 
 	# Code/stack/heap display setup {{{4
 	column_names = ['Current', 'Line', 'Breakpoint', 'Code', 'Labels']
@@ -264,21 +264,6 @@ class GSam:
 	    self._code_view.scroll_to_cell(nPath)
 	    self._code_view.queue_draw() # TODO better way to do this?
 
-    ### General display updating {{{2
-    def reset_memory_display(self):
-	self._stack_view.get_model().clear()
-	self._heap_view.get_model().clear()
-
-    def update_registers(self):
-	self._pc_label.set_text("PC: %d" % self._prog.pc)
-	self._fbr_label.set_text("FBR: %d" % self._prog.fbr)
-	self._sp_label.set_text("SP: %d" % self._prog.sp)
-
-    def update_display(self):
-	self.update_registers()
-	self.scroll_code_view()
-	self.handle_changes()
-
     ### Stack/Heap display handling {{{2
     def value_to_row(self, addr, v):
 	return (addr, sam.TypeChars[v.type], v.value, v.type)
@@ -362,6 +347,21 @@ class GSam:
 		riter = model.iter_nth_child(iter, n)
 		self.set_row_to_value(model, riter, change.start, change.value)
 
+    ### General display updating {{{2
+    def reset_memory_display(self):
+	self._stack_view.get_model().clear()
+	self._heap_view.get_model().clear()
+
+    def update_registers(self):
+	self._pc_label.set_text("PC: %d" % self._prog.pc)
+	self._fbr_label.set_text("FBR: %d" % self._prog.fbr)
+	self._sp_label.set_text("SP: %d" % self._prog.sp)
+
+    def update_display(self):
+	self.update_registers()
+	self.scroll_code_view()
+	self.handle_changes()
+
     ### Sam program execution {{{2
     # Non-GUI specific implementations {{{3
     # Regular step, ignores breakpoints because it only gets called directly
@@ -377,19 +377,26 @@ class GSam:
 		self.update_display()
 	    return not self._finished
 
+    # Single step, ignores breakpoints
+    def single_step(self):
+	if not self.is_waiting_for_input():
+	    return self.step()
+
     # Step for while running. Supports breakpoints, etc.
     def run_step(self):
 	return self.step() # TODO debug support
 
     def pause(self):
-	if self._timer_id:
-	    gobject.source_remove(self._timer_id)
-	    self._timer_id = None
+	if not self.is_waiting_for_input():
+	    if self._timer_id:
+		gobject.source_remove(self._timer_id)
+		self._timer_id = None
 
     def start(self):
-	if self._prog and self._timer_id is None:
-	    self._timer_id =\
-		    gobject.timeout_add(self._timeout_interval, self.run_step)
+	if not self.is_waiting_for_input():
+	    if self._prog and self._timer_id is None:
+		self._timer_id = gobject.timeout_add(self._timeout_interval,\
+			self.run_step)
 
     def start_pause(self):
 	if self._prog:
@@ -406,11 +413,12 @@ class GSam:
 	    self.reset_memory_display()
 	    self._finished = False
 	    self._timer_id = None
+	    self.reset_input_box()
 
     # GTK handlers {{{3
     def on_step_clicked(self, p):
 	if not self._timer_id:
-	    self.step()
+	    self.single_step()
 
     def on_start_activate(self, p):
 	self.start()
@@ -476,23 +484,34 @@ class GSam:
 	#self.change_speed(customSpeed)
 
     ### IO Funcs {{{2
+    def is_waiting_for_input(self):
+	self._input_box.get_property("visible")
+
+    def reset_input_box(self):
+	if self._input_box.get_property("visible"):
+	    self._input_ready = False
+	    self._input_box.hide_all()
+	    gtk.main_quit()
 
     def sam_string_input(self):
 	self._input.set_text("")
 	self._input_ready = False
 	self._input_box.show_all()
 	self._input.grab_focus() # Hmm... focus grabbing...
-	# TODO Hang until response, work?
-	while not self._input_ready:
-	    pass
-	res = self._input.get_text()
-	self._input.set_text("")
-	sefl._input_box.hide_all()
-	self.append_to_console("Program input: %s" % res)
-	return res
+	# TODO Hang until response, fonctionne?
+	gtk.main()
+	if self._input_ready:
+	    res = self._input.get_text()
+	    self._input.set_text("")
+	    self._input_box.hide_all()
+	    self.append_to_console("User Input: %s" % res)
+	    return res
+	else: # TODO failure?
+	    return self.sam_string_input()
 
     def on_program_entry_activate(self, p):
 	self._input_ready = True
+	gtk.main_quit()
 	# TODO return res in on_input_requested
 
     def sam_print(self, str):
