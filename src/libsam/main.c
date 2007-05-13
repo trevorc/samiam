@@ -37,30 +37,17 @@
 #include <libsam/string.h>
 #include <libsam/array.h>
 #include <libsam/hash_table.h>
-#include <libsam/parse.h>
 
-#include "sam_execute.h"
-
-#if defined(HAVE_LOCALE_H)
-# include <locale.h>
-#endif /* HAVE_LOCALE_H */
+#include "execute.h"
 
 int
 sam_main(sam_options options,
 	 /*@null@*/ const char *restrict file,
 	 /*@null@*/ sam_io_dispatcher io_dispatcher)
 {
-    sam_es *restrict es = sam_es_new(options, io_dispatcher);
-
-#ifdef HAVE_LOCALE_H
-    if (setlocale(LC_ALL, "") == NULL ||
-	setlocale(LC_CTYPE, "C") == NULL) {
-	fputs("warning: couldn't setlocale.\n", stderr);
-    }
-#endif /* HAVE_LOCALE_H */
-
-    if (!sam_parse(es, file)) {
-	sam_es_free(es);
+    sam_es *restrict es = sam_es_new(file, options, io_dispatcher);
+    
+    if (es == NULL) {
 	return SAM_PARSE_ERROR;
     }
 
