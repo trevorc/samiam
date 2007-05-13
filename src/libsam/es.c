@@ -242,7 +242,8 @@ sam_es_loc_ins(sam_es *restrict es,
 {
     sam_es_loc **restrict locs = (sam_es_loc **)es->locs.arr;
 
-    if (*locs == NULL || locs[es->locs.len - 1]->pa != line_no) {
+    if (*locs == NULL || es->locs.len == 0
+	    || locs[es->locs.len - 1]->pa != line_no) {
 	sam_array_ins(&es->locs,
 		      sam_es_loc_new(line_no, label));
     } else {
