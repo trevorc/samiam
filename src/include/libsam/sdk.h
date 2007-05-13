@@ -35,6 +35,5 @@
 #include "util.h"
 #include "es.h"
 #include "error.h"
-#include "parse.h"
 
 #endif /* LIBSAM_SDK_H */
