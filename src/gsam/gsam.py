@@ -120,6 +120,9 @@ class GSam:
 	self._file = None
 	self._prog = None
 
+	self._timer_id = None
+	self._timeout_interval = 0 # TODO default timeout?
+
 	column_names = ['Current', 'Line', 'Breakpoint', 'Code', 'Labels']
 	for n in range(0, len(column_names)):
 	    cell = gtk.CellRendererText()
@@ -138,7 +141,7 @@ class GSam:
 	self._stack_view.set_search_column(1)
 
 	self._heap_view.set_model(gtk.TreeStore(gobject.TYPE_LONG,\
-	    gobject.TYPE_STRING, gobject.TYPE_LONG)) # TODO heap
+	    gobject.TYPE_STRING, gobject.TYPE_LONG)) # TODO heap done?
 	for n in range(0, len(column_names)):
 	    renderer = gtk.CellRendererText()
 	    column = gtk.TreeViewColumn(column_names[n], renderer, text=n)
@@ -168,6 +171,7 @@ class GSam:
 	if self._file:
 	    self._file = None
 	    self._prog = None
+	self._timer_id = None
 	self._main_window.set_title(self._default_title)
 	self._code_view.set_model(None)
 	self._code_models = None
@@ -207,7 +211,6 @@ class GSam:
 		    self.get_current_module()))
 	self._code_view.set_model(self.get_current_code_model())
 
-    # TODO
     def reset_memory_display(self):
 	self._stack_view.get_model().clear()
 	self._heap_view.get_model().clear()
@@ -328,6 +331,23 @@ class GSam:
 		    self.append_to_console(\
 			    "Final Result: %d" % self._prog.stack[0].value)
 		self.update_display()
+	    return not self._finished
+    
+    def on_pause_activated(self, p):
+	if self._timer_id:
+	    gobject.source_remove(self._timer_id)
+
+    def on_start_activated(self, p):
+	if self._prog and self._timer_id is None:
+	    gobject.timeout_add(self._timeout_interval,\
+		    self.on_step_clicked, p)
+
+    def on_start_pause_clicked(self, p):
+	if self._prog:
+	    if self._timer_id:
+		self.on_pause_activated(p)
+	    else:
+		self.on_start_activated(p)
     
     def on_reset_clicked(self, p):
 	if self._prog:

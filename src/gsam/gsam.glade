@@ -141,7 +141,7 @@
                         <property name="visible">True</property>
                         <property name="label" translatable="yes">_Start</property>
                         <property name="use_underline">True</property>
-                        <signal name="activate" handler="on_start1_activate"/>
+                        <signal name="activate" handler="on_start_activate"/>
                         <child internal-child="image">
                           <widget class="GtkImage" id="image117">
                             <property name="visible">True</property>
@@ -152,7 +152,7 @@
                       </widget>
                     </child>
                     <child>
-                      <widget class="GtkImageMenuItem" id="pause1">
+                      <widget class="GtkImageMenuItem" id="pause">
                         <property name="visible">True</property>
                         <property name="label">gtk-media-pause</property>
                         <property name="use_underline">True</property>
@@ -161,7 +161,7 @@
                       </widget>
                     </child>
                     <child>
-                      <widget class="GtkImageMenuItem" id="reset1">
+                      <widget class="GtkImageMenuItem" id="reset">
                         <property name="visible">True</property>
                         <property name="label" translatable="yes">_Reset</property>
                         <property name="use_underline">True</property>
@@ -181,7 +181,7 @@
                       </widget>
                     </child>
                     <child>
-                      <widget class="GtkImageMenuItem" id="step_into1">
+                      <widget class="GtkImageMenuItem" id="step_into">
                         <property name="visible">True</property>
                         <property name="label" translatable="yes">Step _Into</property>
                         <property name="use_underline">True</property>
@@ -197,7 +197,7 @@
                       </widget>
                     </child>
                     <child>
-                      <widget class="GtkImageMenuItem" id="step_over1">
+                      <widget class="GtkImageMenuItem" id="step_over">
                         <property name="visible">True</property>
                         <property name="label" translatable="yes">Step _Over</property>
                         <property name="use_underline">True</property>
@@ -213,7 +213,7 @@
                       </widget>
                     </child>
                     <child>
-                      <widget class="GtkImageMenuItem" id="step_return1">
+                      <widget class="GtkImageMenuItem" id="step_return">
                         <property name="visible">True</property>
                         <property name="label" translatable="yes">Step Ret_urn</property>
                         <property name="use_underline">True</property>
@@ -229,7 +229,7 @@
                       </widget>
                     </child>
                     <child>
-                      <widget class="GtkImageMenuItem" id="run_to_line1">
+                      <widget class="GtkImageMenuItem" id="run_to_line">
                         <property name="visible">True</property>
                         <property name="label" translatable="yes">Run to _Line</property>
                         <property name="use_underline">True</property>
@@ -250,55 +250,60 @@
                       </widget>
                     </child>
                     <child>
-                      <widget class="GtkMenuItem" id="execution_speed1">
+                      <widget class="GtkMenuItem" id="execution_speed_menu_item">
                         <property name="visible">True</property>
                         <property name="label" translatable="yes">Execution _Speed</property>
                         <property name="use_underline">True</property>
                         <signal name="activate" handler="on_execution_speed1_activate"/>
                         <child>
-                          <widget class="GtkMenu" id="execution_speed1_menu">
+                          <widget class="GtkMenu" id="execution_speed_menu">
                             <child>
-                              <widget class="GtkRadioMenuItem" id="full1">
+                              <widget class="GtkRadioMenuItem" id="full_speed">
                                 <property name="visible">True</property>
                                 <property name="label" translatable="yes">F_ull</property>
                                 <property name="use_underline">True</property>
                                 <property name="active">True</property>
+                                <property name="draw_as_radio">True</property>
                                 <signal name="activate" handler="on_full1_activate"/>
                               </widget>
                             </child>
                             <child>
-                              <widget class="GtkRadioMenuItem" id="fast1">
+                              <widget class="GtkRadioMenuItem" id="fast_speed">
                                 <property name="visible">True</property>
                                 <property name="label" translatable="yes">_Fast</property>
                                 <property name="use_underline">True</property>
-                                <property name="group">full1</property>
+                                <property name="draw_as_radio">True</property>
+                                <property name="group">full_speed</property>
                                 <signal name="activate" handler="on_fast1_activate"/>
                               </widget>
                             </child>
                             <child>
-                              <widget class="GtkRadioMenuItem" id="medium1">
+                              <widget class="GtkRadioMenuItem" id="medium_speed">
                                 <property name="visible">True</property>
                                 <property name="label" translatable="yes">_Medium</property>
                                 <property name="use_underline">True</property>
-                                <property name="group">full1</property>
+                                <property name="draw_as_radio">True</property>
+                                <property name="group">full_speed</property>
                                 <signal name="activate" handler="on_medium1_activate"/>
                               </widget>
                             </child>
                             <child>
-                              <widget class="GtkRadioMenuItem" id="slow1">
+                              <widget class="GtkRadioMenuItem" id="slow_speed">
                                 <property name="visible">True</property>
                                 <property name="label" translatable="yes">_Slow</property>
                                 <property name="use_underline">True</property>
-                                <property name="group">full1</property>
+                                <property name="draw_as_radio">True</property>
+                                <property name="group">full_speed</property>
                                 <signal name="activate" handler="on_slow1_activate"/>
                               </widget>
                             </child>
                             <child>
-                              <widget class="GtkRadioMenuItem" id="custom1">
+                              <widget class="GtkRadioMenuItem" id="custom_speed">
                                 <property name="visible">True</property>
                                 <property name="label" translatable="yes">_Custom...</property>
                                 <property name="use_underline">True</property>
-                                <property name="group">full1</property>
+                                <property name="draw_as_radio">True</property>
+                                <property name="group">full_speed</property>
                                 <signal name="activate" handler="on_custom1_activate"/>
                               </widget>
                             </child>
@@ -311,12 +316,12 @@
               </widget>
             </child>
             <child>
-              <widget class="GtkMenuItem" id="debug1">
+              <widget class="GtkMenuItem" id="debug_menu_item">
                 <property name="visible">True</property>
                 <property name="label" translatable="yes">_Debug</property>
                 <property name="use_underline">True</property>
                 <child>
-                  <widget class="GtkMenu" id="debug1_menu">
+                  <widget class="GtkMenu" id="debug_menu">
                     <child>
                       <widget class="GtkMenuItem" id="(un)set_breakpoint1">
                         <property name="visible">True</property>
@@ -366,7 +371,7 @@
               </widget>
             </child>
             <child>
-              <widget class="GtkMenuItem" id="menuitem4">
+              <widget class="GtkMenuItem" id="help_menu_item">
                 <property name="visible">True</property>
                 <property name="label" translatable="yes">_Help</property>
                 <property name="use_underline">True</property>
