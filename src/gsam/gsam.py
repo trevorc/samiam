@@ -129,6 +129,9 @@ class GSam:
 	self._speeds = {'full': 0, 'fast': 10, 'medium': 100, 'slow': 1000}
 	self._timeout_interval = self._speeds['fast']
 
+	self._console_end_mark = self._console.get_buffer().create_mark("end",\
+		self._console.get_buffer().get_end_iter(), False)
+
 	# Code/stack/heap display setup {{{4
 	column_names = ['Current', 'Line', 'Breakpoint', 'Code', 'Labels']
 	for n in range(0, len(column_names)):
@@ -455,8 +458,13 @@ class GSam:
     # append_to_console () {{{2
     def append_to_console(self, str):
 	buf = self._console.get_buffer()
-	buf.insert(buf.get_end_iter(),
-		   "[%s] %s\n" % (time.strftime('%X'), str))
+	if buf.get_char_count() == 0:
+	    st = ""
+	else:
+	    st = "\n"
+	buf.insert(buf.get_end_iter(),\
+		"%s[%s] %s" % (st, time.strftime('%X'), str))
+	self._console.scroll_mark_onscreen(self._console_end_mark)
 
     ### Speed change handlers {{{2
     # Requires: newSpeed >= 0
