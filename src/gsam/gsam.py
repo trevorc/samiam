@@ -114,6 +114,9 @@ class GSam:
 
 	self._console = self._xml.get_widget('console_view')
 
+	self._input_box = self._xml.get_widget('program_entry_box')
+	self._input = self._xml.get_widget('program_entry')
+
 	self._file = None
 	self._prog = None
 
@@ -124,12 +127,23 @@ class GSam:
 	    self._code_view.append_column(tvcolumn)
 	self._code_view.set_search_column(3)
 
+	self._stack_view.set_model(gtk.ListStore(gobject.TYPE_LONG,\
+	    gobject.TYPE_STRING, gobject.TYPE_LONG))
+
 	column_names = ['Address', 'Type', 'Value']
 	for n in range(0, len(column_names)):
 	    renderer = gtk.CellRendererText()
 	    column = gtk.TreeViewColumn(column_names[n], renderer, text=n)
 	    self._stack_view.append_column(column)
 	self._stack_view.set_search_column(1)
+
+	self._heap_view.set_model(gtk.TreeStore(gobject.TYPE_LONG,\
+	    gobject.TYPE_STRING, gobject.TYPE_LONG)) # TODO heap
+	for n in range(0, len(column_names)):
+	    renderer = gtk.CellRendererText()
+	    column = gtk.TreeViewColumn(column_names[n], renderer, text=n)
+	    self._heap_view.append_column(column)
+	self._heap_view.set_search_column(1)
 
     def _filechooser_factory(self, title, p):
 	dialog = gtk.FileChooserDialog(title=title, \
@@ -156,9 +170,9 @@ class GSam:
 	    self._prog = None
 	self._main_window.set_title(self._default_title)
 	self._code_view.set_model(None)
-	self._stack_view.set_model(None)
-	self._heap_view.set_model(None)
 	self._code_models = None
+	self._stack_view.get_model().clear()
+	self._heap_view.get_model().clear()
 
     def on_open_activate(self, p):
 	filechooser = self._filechooser_factory("Select a SaM file", p)
@@ -195,9 +209,8 @@ class GSam:
 
     # TODO
     def reset_memory_display(self):
-	self._stack_view.set_model(gtk.ListStore(gobject.TYPE_LONG,\
-	    gobject.TYPE_STRING, gobject.TYPE_LONG))
-	self._heap_view.set_model(None) # TODO heap
+	self._stack_view.get_model().clear()
+	self._heap_view.get_model().clear()
 
     def init_program_display(self, filename):
 	self._file = filename
@@ -226,8 +239,8 @@ class GSam:
     def value_to_row(self, addr, v):
 	return (addr, sam.TypeChars[v.type], v.value)
 
-    def set_row_to_value(self, model, iter, v):
-	row = self.value_to_row(model.get_path(iter)[0], v)
+    def set_row_to_value(self, model, iter, addr, v):
+	row = self.value_to_row(addr, v)
 	for i in range(0, len(row)):
 	    model.set(iter, i, row[i])
 
@@ -236,6 +249,32 @@ class GSam:
 
     def get_nth_path(self, model, n):
 	return model.get_path(self.get_nth_iter(model, n))
+
+    # Get the iter at the allocation or immediately before where it would go
+    def get_heap_allocation_near_iter(self, addr):
+	model = self._heap_view.get_model()
+	piter = None
+	iter = model.get_iter_root()
+	# empty tree
+	if iter is None:
+	    return None
+	while iter and model.get_value(iter, 0) <= addr:
+	    piter = iter
+	    iter = model.iter_next(iter)
+	if piter:
+	    return piter
+	else:
+	    return None
+
+    # Get the iter at the allocation exactly
+    def get_heap_allocation_iter(self, addr):
+	iter = self.get_heap_allocation_near_iter(addr)
+	if iter is None:
+	    return None
+	elif self._heap_view.get_model().get_value(iter, 0) == addr:
+	    return iter
+	else:
+	    return None
 
     def handle_changes(self):
 	for change in self._prog.changes:
@@ -254,7 +293,27 @@ class GSam:
 		model.remove(end_iter)
 	    elif ctype == "stack_change":
 		iter = model.iter_nth_child(None, change.start)
-		self.set_row_to_value(model, iter, change.value)
+		self.set_row_to_value(model, iter, change.start, change.value)
+	    elif ctype == "heap_alloc":
+		iter = self.get_heap_allocation_near_iter(change.start)
+		# TODO heap allocation rows?
+		row = (change.start, "", change.size)
+		if iter is None:
+		    ai = model.insert_before(None, None, row)
+		else:
+		    ai = model.insert_after(None, iter, row)
+		for i in [x + change.start for x in range(0, change.size)]:
+		    model.append(ai, (i, "N", 0))
+	    elif ctype == "heap_free":
+		iter = self.get_heap_allocation_iter(change.start)
+		# iter None here is an error
+		model.remove(iter)
+	    elif ctype == "heap_change":
+		iter = self.get_heap_allocation_near_iter(change.start)
+		base = model.get_value(iter, 0)
+		n = change.start - base
+		riter = model.iter_nth_child(iter, n)
+		self.set_row_to_value(model, riter, change.start, change.value)
 
     def update_display(self):
 	self.update_registers()
@@ -299,6 +358,30 @@ class GSam:
     def append_to_console(self, str):
 	buf = self._console.get_buffer()
 	buf.insert(buf.get_end_iter(), "%s\n" % str)
+
+    ### IO Funcs
+
+    def sam_string_input(self):
+	self._input.set_text("")
+	self._input_ready = False
+	self._input_box.show_all()
+	self._input.grab_focus() # Hmm... focus grabbing...
+	# TODO Hang until response, work?
+	while not self._input_ready:
+	    pass
+	res = self._input.get_text()
+	self._input.set_text("")
+	sefl._input_box.hide_all()
+	self.append_to_console("Program input: %s" % res)
+	return res
+
+    def on_program_entry_activate(self, p):
+	self._input_ready = True
+	# TODO return res in on_input_requested
+
+    def sam_print(self, str):
+	# TODO timestamp?
+	self.append_to_console("Program output: %s" % str)
 
     def gtk_main_quit(*self):
 	gtk.main_quit()
