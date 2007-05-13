@@ -78,8 +78,7 @@ Instruction_create(sam_instruction *restrict si)
     ///rv->inst = si->name;
     // TODO we malloc, when do we free?
     char *tmp;
-    switch(si->optype)
-    {
+    switch(si->optype) {
 	case SAM_OP_TYPE_INT:
 	    tmp = (char *) malloc(sizeof(char) * (20 + strlen(si->name)));
 	    /* TODO how big do ints get? */
@@ -182,8 +181,7 @@ static PyObject *
 Instructions_item(Instructions *self, unsigned i)
 {
     /* i is unsigned, no check for i < 0 */
-    if(i >= sam_es_instructions_len(self->es))
-    {
+    if(i >= sam_es_instructions_len(self->es)) {
 	PyErr_SetNone(PyExc_IndexError);
 	return NULL;
     }
@@ -295,10 +293,11 @@ static PyObject *
 ModulesIter_next(ModulesIterObject *restrict self)
 {
     // TODO this is hackish because libsam lacks module support
-    if (self->idx != 0)
+    if (self->idx != 0) {
 	return NULL;
-    else
+    } else {
 	self->idx++;
+    }
 
     Module *restrict module = PyObject_New(Module, &ModuleType);
 
@@ -360,8 +359,7 @@ static PyObject *
 Modules_item(Modules *restrict self, unsigned i)
 {
     // TODO this is hackish because libsam lacks module support
-    if(i != 0)
-    {
+    if(i != 0) {
 	PyErr_SetNone(PyExc_IndexError);
 	return NULL;
     }
@@ -369,7 +367,7 @@ Modules_item(Modules *restrict self, unsigned i)
     Module *rv = PyObject_New(Module, &ModuleType);
     rv->es = self->es;
     Py_INCREF(rv); // TODO Why is this required?
-    return (PyObject *) rv;
+    return (PyObject *)rv;
 }
 
 /* PySquenceMethods Modules_sequence_methods {{{2 */
@@ -667,10 +665,11 @@ Change_type_get(Change *restrict self)
 static PyObject *
 Change_start_get (Change *restrict self)
 {
-    if (self->change->stack)
+    if (self->change->stack) {
 	return PyLong_FromLong(self->change->ma.sa);
-    else
+    } else {
 	return PyLong_FromLong(self->change->ma.ha);
+    }
 }
 
 /* Change_size_get () {{{2 */
@@ -684,8 +683,7 @@ Change_size_get (Change *restrict self)
 static PyObject *
 Change_value_get (Change *restrict self)
 {
-    if (self->change->remove)
-    {
+    if (self->change->remove) {
 	// TODO exception?
 	return NULL;
     }
@@ -737,15 +735,12 @@ static PyObject *
 ChangesIter_next(ChangesIter *restrict self)
 {
     sam_es_change *ch = malloc(sizeof(sam_es_change));
-    if (sam_es_change_get(self->es, ch))
-    {
+    if (sam_es_change_get(self->es, ch)) {
 	Change *rv = PyObject_New(Change, &ChangeType);
 	rv->change = ch;
 	
 	return (PyObject *)rv;
-    }
-    else
-    {
+    } else {
 	free(ch);
 	return NULL;
     }
@@ -927,7 +922,7 @@ Program_heap_get(Program *restrict self)
     }
 
     heap->es = self->es;
-    return (PyObject *) heap;
+    return (PyObject *)heap;
 }
 
 /* Program_modules_get () {{{2 */
@@ -942,7 +937,7 @@ Program_modules_get(Program *restrict self)
 
     modules->es = self->es;
     Py_INCREF(modules); // TODO Why is this required?
-    return (PyObject *) modules;
+    return (PyObject *)modules;
 }
 
 /* Program_changes_get () {{{2 */
@@ -957,7 +952,7 @@ Program_changes_get(Program *restrict self)
 
     changes->es = self->es;
     Py_INCREF(changes); // TODO Why is this required?
-    return (PyObject *) changes;
+    return (PyObject *)changes;
 }
 
 /* Program_print_func_get () {{{2 */
@@ -1065,8 +1060,9 @@ Program_step(Program *restrict self)
     }
 
     long err = sam_es_instructions_cur(self->es)->handler(self->es);
-    if(err != SAM_OK)
+    if(err != SAM_OK) {
 	Py_RETURN_FALSE;
+    }
 
     sam_es_pc_pp(self->es);
 
@@ -1076,14 +1072,17 @@ Program_step(Program *restrict self)
 /* Program IO funcs {{{2 */
 /* Program_io_vfprintf_func () {{{3 */
 static int
-Program_io_vfprintf(sam_io_stream ios, Program *restrict self,
-			 const char *restrict fmt, va_list ap)
+Program_io_vfprintf(sam_io_stream ios,
+		    void *data,
+		    const char *restrict fmt,
+		    va_list ap)
 {
     // TODO ios?
     int len = vsnprintf(NULL, 0, fmt, ap);
     char *str = malloc(len);
     vsprintf(str, fmt, ap);
     PyObject *restrict arglist = Py_BuildValue("(s)", str);
+    Program *restrict self = data;
     PyEval_CallObject(self->print_func, arglist);
     Py_DECREF(arglist);
     return len;
@@ -1091,12 +1090,15 @@ Program_io_vfprintf(sam_io_stream ios, Program *restrict self,
 
 /* Program_io_afgets_func () {{{3 */
 static char *
-Program_io_afgets(sam_io_stream ios, Program *restrict self)
+Program_io_afgets(char **s,
+		  sam_io_stream ios,
+		  void *data)
 {
     PyObject *restrict arglist = Py_BuildValue("()");
+    Program *restrict self = data;
     PyObject *res = PyEval_CallObject(self->input_func, arglist);
     Py_DECREF(arglist);
-    return PyString_AsString(res);
+    return *s = PyString_AsString(res);
 }
 
 /* Program_io_dispatcher () {{{3 */
@@ -1109,16 +1111,14 @@ Program_io_dispatcher(Program *restrict self, sam_io_func_name io_func)
 	    if (self->print_func) {
 		sam_io_func rv = { .vfprintf = Program_io_vfprintf };
 		return rv;
-	    }
-	    else {
+	    } else {
 		return (sam_io_func) { NULL };
 	    }
 	case SAM_IO_AFGETS:
 	    if (self->input_func) {
 		sam_io_func rv = { .afgets = Program_io_afgets };
 		return rv;
-	    }
-	    else {
+	    } else {
 		return (sam_io_func) { NULL };
 	    }
 	default:
@@ -1202,40 +1202,18 @@ static PyMethodDef module_methods[] = {
 PyMODINIT_FUNC
 initsam(void)
 {
-    if (PyType_Ready(&ValueType) < 0) {
-	return;
-    }
-    if (PyType_Ready(&InstructionType) < 0) {
-	return;
-    }
-    if (PyType_Ready(&InstructionsIterType) < 0) {
-	return;
-    }
-    if (PyType_Ready(&InstructionsType) < 0) {
-	return;
-    }
-    if (PyType_Ready(&StackIterType) < 0) {
-	return;
-    }
-    if (PyType_Ready(&StackType) < 0) {
-	return;
-    }
-    if (PyType_Ready(&HeapIterType) < 0) {
-	return;
-    }
-    if (PyType_Ready(&HeapType) < 0) {
-	return;
-    }
-    if (PyType_Ready(&ChangeType) < 0) {
-	return;
-    }
-    if (PyType_Ready(&ChangesIterType) < 0) {
-	return;
-    }
-    if (PyType_Ready(&ChangesType) < 0) {
-	return;
-    }
-    if (PyType_Ready(&ProgramType) < 0) {
+    if (PyType_Ready(&ValueType) < 0 ||
+	PyType_Ready(&InstructionType) < 0 ||
+	PyType_Ready(&InstructionsIterType) < 0 ||
+	PyType_Ready(&InstructionsType) < 0 ||
+	PyType_Ready(&StackIterType) < 0 ||
+	PyType_Ready(&StackType) < 0 ||
+	PyType_Ready(&HeapIterType) < 0 ||
+	PyType_Ready(&HeapType) < 0 ||
+	PyType_Ready(&ChangeType) < 0 ||
+	PyType_Ready(&ChangesIterType) < 0 ||
+	PyType_Ready(&ChangesType) < 0 ||
+	PyType_Ready(&ProgramType) < 0) {
 	return;
     }
 
