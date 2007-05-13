@@ -1105,24 +1105,15 @@ Program_io_afgets(char **s,
 static sam_io_func
 Program_io_dispatcher(Program *restrict self, sam_io_func_name io_func)
 {
-    switch(io_func)
-    {
+    switch(io_func) {
 	case SAM_IO_VFPRINTF:
-	    if (self->print_func) {
-		sam_io_func rv = { .vfprintf = Program_io_vfprintf };
-		return rv;
-	    } else {
-		return (sam_io_func) { NULL };
-	    }
+	    return self->print_func == NULL?
+		NULL: (sam_io_func){.vfprintf = Program_io_vfprintf};
 	case SAM_IO_AFGETS:
-	    if (self->input_func) {
-		sam_io_func rv = { .afgets = Program_io_afgets };
-		return rv;
-	    } else {
-		return (sam_io_func) { NULL };
-	    }
+	    return self->input_func == NULL?
+		NULL: (sam_io_func){.vfprintf = Program_io_afgets};
 	default:
-	    return (sam_io_func) { NULL };
+	    return NULL;
     }
 }
 
