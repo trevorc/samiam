@@ -12,11 +12,12 @@ class CodeTreeModel(gtk.GenericTreeModel):
     column_types = (str, int, str, str, str)
     column_names = ['Current', 'Line', 'Breakpoint', 'Code', 'Labels']
 
-    def __init__(self, prog, modnum):
+    def __init__(self, prog, modnum, bp):
 	gtk.GenericTreeModel.__init__(self)
 	self._prog = prog
 	self._module_n = modnum
 	self._instructions = prog.modules[modnum].instructions
+	self._breakpoints = bp[modnum]
     
     def on_get_flags(self):
 	return gtk.TREE_MODEL_LIST_ONLY | gtk.TREE_MODEL_ITERS_PERSIST
@@ -43,7 +44,15 @@ class CodeTreeModel(gtk.GenericTreeModel):
 	elif column is 1:
 	    return rowref
 	elif column is 2:
-	    return "" # TODO breakpoints
+	    # TODO breakpoints
+	    if rowref in self._breakpoints['normal']:
+		return gtk.STOCK_NO #TODO get some pixbufs
+	    elif rowref in self._breakpoints['temporary']:
+		return gtk.STOCK_YES #TODO get some pixbufs
+	    elif rowref == 0:
+		return gtk.STOCK_NEW
+	    else:
+		return None
 	elif column is 3:
 	    return item.assembly
 	elif column is 4:
@@ -109,7 +118,8 @@ class GSam:
 	self._show_stack = self._xml.get_widget('show_stack')
 	self._show_heap = self._xml.get_widget('eshow_heap')
 
-	self._pc_label = self._xml.get_widget('pc_label')
+	self._mc_label = self._xml.get_widget('mc_label')
+	self._lc_label = self._xml.get_widget('lc_label')
 	self._fbr_label = self._xml.get_widget('fbr_label')
 	self._sp_label = self._xml.get_widget('sp_label')
 
@@ -121,6 +131,7 @@ class GSam:
 	# Set default values {{{4
 	self._file = None
 	self._prog = None
+	self._breakpoints = None
 
 	self._timer_id = None
 	# TODO decide on best default speeds?
@@ -135,26 +146,21 @@ class GSam:
 	self._module_combobox.pack_start(cell, True)
 	self._module_combobox.add_attribute(cell, 'text', 0)
 
-	# Code/stack/heap display setup {{{4
-	def make_arrow(tvcolumn, cell, model, iter):
-	    if model.get_path(iter) == self._prog.pc or True:
-		pb = self._code_view.render_icon(gtk.STOCK_GO_FORWARD,\
-			gtk.ICON_SIZE_MENU, None)
-		cell.set_property('pixbuf', pb)
-
+	# Code display setup {{{4
 	column_names = ['Current', 'Line', 'Breakpoint', 'Code', 'Labels']
 
-	cell = gtk.CellRendererPixbuf()
-	tvcolumn = gtk.TreeViewColumn(column_names[0], cell, text=0)
-	tvcolumn.set_attributes(cell, stock_id=0)
-	self._code_view.append_column(tvcolumn)
-
-	for n in range(1, len(column_names)):
-	    cell = gtk.CellRendererText()
-	    tvcolumn = gtk.TreeViewColumn(column_names[n], cell, text=n)
+	for n in range(0, len(column_names)):
+	    if n == 2 or n == 0:
+		cell = gtk.CellRendererPixbuf()
+		tvcolumn = gtk.TreeViewColumn(column_names[n], cell, text=n)
+		tvcolumn.set_attributes(cell, stock_id=n)
+	    else:
+		cell = gtk.CellRendererText()
+		tvcolumn = gtk.TreeViewColumn(column_names[n], cell, text=n)
 	    self._code_view.append_column(tvcolumn)
 	self._code_view.set_search_column(3)
 
+	# Stack/heap display setup {{{4
 	self._stack_view.set_model(gtk.ListStore(gobject.TYPE_LONG,\
 	    gobject.TYPE_STRING, gobject.TYPE_LONG, gobject.TYPE_LONG))
 
@@ -227,6 +233,7 @@ class GSam:
 	self._main_window.set_title(self._default_title)
 	self._code_view.set_model(None)
 	self._code_models = None
+	self._breakpoints = None
 	self._stack_view.get_model().clear()
 	self._heap_view.get_model().clear()
 	self._module_combobox.get_model().clear()
@@ -264,11 +271,23 @@ class GSam:
 	for i in range(0, len(mods)):
 	    self._module_combobox.append_text("%d - %s" % (i,mods[i].filename))
 	self._module_combobox.set_active(0)
+	self._breakpoints = [{'normal': set(), 'temporary': set()}\
+		for i in range(0, self.get_n_modules())]
 	self._code_models = [None for i in range(0, self.get_n_modules())]
 	self.update_code_display()
 	self.reset_memory_display()
 
     ### Code display handling {{{2
+    def get_selected_code_line(self):
+	iter = self._code_view.get_selection().get_selected()[1]
+	if iter:
+	    return self._code_view.get_model().get_path(iter)[0]
+	else:
+	    return None
+
+    def refresh_code_display(self):
+	self._code_view.queue_draw() # TODO better way to do this?
+
     def get_n_modules(self):
 	return len(self._prog.modules)
 
@@ -289,11 +308,11 @@ class GSam:
     def update_code_display(self):
 	if self.get_current_code_model() is None:
 	    self.set_current_code_model(CodeTreeModel(self._prog, \
-		    self.get_current_module_num()))
+		    self.get_current_module_num(), self._breakpoints))
 	self._code_view.set_model(self.get_current_code_model())
 
     def on_module_combobox_changed(self, p):
-	if self._prog:
+	if self._prog and self._code_models:
 	    self.update_code_display()
 
     def scroll_code_view(self):
@@ -302,7 +321,7 @@ class GSam:
 	    nIter = model.iter_nth_child(None, self._prog.pc)
 	    nPath = model.get_path(nIter)
 	    self._code_view.scroll_to_cell(nPath)
-	    self._code_view.queue_draw() # TODO better way to do this?
+	    self.refresh_code_display()
 
     ### Stack/Heap display handling {{{2
     def value_to_row(self, addr, v):
@@ -393,7 +412,8 @@ class GSam:
 	self._heap_view.get_model().clear()
 
     def update_registers(self):
-	self._pc_label.set_text("PC: %d" % self._prog.pc)
+	self._mc_label.set_text("MC: %d" % self._prog.mc)
+	self._lc_label.set_text("LC: %d" % self._prog.pc) # TODO pc --> lc
 	self._fbr_label.set_text("FBR: %d" % self._prog.fbr)
 	self._sp_label.set_text("SP: %d" % self._prog.sp)
 
@@ -424,7 +444,15 @@ class GSam:
 
     # Step for while running. Supports breakpoints, etc.
     def run_step(self):
-	return self.step() # TODO debug support
+	# TODO debug support
+	# TODO break before or after breakpoint?
+	isbp = self._prog.pc in self._breakpoints[self._prog.mc]['normal']
+	rv = self.step()
+	if isbp:
+	    self._timer_id = None
+	    return False
+	else:
+	    return rv
 
     def pause(self):
 	if not self.is_waiting_for_input():
@@ -471,6 +499,38 @@ class GSam:
     
     def on_reset_clicked(self, p):
 	self.reset()
+
+    ### Breakpoints {{{2
+    def toggle_breakpoint(self, module, line):
+	bp = self._breakpoints[module]['normal']
+	if line in bp:
+	    bp.remove(line)
+	else:
+	    bp.add(line)
+	self.refresh_code_display()
+
+    def toggle_breakpoint_selected(self):
+	if self._prog:
+	    self.toggle_breakpoint(self.get_current_module_num(),\
+		    self.get_selected_code_line())
+
+    # TODO semantics of non-normal breakpoints?
+    def clear_breakpoints(self):
+	if self._breakpoints:
+	    for bps in self._breakpoints:
+		for bp in bps:
+		    bp.clear()
+	self.refresh_code_display()
+
+    def on_code_view_row_activated(self, tv, path, col):
+	if self._prog:
+	    self.toggle_breakpoint(self.get_current_module_num(), path[0])
+
+    def on_toggle_breakpoint_activate(self, p):
+	self.toggle_breakpoint_selected()
+
+    def on_reset_all_breakpoints_activate(self, p):
+	self.clear_breakpoints()
 
     ### View menu handling {{{2
     def on_show_code_activate(self, p):

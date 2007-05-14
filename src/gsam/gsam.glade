@@ -336,19 +336,19 @@
                 <child>
                   <widget class="GtkMenu" id="debug_menu">
                     <child>
-                      <widget class="GtkMenuItem" id="(un)set_breakpoint1">
+                      <widget class="GtkMenuItem" id="toggle_breakpoint">
                         <property name="visible">True</property>
                         <property name="label" translatable="yes">_Toggle Breakpoint</property>
                         <property name="use_underline">True</property>
-                        <signal name="activate" handler="on_(un)set_breakpoint1_activate"/>
+                        <signal name="activate" handler="on_toggle_breakpoint_activate"/>
                       </widget>
                     </child>
                     <child>
-                      <widget class="GtkImageMenuItem" id="remove_all_breakpoints1">
+                      <widget class="GtkImageMenuItem" id="remove_all_breakpoints">
                         <property name="visible">True</property>
                         <property name="label" translatable="yes">_Remove All Breakpoints</property>
                         <property name="use_underline">True</property>
-                        <signal name="activate" handler="on_remove_all_breakpoints1_activate"/>
+                        <signal name="activate" handler="on_remove_all_breakpoints_activate"/>
                         <child internal-child="image">
                           <widget class="GtkImage" id="image123">
                             <property name="visible">True</property>
@@ -459,6 +459,7 @@
                                 <property name="can_focus">True</property>
                                 <property name="headers_visible">False</property>
                                 <property name="rules_hint">True</property>
+                                <signal name="row_activated" handler="on_code_view_row_activated"/>
                               </widget>
                             </child>
                           </widget>
@@ -562,9 +563,9 @@
             <property name="visible">True</property>
             <property name="homogeneous">True</property>
             <child>
-              <widget class="GtkLabel" id="pc_label">
+              <widget class="GtkLabel" id="mc_label">
                 <property name="visible">True</property>
-                <property name="label" translatable="yes">PC: 0</property>
+                <property name="label" translatable="yes">MC: 0</property>
               </widget>
               <packing>
                 <property name="expand">False</property>
@@ -572,9 +573,9 @@
               </packing>
             </child>
             <child>
-              <widget class="GtkLabel" id="fbr_label">
+              <widget class="GtkLabel" id="lc_label">
                 <property name="visible">True</property>
-                <property name="label" translatable="yes">FBR: 0</property>
+                <property name="label" translatable="yes">LC: 0</property>
               </widget>
               <packing>
                 <property name="expand">False</property>
@@ -591,6 +592,17 @@
                 <property name="expand">False</property>
                 <property name="fill">False</property>
                 <property name="position">2</property>
+              </packing>
+            </child>
+            <child>
+              <widget class="GtkLabel" id="fbr_label">
+                <property name="visible">True</property>
+                <property name="label" translatable="yes">FBR: 0</property>
+              </widget>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">False</property>
+                <property name="position">3</property>
               </packing>
             </child>
           </widget>
