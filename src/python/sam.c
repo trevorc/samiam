@@ -113,7 +113,12 @@ Instruction_create(sam_instruction *restrict si)
 
 /* InstructionsIter {{{1 */
 /* typedef InstructionsIterObject {{{2 */
-typedef EsRefIterType InstructionsIterObject;
+typedef struct {
+    PyObject_HEAD
+    sam_es *es;
+    PyDictObject *locs;
+    size_t idx;
+} InstructionsIterObject;
 
 /* InstructionsIter_next () {{{2 */
 static PyObject *
@@ -150,7 +155,11 @@ PyTypeObject InstructionsIterType = {
 /* Instructions {{{1 */
 /* typedef Instructions {{{2 */
 /* Sequence of the SaM program code */
-typedef EsRefObj Instructions;
+typedef struct {
+    PyObject_HEAD
+    PyDictObject *locs;
+    sam_es *es;
+} Instructions;
 
 /* Instructions_iter () {{{2 */
 static PyObject *
@@ -216,7 +225,10 @@ static PyTypeObject InstructionsType = {
 
 /* Module {{{1 */
 /* typedef Module {{{2 */
-typedef EsRefObj Module;
+typedef struct {
+    PyObject_HEAD
+    sam_es *es;
+} Module;
 
 /* Module_instructions_get () {{{2 */
 static PyObject *
