@@ -4,10 +4,12 @@ import pygtk
 import gtk, gtk.glade, gobject
 import sam
 import time
+import sys
 
 # class CodeTreeModel {{{1
 class CodeTreeModel(gtk.GenericTreeModel):
-    column_types = (str, int, str, str, str) # TODO Last two may become images
+    # TODO Last two may become images
+    column_types = (str, int, str, str, str)
     column_names = ['Current', 'Line', 'Breakpoint', 'Code', 'Labels']
 
     def __init__(self, prog, modnum):
@@ -38,9 +40,9 @@ class CodeTreeModel(gtk.GenericTreeModel):
 	    # TODO multi-module support
 	    # TODO deuglify
 	    if self._prog.pc == rowref:
-		return "-->"
+		return gtk.STOCK_GO_FORWARD
 	    else:
-		return ""
+		return None
 	elif column is 1:
 	    return rowref
 	elif column is 2:
@@ -90,7 +92,7 @@ class CodeTreeModel(gtk.GenericTreeModel):
 # class GSam {{{1
 class GSam:
     # __init__ () {{{2
-    def __init__(self):
+    def __init__(self, filename=None):
 	self._xml = gtk.glade.XML('gsam.glade')
 	self._xml.signal_autoconnect(self)
 
@@ -133,8 +135,20 @@ class GSam:
 		self._console.get_buffer().get_end_iter(), False)
 
 	# Code/stack/heap display setup {{{4
+	def make_arrow(tvcolumn, cell, model, iter):
+	    if model.get_path(iter) == self._prog.pc or True:
+		pb = self._code_view.render_icon(gtk.STOCK_GO_FORWARD,\
+			gtk.ICON_SIZE_MENU, None)
+		cell.set_property('pixbuf', pb)
+
 	column_names = ['Current', 'Line', 'Breakpoint', 'Code', 'Labels']
-	for n in range(0, len(column_names)):
+
+	cell = gtk.CellRendererPixbuf()
+	tvcolumn = gtk.TreeViewColumn(column_names[0], cell, text=0)
+	tvcolumn.set_attributes(cell, stock_id=0)
+	self._code_view.append_column(tvcolumn)
+
+	for n in range(1, len(column_names)):
 	    cell = gtk.CellRendererText()
 	    tvcolumn = gtk.TreeViewColumn(column_names[n], cell, text=n)
 	    self._code_view.append_column(tvcolumn)
@@ -178,6 +192,10 @@ class GSam:
 	    self._heap_view.append_column(column)
 	self._heap_view.set_search_column(1)
 
+	# Handle file input if given {{{4
+	if filename:
+	    self.open_file(filename)
+
     ### Open/close file methods {{{2
     # _filechooser_factory () {{{3
     def _filechooser_factory(self, title, p):
@@ -199,8 +217,8 @@ class GSam:
 
 	return dialog
 
-    # on_close_activate () {{{3
-    def on_close_activate(self, p):
+    # close_file () {{{3
+    def close_file(self):
 	if self._file:
 	    self._file = None
 	    self._prog = None
@@ -211,14 +229,22 @@ class GSam:
 	self._stack_view.get_model().clear()
 	self._heap_view.get_model().clear()
 
+    # on_close_activate () {{{3
+    def on_close_activate(self, p):
+	self.close_file()
+
+    # open_file () {{{3
+    def open_file(self, filename):
+	# close old file
+	self.close_file()
+	self.init_program_display(filename)
+
     # on_open_activate () {{{3
     def on_open_activate(self, p):
 	filechooser = self._filechooser_factory("Select a SaM file", p)
 	response = filechooser.run()
 	if response == gtk.RESPONSE_OK:
-	    # close old file
-	    self.on_close_activate(p)
-	    self.init_program_display(filechooser.get_filename())
+	    self.open_file(filechooser.get_filename())
 	filechooser.destroy()
 
     # init_program_display () {{{3
@@ -533,6 +559,10 @@ class GSam:
 
 # main {{{1
 if __name__ == '__main__':
-    gsam = GSam()
+    if len(sys.argv) > 1:
+	gsam = GSam(sys.argv[1])
+    else:
+	gsam = GSam()
+	gsam.on_open_activate(None)
 
     gtk.main()
