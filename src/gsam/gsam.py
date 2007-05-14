@@ -127,6 +127,14 @@ class GSam:
 
 	self._input_box = self._xml.get_widget('program_entry_box')
 	self._input = self._xml.get_widget('program_entry')
+
+	self._custom_dialog = self._xml.get_widget('custom_dialog')
+	self._custom_entry = self._xml.get_widget('custom_entry')
+	self._custom_speed = self._xml.get_widget('custom_speed')
+
+	# Setup custom speed dialog {{{4
+	self._custom_dialog.add_buttons(gtk.STOCK_CANCEL, gtk.RESPONSE_REJECT,\
+                      gtk.STOCK_OK, gtk.RESPONSE_ACCEPT)
 	
 	# Set default values {{{4
 	self._file = None
@@ -452,9 +460,8 @@ class GSam:
     def run_step(self):
 	# TODO debug support
 	# TODO break before or after breakpoint?
-	isbp = self._prog.lc in self._breakpoints[self._prog.mc]['normal']
 	rv = self.step()
-	if isbp:
+	if self._prog.lc in self._breakpoints[self._prog.mc]['normal']:
 	    self._timer_id = None
 	    return False
 	else:
@@ -481,6 +488,7 @@ class GSam:
 
     def reset(self):
 	if self._prog:
+	    self.pause()
 	    self._prog.reset()
 	    self.update_registers()
 	    self.scroll_code_view()
@@ -524,8 +532,8 @@ class GSam:
     def clear_breakpoints(self):
 	if self._breakpoints:
 	    for bps in self._breakpoints:
-		for bp in bps:
-		    bp.clear()
+		for key in bps:
+		    bps[key].clear()
 	self.refresh_code_display()
 
     def on_code_view_row_activated(self, tv, path, col):
@@ -535,7 +543,7 @@ class GSam:
     def on_toggle_breakpoint_activate(self, p):
 	self.toggle_breakpoint_selected()
 
-    def on_reset_all_breakpoints_activate(self, p):
+    def on_remove_all_breakpoints_activate(self, p):
 	self.clear_breakpoints()
 
     ### View menu handling {{{2
@@ -597,8 +605,16 @@ class GSam:
 	self.change_to_def_speed('slow')
 
     def on_custom_speed_activate(self, p):
-	pass # TODO custom speeds
-	#self.change_speed(customSpeed)
+	if self._custom_speed.get_active():
+	    self._custom_entry.set_value(self._timeout_interval)
+	    if self._custom_dialog.run() == gtk.RESPONSE_ACCEPT:
+		customSpeed = self._custom_entry.get_value_as_int()
+		self.change_speed(customSpeed)
+	    # Otherwise leave speed as it is, but custom is selected
+	    self._custom_dialog.hide()
+    
+    def on_custom_dialog_ok(self, p):
+	self._custom_dialog.response(gtk.RESPONSE_ACCEPT)
 
     ### IO Funcs {{{2
     def is_waiting_for_input(self):
