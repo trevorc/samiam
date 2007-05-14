@@ -16,8 +16,7 @@ class CodeTreeModel(gtk.GenericTreeModel):
 	gtk.GenericTreeModel.__init__(self)
 	self._prog = prog
 	self._module_n = modnum
-	# TODO multi-module support
-	self._instructions = self._prog.instructions
+	self._instructions = prog.modules[modnum].instructions
     
     def on_get_flags(self):
 	return gtk.TREE_MODEL_LIST_ONLY | gtk.TREE_MODEL_ITERS_PERSIST
@@ -283,7 +282,7 @@ class GSam:
 	if self.get_current_code_model() is None:
 	    # TODO should be _prog.modules[n].instructions
 	    self.set_current_code_model(CodeTreeModel(self._prog, \
-		    self.get_current_module()))
+		    self.get_current_module_num()))
 	self._code_view.set_model(self.get_current_code_model())
 
     def scroll_code_view(self):
@@ -480,8 +479,9 @@ class GSam:
 	    self._heap_box.show_all()
 	else:
 	    self._heap_box.hide_all()
-    
-    # append_to_console () {{{2
+
+    ### Console handling {{{2
+    # append_to_console () {{{3
     def append_to_console(self, str):
 	buf = self._console.get_buffer()
 	if buf.get_char_count() == 0:
@@ -491,6 +491,10 @@ class GSam:
 	buf.insert(buf.get_end_iter(),\
 		"%s[%s] %s" % (st, time.strftime('%X'), str))
 	self._console.scroll_mark_onscreen(self._console_end_mark)
+
+    # on_clear_console {{{3
+    def on_clear_console_activate(self, p):
+	self._console.get_buffer().set_text("")
 
     ### Speed change handlers {{{2
     # Requires: newSpeed >= 0
