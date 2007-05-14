@@ -129,6 +129,11 @@ class GSam:
 
 	self._console_end_mark = self._console.get_buffer().create_mark("end",\
 		self._console.get_buffer().get_end_iter(), False)
+	
+	self._module_combobox.set_model(gtk.ListStore(str))
+	cell = gtk.CellRendererText()
+	self._module_combobox.pack_start(cell, True)
+	self._module_combobox.add_attribute(cell, 'text', 0)
 
 	# Code/stack/heap display setup {{{4
 	def make_arrow(tvcolumn, cell, model, iter):
@@ -224,6 +229,7 @@ class GSam:
 	self._code_models = None
 	self._stack_view.get_model().clear()
 	self._heap_view.get_model().clear()
+	self._module_combobox.get_model().clear()
 
     # on_close_activate () {{{3
     def on_close_activate(self, p):
@@ -253,6 +259,11 @@ class GSam:
 	self._prog.input_func = self.sam_string_input
 	self._finished = False
 
+	mods = self._prog.modules
+	modsm = self._module_combobox.get_model()
+	for i in range(0, len(mods)):
+	    self._module_combobox.append_text("%d - %s" % (i,mods[i].filename))
+	self._module_combobox.set_active(0)
 	self._code_models = [None for i in range(0, self.get_n_modules())]
 	self.update_code_display()
 	self.reset_memory_display()
