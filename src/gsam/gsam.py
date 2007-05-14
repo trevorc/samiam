@@ -292,7 +292,7 @@ class GSam:
 		    self.get_current_module_num()))
 	self._code_view.set_model(self.get_current_code_model())
 
-    def on_module_combobox_changed(self, p)
+    def on_module_combobox_changed(self, p):
 	if self._prog:
 	    self.update_code_display()
 
