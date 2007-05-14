@@ -104,6 +104,9 @@ class GSam:
 	# Getting gtk object handles {{{4
 	self._main_window = self._xml.get_widget('main_window')
 	self._default_title = self._main_window.get_title()
+
+	self._about_dialog = self._xml.get_widget('about_dialog')
+
 	self._module_combobox = self._xml.get_widget('module_combobox')
 	
 	self._code_view = self._xml.get_widget('code_view')
@@ -140,6 +143,7 @@ class GSam:
 	self._file = None
 	self._prog = None
 	self._breakpoints = None
+	self._breakreturn = None
 
 	self._timer_id = None
 	# TODO decide on best default speeds?
@@ -242,6 +246,7 @@ class GSam:
 	self._code_view.set_model(None)
 	self._code_models = None
 	self._breakpoints = None
+	self._breakreturn = None
 	self._stack_view.get_model().clear()
 	self._heap_view.get_model().clear()
 	self._module_combobox.get_model().clear()
@@ -448,21 +453,35 @@ class GSam:
 		    self.append_to_console(\
 			    "Final Result: %d" % self._prog.stack[0].value)
 		    self._timer_id = None
+		    self.clear_temporary_breakpoints()
 		self.update_display()
 	    return not self._finished
 
     # Single step, ignores breakpoints
     def single_step(self):
-	if not self.is_waiting_for_input():
+	if not self.is_waiting_for_input() and not self._timer_id:
 	    return self.step()
 
     # Step for while running. Supports breakpoints, etc.
     def run_step(self):
-	# TODO debug support
-	# TODO break before or after breakpoint?
+	if self._break_return: # check for nested functions
+	    next_asm_st = self.get_current_module().\
+		    instructions[self._prog.lc].assembly[0:3]
+	    if next_asm_st == "RST":
+		self._break_return = self._break_return - 1
+	    elif next_asm_st == "JSR":
+		self._break_return = self._break_return + 1
 	rv = self.step()
 	if self._prog.lc in self._breakpoints[self._prog.mc]['normal']:
 	    self._timer_id = None
+	    return False
+	elif self._prog.lc in self._breakpoints[self._prog.mc]['temporary']:
+	    self._timer_id = None
+	    self._breakpoints[self._prog.mc]['temporary'].remove(self._prog.lc)
+	    return False
+	elif not (self._break_return is None) and self._break_return == 0:
+	    self._timer_id = None
+	    self._break_return = None
 	    return False
 	else:
 	    return rv
@@ -476,8 +495,9 @@ class GSam:
     def start(self):
 	if not self.is_waiting_for_input():
 	    if self._prog and self._timer_id is None:
-		self._timer_id = gobject.timeout_add(self._timeout_interval,\
-			self.run_step)
+		if self.run_step():
+		    self._timer_id = gobject.timeout_add(\
+			self._timeout_interval, self.run_step)
 
     def start_pause(self):
 	if self._prog:
@@ -491,6 +511,7 @@ class GSam:
 	    self.pause()
 	    self._prog.reset()
 	    self.update_registers()
+	    self.clear_temporary_breakpoints()
 	    self.scroll_code_view()
 	    self.reset_memory_display()
 	    self._finished = False
@@ -499,16 +520,17 @@ class GSam:
 
     # GTK handlers {{{3
     def on_step_clicked(self, p):
-	if not self._timer_id:
-	    self.single_step()
+	self.single_step()
 
     def on_start_activate(self, p):
 	self.start()
 
     def on_pause_activate(self, p):
+	self.clear_temporary_breakpoints()
 	self.pause()
 
     def on_start_pause_clicked(self, p):
+	self.clear_temporary_breakpoints()
 	self.start_pause()
     
     def on_reset_clicked(self, p):
@@ -516,24 +538,54 @@ class GSam:
 
     ### Breakpoints {{{2
     def toggle_breakpoint(self, module, line):
-	bp = self._breakpoints[module]['normal']
-	if line in bp:
-	    bp.remove(line)
-	else:
-	    bp.add(line)
-	self.refresh_code_display()
+	if self._breakpoints:
+	    bp = self._breakpoints[module]['normal']
+	    if line in bp:
+		bp.remove(line)
+	    else:
+		bp.add(line)
+	    self.refresh_code_display()
 
     def toggle_breakpoint_selected(self):
 	if self._prog:
 	    self.toggle_breakpoint(self.get_current_module_num(),\
 		    self.get_selected_code_line())
 
+    def set_temp_bp(self, module, line):
+	if not self._finished:
+	    self._breakpoints[module]['temporary'].add(line)
+	    self.refresh_code_display()
+    
+    def step_return(self):
+	if self._prog and self._timer_id is None:
+	    self._break_return = 1
+	    self.start()
+
+    def run_to_line(self, module, line):
+	if self._prog and self._timer_id is None:
+	    self.set_temp_bp(module, line)
+	    self.start()
+
+    def step_over(self):
+	if self._prog:
+	    self.run_to_line(self._prog.mc, self._prog.lc + 1)
+
     # TODO semantics of non-normal breakpoints?
-    def clear_breakpoints(self):
+    def clear_normal_breakpoints(self):
 	if self._breakpoints:
 	    for bps in self._breakpoints:
 		for key in bps:
-		    bps[key].clear()
+		    if key == "normal":
+			bps[key].clear()
+	self.refresh_code_display()
+
+    def clear_temporary_breakpoints(self):
+	if self._breakpoints:
+	    for bps in self._breakpoints:
+		for key in bps:
+		    if key == "temporary":
+			bps[key].clear()
+	self._break_return = None
 	self.refresh_code_display()
 
     def on_code_view_row_activated(self, tv, path, col):
@@ -544,7 +596,18 @@ class GSam:
 	self.toggle_breakpoint_selected()
 
     def on_remove_all_breakpoints_activate(self, p):
-	self.clear_breakpoints()
+	self.clear_normal_breakpoints()
+
+    # Run menu handlers
+    def on_step_over_activate(self, p):
+	self.step_over()
+
+    def on_step_return_activate(self, p):
+	self.step_return()
+
+    def on_run_to_line_activate(self, p):
+	self.run_to_line(self.get_current_module_num(),\
+		self.get_selected_code_line())
 
     ### View menu handling {{{2
     def on_show_code_activate(self, p):
@@ -649,6 +712,13 @@ class GSam:
 
     def sam_print(self, str):
 	self.append_to_console("Program output: %s" % str)
+
+    # About dialog {{{2
+    def on_about_activate(self, p):
+	self._about_dialog.show()
+
+    def on_about_close(self, p, res):
+	self._about_dialog.hide()
 
     # gtk_main_quit () {{{2
     def gtk_main_quit(*self):
