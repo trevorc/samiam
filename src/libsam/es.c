@@ -243,12 +243,29 @@ sam_es_loc_ins(sam_es *restrict es,
 {
     sam_es_loc **restrict locs = (sam_es_loc **)es->locs.arr;
 
-    if (es->locs.len == 0 || locs[es->locs.len - 1]->pa != line_no) {
+    if (es->locs.len == 0 ||
+	!(locs[es->locs.len - 1]->pa.m == line_no.m &&
+	  locs[es->locs.len - 1]->pa.l == line_no.l)) {
 	sam_array_ins(&es->locs,
 		      sam_es_loc_new(line_no, label));
     } else {
 	sam_array_ins(&locs[es->locs.len - 1]->labels, label);
     }
+}
+
+static size_t
+sam_pa_to_size_t(sam_pa pa)
+{
+    return (pa.m << (CHAR_BIT * sizeof (pa.m))) + pa.l;
+}
+
+static sam_pa
+sam_size_t_to_pa(size_t size)
+{
+    return (sam_pa) {
+	.m = size >> (CHAR_BIT * sizeof (unsigned short)),
+	.l = (unsigned short)size
+    };
 }
 
 #if 0
@@ -303,7 +320,9 @@ sam_es_pc_get(const sam_es *restrict es)
 inline sam_pa
 sam_es_pc_pp(sam_es *restrict es)
 {
-    return es->pc++;
+    sam_pa pc = es->pc;
+    ++es->pc.l;
+    return pc;
 }
 
 inline void
@@ -467,7 +486,7 @@ sam_es_labels_ins(sam_es *restrict es,
 		  char *restrict label,
 		  sam_pa line_no)
 {
-    if (sam_hash_table_ins(&es->labels, label, line_no)) {
+    if (sam_hash_table_ins(&es->labels, label, sam_pa_to_size_t(line_no))) {
 	sam_es_loc_ins(es, line_no, label);
 	return true;
     } else {
@@ -480,7 +499,10 @@ sam_es_labels_get(/*@in@*/ sam_es *restrict es,
 		  /*@out@*/ sam_pa *restrict pa,
 		  const char *restrict name)
 {
-    return sam_hash_table_get(&es->labels, name, pa);
+    size_t tmp;
+    bool rv = sam_hash_table_get(&es->labels, name, &tmp);
+    *pa = sam_size_t_to_pa(tmp);
+    return rv;
 }
 
 inline sam_array *
@@ -509,13 +531,14 @@ sam_es_instructions_ins(sam_es *restrict es,
 sam_es_instructions_get(/*@in@*/ const sam_es *restrict es,
 			sam_pa pa)
 {
-    return pa < es->instructions.len? es->instructions.arr[pa]: NULL;
+    /* TODO: module specific */
+    return pa.l < es->instructions.len? es->instructions.arr[pa.l]: NULL;
 }
 
 sam_instruction *
 sam_es_instructions_cur(sam_es *restrict es)
 {
-    return es->instructions.arr[es->pc];
+    return es->instructions.arr[es->pc.l];
 }
 
 inline size_t
@@ -749,7 +772,7 @@ static void
 sam_es_init(sam_es *restrict es)
 {
     es->bt = false;
-    es->pc = 0;
+    es->pc = (sam_pa){.l = 0, .m = 0};
     es->fbr = 0;
     sam_array_init(&es->stack);
     sam_array_init(&es->heap.a);

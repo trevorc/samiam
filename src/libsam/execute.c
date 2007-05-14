@@ -117,7 +117,7 @@ sam_convert_to_int(sam_es *restrict es,
 	case SAM_ML_TYPE_FLOAT:
 	    return m->value.f;
 	case SAM_ML_TYPE_PA:
-	    return m->value.pa;
+	    return m->value.pa.l;
 	case SAM_ML_TYPE_HA:
 	    return m->value.ha;
 	case SAM_ML_TYPE_SA:
@@ -133,7 +133,7 @@ sam_execute(/*@in@*/ sam_es *restrict es)
 {
     sam_error err = SAM_OK;
 
-    for (; sam_es_pc_get(es) < sam_es_instructions_len(es) && err == SAM_OK;
+    for (; sam_es_pc_get(es).l < sam_es_instructions_len(es) && err == SAM_OK;
 	 sam_es_pc_pp(es)) {
 	err = sam_es_instructions_cur(es)->handler(es);
     }

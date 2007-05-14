@@ -229,8 +229,10 @@ sam_error_uninitialized(/*@in@*/ sam_es *es)
     if (!sam_es_options_get(es, SAM_QUIET)) {
 	sam_io_fprintf(es,
 		       SAM_IOS_ERR,
-		       "warning: use of uninitialized memory at program address "
-		       "%lu.\n", (unsigned long)sam_es_pc_get(es));
+		       "warning: use of uninitialized memory in module number "
+		       "%hu, line %hu.\n",
+		       sam_es_pc_get(es).m,
+		       sam_es_pc_get(es).l);
     }
 }
 

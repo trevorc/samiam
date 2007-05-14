@@ -59,7 +59,10 @@ typedef unsigned long sam_unsigned_int;
 typedef int sam_char;
 
 /** An index into the array of instructions. */
-typedef size_t sam_pa;
+typedef struct {
+    unsigned short l;	/* line number */
+    unsigned short m;	/* module number */
+} sam_pa;
 
 /** An index into the heap. */
 typedef size_t sam_ha;

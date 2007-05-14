@@ -87,17 +87,18 @@ sam_get_jump_target(/*@in@*/ sam_es *restrict es,
     if (cur->optype == SAM_OP_TYPE_INT) {
 	/* subtract 1 when we change the pa because it will be
 	 * incremented by the loop in sam_execute */
-	*p = cur->operand.pa - 1;
+	p->m = cur->operand.pa.m;
+	p->l = cur->operand.pa.l - 1;
     } else if (cur->optype == SAM_OP_TYPE_LABEL) {
 	if (sam_es_labels_get(es, p, cur->operand.s)) {
 	    /* as above */
-	    --*p;
+	    --p->l;
 	} else {
-	    *p = 0;
+	    p->l = 0;
 	    return sam_error_unknown_identifier(es, cur->operand.s);
 	}
     } else {
-	*p = 0;
+	p->l = 0;
 	return sam_error_optype(es);
     }
 
@@ -183,7 +184,7 @@ sam_addition(/*@in@*/ sam_es *restrict es,
 	case SAM_ML_TYPE_PA:
 	    if (m2->type == SAM_ML_TYPE_INT) {
 		/* user could set an illegal index here */
-		m1->value.pa = m1->value.pa + sign * m2->value.i;
+		m1->value.pa.l = m1->value.pa.l + sign * m2->value.i;
 		free(m2);
 		return sam_es_stack_push(es, m1)?
 		    SAM_OK: sam_error_stack_overflow(es);
@@ -230,7 +231,7 @@ sam_addition(/*@in@*/ sam_es *restrict es,
 	    }
 	    if (m2->type == SAM_ML_TYPE_PA) {
 		/* user could set an illegal index here */
-		m1->value.pa = m1->value.i + sign * m2->value.pa;
+		m1->value.pa.l = m1->value.i + sign * m2->value.pa.l;
 		m1->type = SAM_ML_TYPE_PA;
 		free(m2);
 		return sam_es_stack_push(es, m1)?
@@ -699,7 +700,12 @@ sam_op_pushimmpa(/*@in@*/ sam_es *restrict es)
     sam_instruction *cur = sam_es_instructions_cur(es);
     if (cur->optype == SAM_OP_TYPE_INT) {
 	if (!sam_es_stack_push(es, sam_ml_new(
-		    (sam_ml_value){ .pa = cur->operand.i }, SAM_ML_TYPE_PA))) {
+	    (sam_ml_value){
+		.pa = (sam_pa){
+		    .l = cur->operand.i,
+		    .m = sam_es_pc_get(es).m}
+		},
+		SAM_ML_TYPE_PA))) {
 	    return sam_error_stack_overflow(es);
 	}
     } else if (cur->optype == SAM_OP_TYPE_LABEL) {
@@ -1242,7 +1248,7 @@ sam_op_equal(/*@in@*/ sam_es *restrict es)
 	    break;
 	case SAM_ML_TYPE_PA:
 	    if (m2->type == SAM_ML_TYPE_PA) {
-		m1->value.i = m1->value.pa == m2->value.pa;
+		m1->value.i = (m1->value.pa.l == m2->value.pa.l) && (m1->value.pa.m == m2->value.pa.m);
 	    } else {
 		m1->value.i = false;
 	    }
@@ -1350,7 +1356,7 @@ sam_op_jumpind(/*@in@*/ sam_es *restrict es)
 	free(m);
 	return sam_error_stack_input(es, "first", t, SAM_ML_TYPE_PA);
     }
-    sam_es_pc_set(es, m->value.pa - 1);
+    sam_es_pc_set(es, (sam_pa){.m = m->value.pa.m, .l = m->value.pa.l - 1});
     free(m);
     return SAM_OK;
 }
@@ -1368,7 +1374,9 @@ sam_op_jsr(/*@in@*/ sam_es *restrict es)
     sam_pa	 target;
     sam_error	 err;
 
-    v.pa = sam_es_pc_get(es) + 1;
+    v.pa = sam_es_pc_get(es);
+    ++v.pa.l;
+
     if (!sam_es_stack_push(es, sam_ml_new(v, SAM_ML_TYPE_PA))) {
 	return sam_error_stack_overflow(es);
     }
@@ -1395,12 +1403,14 @@ sam_op_jsrind(/*@in@*/ sam_es *restrict es)
 	return sam_error_stack_input(es, "first", t, SAM_ML_TYPE_PA);
     }
 
-    v.pa = sam_es_pc_get(es) + 1;
+    v.pa = sam_es_pc_get(es);
+    ++v.pa.l;
+
     if (!sam_es_stack_push(es, sam_ml_new(v, SAM_ML_TYPE_PA))) {
 	free(m);
 	return sam_error_stack_overflow(es);
     }
-    sam_es_pc_set(es, m->value.pa - 1);
+    sam_es_pc_set(es, (sam_pa){.m = m->value.pa.m, .l = m->value.pa.l - 1});
 
     free(m);
     return SAM_OK;
@@ -1414,10 +1424,13 @@ sam_op_skip(/*@in@*/ sam_es *restrict es)
     if ((m = sam_es_stack_pop(es)) == NULL) {
 	return sam_error_stack_underflow(es);
     }
-    sam_es_pc_set(es, sam_es_pc_get(es) + m->value.pa);
+    sam_es_pc_set(es, (sam_pa){
+		      .m = sam_es_pc_get(es).m,
+		      .l = sam_es_pc_get(es).l + m->value.pa.l
+		  });
 
     free(m);
-    return SAM_ENOSYS;
+    return SAM_OK;
 }
 
 static sam_error
@@ -1666,7 +1679,7 @@ sam_op_patoi(/*@in@*/ sam_es *restrict es)
 	free(m);
 	return sam_error_type_conversion(es, SAM_ML_TYPE_INT, t, SAM_ML_TYPE_PA);
     }
-    m->value.i = m->value.pa;
+    m->value.i = m->value.pa.l;
     m->type = SAM_ML_TYPE_INT;
     return sam_es_stack_push(es, m)? SAM_OK: sam_error_stack_overflow(es);
 }

@@ -159,10 +159,11 @@ sam_error_duplicate_label(const sam_es *restrict es,
     if (!sam_es_options_get(es, SAM_QUIET)) {
 	sam_io_fprintf(es,
 		       SAM_IOS_ERR,
-		       "error: duplicate label \"%s\" was found at program "
-		       "address %lu.\n",
+		       "error: duplicate label \"%s\" was found in module "
+		       "number %hu, line %hu.\n",
 		       label,
-		       (unsigned long)pa);
+		       pa.m,
+		       pa.l);
     }
 }
 
@@ -548,7 +549,9 @@ sam_parse(sam_es *restrict es,
 #endif /* SAM_EXTENSIONS */
 
     /* Parse as many labels as we find, then parse an instruction. */
-    sam_pa cur_line = 0;
+    sam_pa cur_line = {
+	.l = 0
+    };
 
     while (*input != '\0') {
 	sam_eat_whitespace(&input);
@@ -567,7 +570,7 @@ sam_parse(sam_es *restrict es,
 	    return false;
 	}
 	sam_es_instructions_ins(es, i);
-	++cur_line;
+	++cur_line.l;
     }
 
     return true;

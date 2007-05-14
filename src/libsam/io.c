@@ -133,7 +133,7 @@ sam_io_ml_value_print(const sam_es *restrict es,
 	    sam_io_fprintf(es, SAM_IOS_ERR, "%luS", (unsigned long)v.sa);
 	    break;
 	case SAM_ML_TYPE_PA:
-	    sam_io_fprintf(es, SAM_IOS_ERR, "%lu", (unsigned long)v.pa);
+	    sam_io_fprintf(es, SAM_IOS_ERR, "%hu:%hu", v.pa.m, v.pa.l);
 	    break;
 	case SAM_ML_TYPE_NONE: /*@fallthrough@*/
 	default:
@@ -172,6 +172,7 @@ sam_io_op_value_print(const sam_es *restrict es,
 }
 
 /* Die... with style! */
+/* TODO: module specific */
 static void
 sam_io_bt_default(const sam_es *restrict es)
 {
@@ -180,10 +181,11 @@ sam_io_bt_default(const sam_es *restrict es)
     sam_io_fprintf(es,
 		   SAM_IOS_ERR,
 		   "\nstate of execution:\n"
-		   "PC:\t%lu\n"
+		   "PC:\t%hu:%hu\n"
 		   "FBR:\t%lu\n"
 		   "SP:\t%lu\n\n",
-		   (unsigned long)sam_es_pc_get(es),
+		   sam_es_pc_get(es).m,
+		   sam_es_pc_get(es).l,
 		   (unsigned long)sam_es_fbr_get(es),
 		   (unsigned long)sam_es_stack_len(es));
 
@@ -227,14 +229,14 @@ sam_io_bt_default(const sam_es *restrict es)
 	    sam_io_fprintf(es, SAM_IOS_ERR, "    \t\t");
 	}
 	if (i <= sam_es_instructions_len(es)) {
-	    if (i == sam_es_pc_get(es)) {
+	    if (i == sam_es_pc_get(es).l) {
 		sam_io_fprintf(es, SAM_IOS_ERR, "==> ");
 	    } else {
 		sam_io_fprintf(es, SAM_IOS_ERR, "    ");
 	    }
 	    if (i < sam_es_instructions_len(es)) {
 		sam_instruction *restrict inst =
-		    sam_es_instructions_get(es, i);
+		    sam_es_instructions_get(es, (sam_pa){.m = 0, .l = i});
 		sam_io_fprintf(es, SAM_IOS_ERR, "%s", inst->name);
 		if (inst->optype != SAM_OP_TYPE_NONE) {
 		    sam_io_fprintf(es, SAM_IOS_ERR, " ");
