@@ -3,6 +3,13 @@
 
 #include <libsam/sdk.h>
 
+/* locs helper {{{1 */
+/* pa_to_dict_key () {{{2 */
+static inline PyObject *
+pa_to_dict_key(sam_pa pa)
+{
+    return Py_BuildValue("(ll)", pa.m, pa.l);
+}
 /* Exceptions {{{1 */
 /* PyObject SamError {{{2 */
 static PyObject *SamError;
@@ -72,10 +79,11 @@ static PyTypeObject InstructionType = {
 
 /* Instruction_create {{{2 */
 static PyObject *
-Instruction_create(sam_instruction *restrict si)
+Instruction_create(sam_instruction *restrict si, sam_pa addr,
+		   PyObject *locs)
 {
-    Instruction *restrict rv = PyObject_New(Instruction, &InstructionType);
-    ///rv->inst = si->name;
+    Instruction *restrict rv =
+	PyObject_New(Instruction, &InstructionType);
     // TODO we malloc, when do we free?
     char *tmp;
     switch(si->optype) {
@@ -105,10 +113,14 @@ Instruction_create(sam_instruction *restrict si)
 	default:
 	    rv->inst = si->name;
     }
-    // TODO get labels
-    rv->labels = Py_BuildValue("()");
+    PyObject *key = pa_to_dict_key(addr);
+    rv->labels = PyDict_GetItem(locs, key);
+    Py_DECREF(key);
+    Py_XINCREF(rv->labels);
+    if (rv->labels == NULL) {
+	rv->labels = Py_BuildValue("()");
+    }
     return (PyObject *) rv;
-
 }
 
 /* InstructionsIter {{{1 */
@@ -116,7 +128,8 @@ Instruction_create(sam_instruction *restrict si)
 typedef struct {
     PyObject_HEAD
     sam_es *es;
-    PyDictObject *locs;
+    unsigned short module_num;
+    PyObject *locs;
     size_t idx;
 } InstructionsIterObject;
 
@@ -134,10 +147,10 @@ InstructionsIter_next(InstructionsIterObject *restrict self)
     if (inst == NULL) {
 	return NULL;
     }
+    sam_pa addr = { .m = self->module_num, .l = self->idx++ };
     sam_instruction *si =
-	sam_es_instructions_get(self->es, (sam_pa) self->idx++);
-
-    return Instruction_create(si);
+	sam_es_instructions_get(self->es, addr);
+    return Instruction_create(si, addr, self->locs);
 }
 
 /* PyTypeObject InstructionsIterType {{{2 */
@@ -157,8 +170,9 @@ PyTypeObject InstructionsIterType = {
 /* Sequence of the SaM program code */
 typedef struct {
     PyObject_HEAD
-    PyDictObject *locs;
     sam_es *es;
+    unsigned short module_num;
+    PyObject *locs;
 } Instructions;
 
 /* Instructions_iter () {{{2 */
@@ -173,6 +187,8 @@ Instructions_iter(Instructions *restrict self)
     }
 
     iter->es = self->es;
+    iter->module_num = self->module_num;
+    iter->locs = self->locs;
     iter->idx = 0;
     return (PyObject *)iter;
 }
@@ -194,10 +210,10 @@ Instructions_item(Instructions *self, unsigned i)
 	return NULL;
     }
 
-    // TODO can we just cast to sam_pa?
-    sam_instruction *inst = sam_es_instructions_get(self->es, (sam_pa) i);
+    sam_pa addr = { .m = self->module_num,.l = i};
+    sam_instruction *inst = sam_es_instructions_get(self->es, addr);
 
-    return Instruction_create(inst);
+    return Instruction_create(inst, addr, self->locs);
 }
 
 /* PySquenceMethods Instructions_sequence_methods {{{2 */
@@ -228,22 +244,30 @@ static PyTypeObject InstructionsType = {
 typedef struct {
     PyObject_HEAD
     sam_es *es;
+    PyObject *locs;
+    Instructions *insts;
 } Module;
 
 /* Module_instructions_get () {{{2 */
 static PyObject *
 Module_instructions_get(Module *restrict self)
 {
-    // TODO assumes single module
-    Instructions *restrict insts =
-	PyObject_New(Instructions, &InstructionsType);
+    if (self->insts == NULL) {
+	// TODO assumes single module
+	Instructions *restrict insts =
+	    PyObject_New(Instructions, &InstructionsType);
 
-    if (insts == NULL) {
-	return NULL;
+	if (insts == NULL) {
+	    return NULL;
+	}
+
+	insts->es = self->es;
+	insts->module_num = 0;
+	insts->locs = self->locs;
+	self->insts = insts;
     }
-
-    insts->es = self->es;
-    return (PyObject *)insts;
+    Py_XINCREF(self->insts);
+    return (PyObject *)self->insts;
 }
 
 /* Module_filename_get () {{{2 */
@@ -263,15 +287,6 @@ static PyGetSetDef Module_getset[] = {
     {NULL, NULL, NULL, NULL, NULL}
 };
 
-/* PyMethodDef Module_methods {{{2 */
-static PyMethodDef Module_methods[] = {
-    {"get_instructions", (PyCFunction)Module_instructions_get, METH_NOARGS,
-	"gets the program code of this module"},
-    {"get_filename", (PyCFunction)Module_filename_get, METH_NOARGS,
-	"gets the filename of this module"},
-    {0, 0, 0, 0}, /* Sentinel */
-};
-
 /* PyTypeObject ModuleType {{{2 */
 static PyTypeObject ModuleType = {
     PyObject_HEAD_INIT(NULL)
@@ -279,14 +294,18 @@ static PyTypeObject ModuleType = {
     .tp_basicsize = sizeof (Module),
     .tp_flags     = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
     .tp_doc	  = "Sam module (file)",
-    .tp_methods	  = Module_methods,
     .tp_getset	  = Module_getset,
     .tp_new	  = PyType_GenericNew,
 };
 
 /* ModulesIter {{{1 */
 /* typedef ModulesIterObject {{{2 */
-typedef EsRefIterType ModulesIterObject;
+typedef struct {
+    PyObject_HEAD
+    sam_es *es;
+    PyObject *locs;
+    size_t idx;
+} ModulesIterObject;
 
 /* ModulesIter_next () {{{2 */
 static PyObject *
@@ -306,6 +325,8 @@ ModulesIter_next(ModulesIterObject *restrict self)
     }
 
     module->es = self->es;
+    module->insts = NULL;
+    module->locs = self->locs;
     Py_INCREF(module);
     return (PyObject *) module;
 }
@@ -327,7 +348,11 @@ PyTypeObject ModulesIterType = {
 /* Modules {{{1 */
 /* typedef Modules {{{2 */
 /* Sequence of the SaM modules */
-typedef EsRefObj Modules;
+typedef struct {
+    PyObject_HEAD
+    sam_es *es;
+    PyObject *locs;
+} Modules;
 
 /* Modules_iter () {{{2 */
 static PyObject *
@@ -341,12 +366,13 @@ Modules_iter(Modules *restrict self)
     }
 
     iter->es = self->es;
+    iter->locs = self->locs;
     iter->idx = 0;
     Py_INCREF(iter);
     return (PyObject *)iter;
 }
 
-/* Modules_length {{{2 */
+/* Modules_length () {{{2 */
 static long
 Modules_length(Modules *restrict self)
 {
@@ -354,7 +380,7 @@ Modules_length(Modules *restrict self)
     return 1;
 }
 
-/* Modules_item {{{2 */
+/* Modules_item () {{{2 */
 static PyObject *
 Modules_item(Modules *restrict self, unsigned i)
 {
@@ -366,6 +392,8 @@ Modules_item(Modules *restrict self, unsigned i)
 
     Module *rv = PyObject_New(Module, &ModuleType);
     rv->es = self->es;
+    rv->insts = NULL;
+    rv->locs = self->locs;
     Py_INCREF(rv); // TODO Why is this required?
     return (PyObject *)rv;
 }
@@ -412,7 +440,7 @@ Value_value_get(Value *restrict self)
 	case SAM_ML_TYPE_FLOAT:
 	    return PyFloat_FromDouble(self->value.value.f);
 	case SAM_ML_TYPE_SA:
-	    return PyLong_FromLong(self->value.value.pa);
+	    return pa_to_dict_key(self->value.value.pa);
 	case SAM_ML_TYPE_HA:
 	    return PyLong_FromLong(self->value.value.ha);
 	case SAM_ML_TYPE_PA:
@@ -799,7 +827,7 @@ typedef struct {
     Stack *stack;
     Heap *heap;
     Modules *modules;
-    Instructions *instructions; // TODO remove this and use modules
+    PyObject *locs;
     PyObject *print_func;
     PyObject *input_func;
 } Program;
@@ -859,16 +887,16 @@ Program_fbr_set(Program *restrict self, PyObject *v)
     return 0;
 }
 
-/* Program_pc_get () {{{2 */
+/* Program_lc_get () {{{2 */
 static PyObject *
-Program_pc_get(Program *restrict self)
+Program_lc_get(Program *restrict self)
 {
-    return PyLong_FromUnsignedLong(sam_es_pc_get(self->es));
+    return PyLong_FromUnsignedLong(sam_es_pc_get(self->es).l);
 }
 
-/* Program_pc_set () {{{2 */
+/* Program_lc_set () {{{2 */
 static int
-Program_pc_set(Program *restrict self, PyObject *v)
+Program_lc_set(Program *restrict self, PyObject *v)
 {
     if (v == NULL) {
 	PyErr_SetString(PyExc_TypeError,
@@ -880,7 +908,8 @@ Program_pc_set(Program *restrict self, PyObject *v)
 			"Program.pc must be set to a long integer.");
 	return -1;
     }
-    sam_es_pc_set(self->es, PyLong_AsLong(v));
+    sam_es_pc_set(self->es, (sam_pa) { .m = sam_es_pc_get(self->es).m,
+		  .l = PyLong_AsLong(v)});
 
     return 0;
 }
@@ -889,8 +918,27 @@ Program_pc_set(Program *restrict self, PyObject *v)
 static PyObject *
 Program_mc_get(Program *restrict self)
 {
-    // TODO Multiple modules support
-    return PyLong_FromUnsignedLong(0);
+    return PyLong_FromUnsignedLong(sam_es_pc_get(self->es).m);
+}
+
+/* Program_mc_set () {{{2 */
+static int
+Program_mc_set(Program *restrict self, PyObject *v)
+{
+    if (v == NULL) {
+	PyErr_SetString(PyExc_TypeError,
+			"Could not delete Program.pc.");
+	return -1;
+    }
+    if (!PyLong_Check(v)) {
+	PyErr_SetString(PyExc_TypeError,
+			"Program.pc must be set to a long integer.");
+	return -1;
+    }
+    sam_es_pc_set(self->es, (sam_pa) { .l = sam_es_pc_get(self->es).l,
+		  .m = PyLong_AsLong(v)});
+
+    return 0;
 }
 
 /* Program_sp_get () {{{2 */
@@ -949,6 +997,7 @@ Program_modules_get(Program *restrict self)
 	}
 
 	modules->es = self->es;
+	modules->locs = self->locs;
 	self->modules = modules;
     }
     Py_XINCREF(self->modules);
@@ -1028,10 +1077,10 @@ static PyGetSetDef Program_getset[] = {
 	"back trace bit.", NULL},
     {"fbr", (getter)Program_fbr_get, (setter)Program_fbr_set,
 	"frame base register.", NULL},
-    {"pc", (getter)Program_pc_get, (setter)Program_pc_set,
-	"program counter.", NULL},
-    {"mc", (getter)Program_mc_get, NULL,
-	"module counter.", NULL},
+    {"mc", (getter)Program_mc_get, (setter)Program_mc_set,
+	"module counter -- module number of current execution.", NULL},
+    {"lc", (getter)Program_lc_get, (setter)Program_lc_set,
+	"line counter -- line number within module.", NULL},
     {"sp", (getter)Program_sp_get, NULL,
 	"stack pointer.", NULL},
     {"stack", (getter)Program_stack_get, NULL,
@@ -1060,13 +1109,18 @@ Program_dealloc(Program *self)
     }
     free(self->file);
     self->ob_type->tp_free((PyObject *)self);
+    Py_XDECREF(self->heap);
+    Py_XDECREF(self->stack);
+    Py_XDECREF(self->modules);
+    Py_XDECREF(self->locs);
 }
 
 /* Program_step () {{{2 */
 static PyObject *
 Program_step(Program *restrict self)
 {
-    if (sam_es_pc_get(self->es) >=
+    // TODO multi-modules
+    if (sam_es_pc_get(self->es).l >=
 	sam_es_instructions_len(self->es)) {
 	Py_RETURN_FALSE;
     }
@@ -1143,6 +1197,22 @@ Program_load(Program *restrict self)
 	PyErr_SetString(ParseError, "couldn't parse input file.");
 	return -1;
     }
+
+    self->locs = PyDict_New();
+    sam_array *locs = sam_es_locs_get(self->es);
+    for (unsigned i = 0; i < locs->len; i++) {
+	sam_es_loc *loc = locs->arr[i];
+	PyObject *labels = PyTuple_New(loc->labels.len);
+	for (unsigned j = 0; j < loc->labels.len; j++) {
+	    // TODO ref owner of the string?
+	    PyTuple_SetItem(labels, j,
+			    PyString_FromString(loc->labels.arr[j]));
+	}
+	PyObject *key = pa_to_dict_key(loc->pa);
+	PyDict_SetItem(self->locs, key, labels);
+	Py_DECREF(key);
+    }
+    Py_INCREF(self->locs);
 
     return 0;
 }

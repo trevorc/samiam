@@ -37,7 +37,7 @@ class CodeTreeModel(gtk.GenericTreeModel):
     def on_get_value(self, rowref, column):
 	item = self._instructions[rowref]
 	if column is 0:
-	    if self._prog.mc == self._module_n and self._prog.pc == rowref:
+	    if self._prog.mc == self._module_n and self._prog.lc == rowref:
 		return gtk.STOCK_GO_FORWARD
 	    else:
 		return None
@@ -318,7 +318,7 @@ class GSam:
     def scroll_code_view(self):
 	if self._prog.mc == self.get_current_module_num():
 	    model = self._code_view.get_model()
-	    nIter = model.iter_nth_child(None, self._prog.pc)
+	    nIter = model.iter_nth_child(None, self._prog.lc)
 	    nPath = model.get_path(nIter)
 	    self._code_view.scroll_to_cell(nPath)
 	    self.refresh_code_display()
@@ -413,7 +413,7 @@ class GSam:
 
     def update_registers(self):
 	self._mc_label.set_text("MC: %d" % self._prog.mc)
-	self._lc_label.set_text("LC: %d" % self._prog.pc) # TODO pc --> lc
+	self._lc_label.set_text("LC: %d" % self._prog.lc) # TODO pc --> lc
 	self._fbr_label.set_text("FBR: %d" % self._prog.fbr)
 	self._sp_label.set_text("SP: %d" % self._prog.sp)
 
@@ -446,7 +446,7 @@ class GSam:
     def run_step(self):
 	# TODO debug support
 	# TODO break before or after breakpoint?
-	isbp = self._prog.pc in self._breakpoints[self._prog.mc]['normal']
+	isbp = self._prog.lc in self._breakpoints[self._prog.mc]['normal']
 	rv = self.step()
 	if isbp:
 	    self._timer_id = None
