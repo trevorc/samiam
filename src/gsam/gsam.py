@@ -36,9 +36,7 @@ class CodeTreeModel(gtk.GenericTreeModel):
     def on_get_value(self, rowref, column):
 	item = self._instructions[rowref]
 	if column is 0:
-	    # TODO multi-module support
-	    # TODO deuglify
-	    if self._prog.pc == rowref:
+	    if self._prog.mc == self._module_n and self._prog.pc == rowref:
 		return gtk.STOCK_GO_FORWARD
 	    else:
 		return None
@@ -63,7 +61,6 @@ class CodeTreeModel(gtk.GenericTreeModel):
 	else:
 	    return None
 
-    # TODO What is this method?
     def on_iter_children(self, rowref):
 	if rowref:
 	    return None
@@ -267,7 +264,7 @@ class GSam:
     # Note: current module = one being displayed to the user,
     #	not one being executed
     def get_current_module_num(self):
-	return 0
+	return self._prog.mc
 
     def get_current_module(self):
 	return self._prog.modules[self.get_current_module_num()]
@@ -280,7 +277,6 @@ class GSam:
 
     def update_code_display(self):
 	if self.get_current_code_model() is None:
-	    # TODO should be _prog.modules[n].instructions
 	    self.set_current_code_model(CodeTreeModel(self._prog, \
 		    self.get_current_module_num()))
 	self._code_view.set_model(self.get_current_code_model())
