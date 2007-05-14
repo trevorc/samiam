@@ -162,7 +162,7 @@ class GSam:
 
 	# Stack/heap display setup {{{4
 	self._stack_view.set_model(gtk.ListStore(gobject.TYPE_LONG,\
-	    gobject.TYPE_STRING, gobject.TYPE_LONG, gobject.TYPE_LONG))
+	    gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_LONG))
 
 	self._type_colors = {'none': ('lightgray'),\
 			    'int':   ('white'),\
@@ -191,7 +191,7 @@ class GSam:
 
 	# TODO heap done?
 	self._heap_view.set_model(gtk.TreeStore(gobject.TYPE_LONG,\
-	    gobject.TYPE_STRING, gobject.TYPE_LONG, gobject.TYPE_LONG))
+	    gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_LONG))
 	for n in range(0, len(column_names)):
 	    renderer = gtk.CellRendererText()
 	    column = gtk.TreeViewColumn(column_names[n], renderer, text=n)
@@ -325,10 +325,16 @@ class GSam:
 
     ### Stack/Heap display handling {{{2
     def value_to_row(self, addr, v):
-	return (addr, sam.TypeChars[v.type], v.value, v.type)
+	if sam.Types[v.type] == 'none':
+	    vstr = "-"
+	elif sam.Types[v.type] == 'pa':
+	    vstr = "%i:%i" % v.value
+	else:
+	    vstr = "%i" % v.value
+	return (addr, sam.TypeChars[v.type], vstr, v.type)
 
     def none_value_row(self, addr):
-	return (addr, 'N', 0, 0)
+	return (addr, 'N', '0', 0)
 
     def set_row_to_value(self, model, iter, addr, v):
 	row = self.value_to_row(addr, v)

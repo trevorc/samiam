@@ -440,11 +440,11 @@ Value_value_get(Value *restrict self)
 	case SAM_ML_TYPE_FLOAT:
 	    return PyFloat_FromDouble(self->value.value.f);
 	case SAM_ML_TYPE_SA:
-	    return pa_to_dict_key(self->value.value.pa);
+	    return PyLong_FromLong(self->value.value.sa);
 	case SAM_ML_TYPE_HA:
 	    return PyLong_FromLong(self->value.value.ha);
 	case SAM_ML_TYPE_PA:
-	    return PyLong_FromLong(self->value.value.sa);
+	    return pa_to_dict_key(self->value.value.pa);
 	default:
 	    // TODO is this an exception?
 	    return NULL;
@@ -1245,6 +1245,10 @@ Program_init(Program *restrict self, PyObject *args, PyObject *kwds)
 	return -1; 
     }
     self->file = strdup(file);
+    self->heap = NULL;
+    self->stack = NULL;
+    self->locs = NULL;
+    self->modules = NULL;
     self->print_func = NULL;
     self->input_func = NULL;
 
