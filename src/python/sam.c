@@ -1036,9 +1036,6 @@ static PyGetSetDef Program_getset[] = {
     {"input_func", (getter)Program_input_func_get,
 	(setter)Program_input_func_set,
 	"function for sam program to use to get a string input", NULL},
-    // TODO DEBUG remove this
-    {"instructions", (getter)Module_instructions_get, NULL,
-	"the program code", NULL},
     {NULL, NULL, NULL, NULL, NULL}
 };
 
