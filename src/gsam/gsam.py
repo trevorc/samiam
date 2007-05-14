@@ -275,7 +275,7 @@ class GSam:
     # Note: current module = one being displayed to the user,
     #	not one being executed
     def get_current_module_num(self):
-	return self._prog.mc
+	return self._module_combobox.get_active()
 
     def get_current_module(self):
 	return self._prog.modules[self.get_current_module_num()]
@@ -291,6 +291,10 @@ class GSam:
 	    self.set_current_code_model(CodeTreeModel(self._prog, \
 		    self.get_current_module_num()))
 	self._code_view.set_model(self.get_current_code_model())
+
+    def on_module_combobox_changed(self, p)
+	if self._prog:
+	    self.update_code_display()
 
     def scroll_code_view(self):
 	if self._prog.mc == self.get_current_module_num():
