@@ -124,10 +124,13 @@ extern void		     sam_es_ro_alloc	     (const sam_es *restrict es,
 						      const char *symbol,
 						      sam_ml_value value,
 						      sam_ml_type type);
-extern void		     sam_es_global_alloc     (const sam_es *restrict es,
-						      const char *symbol,
-						      sam_ml_value value,
-						      sam_ml_type type);
+extern bool		     sam_es_globals_ins     (sam_es *restrict es,
+						      char *restrict symbol,
+						      size_t size);
+extern bool		     sam_es_globals_get     (const sam_es *restrict es,
+						      sam_ha *restrict ha,
+						      const char *restrict symbol,
+						      unsigned short module);
 extern void		     sam_es_export	     (const sam_es *restrict es,
 						      const char *symbol);
 extern void		     sam_es_import	     (const sam_es *restrict es,

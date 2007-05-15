@@ -93,7 +93,12 @@ typedef struct {
 			     *   in sam_parse(). */
     sam_hash_table labels;  /**< A shallow copy of the labels hash
 			     *   table allocated in main and initialized
-			     *   in sam_parse(). */
+			     *   in sam_parse(). Has all labels this
+			     *   module can access. */
+    sam_hash_table globals; /**< A shallow copy of the globals hash
+			     *   table allocated in main and initialized
+			     *   in sam_parse(). Has all globals this
+			     *   module can access. */
     sam_array allocs;	    /**< Automatically allocated read-only data
 			         and globals. */
 } sam_es_module;
@@ -487,12 +492,20 @@ sam_es_pa_new(sam_pa pa)
     return ptr;
 }
 
+static sam_ha *
+sam_es_ha_new(sam_ha ha)
+{
+    sam_ha *ptr = sam_malloc(sizeof (sam_ha));
+    *ptr = ha;
+    return ptr;
+}
+
 bool
 sam_es_labels_ins(sam_es *restrict es,
 		  char *restrict label,
 		  sam_pa line_no)
 {
-    if (sam_hash_table_ins(&SAM_MODULE_CUR->labels,
+    if (sam_hash_table_ins(&SAM_MODULE_LAST->labels,
 			   label,
 			   sam_es_pa_new(line_no))) {
 	sam_es_loc_ins(es, line_no, label);
@@ -525,6 +538,34 @@ sam_es_labels_get_cur(/*@in@*/ sam_es *restrict es,
 		      const char *restrict name)
 {
     return sam_es_labels_get(es, pa, name, sam_es_pc_get(es).m);
+}
+
+bool
+sam_es_globals_ins(sam_es *restrict es,
+		  char *restrict symbol,
+		  size_t size)
+{
+    sam_ha loc = sam_es_heap_alloc(es, size);
+    return sam_hash_table_ins(&SAM_MODULE_LAST->globals,
+			   symbol,
+			   sam_es_ha_new(loc));
+}
+
+inline bool
+sam_es_globals_get(/*@in@*/ const sam_es *restrict es,
+		  /*@out@*/ sam_ha *restrict ha,
+		  const char *restrict name,
+		  unsigned short module)
+{
+    sam_ha *restrict tmp_ha =
+	sam_hash_table_get(&SAM_MODULE(module)->globals, name);
+
+    if (tmp_ha == NULL) {
+	return false;
+    }
+    *ha = *tmp_ha;
+
+    return true;
 }
 
 inline sam_array *
@@ -875,6 +916,7 @@ sam_es_module_free(sam_es_module *restrict module)
     sam_array_free(&module->instructions);
     sam_array_free(&module->allocs);
     sam_hash_table_free(&module->labels);
+    sam_hash_table_free(&module->globals);
 }
 
 static sam_es_module *
@@ -887,6 +929,7 @@ sam_es_module_new(sam_es *const restrict es,
     sam_array_init(&module->instructions);
     sam_array_init(&module->allocs);
     sam_hash_table_init(&module->labels);
+    sam_hash_table_init(&module->globals);
 
     sam_array_ins(&es->modules, module);
 
