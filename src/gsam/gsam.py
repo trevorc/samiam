@@ -6,6 +6,40 @@ import sam
 import time
 import sys
 
+# prepare_value_view {{{1
+# make_value_tree_store {{{3
+def make_value_tree_store():
+    return gtk.TreeStore(gobject.TYPE_LONG,\
+	gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_LONG)
+
+def prepare_value_view(view):
+    type_colors = {'none': ('lightgray'),\
+			'int':   ('white'),\
+			'float': ('yellow'),\
+			'sa':    ('pink'),\
+			'ha':    ('purple'),\
+			'pa':    ('green'),\
+			'block': ('black')}
+    def mem_color_code(column, cell, model, iter):
+	type_num = model.get_value(iter, 3)
+	if type_num in range(0, len(sam.Types)):
+	    row_color = type_colors[sam.Types[type_num]]
+	    cell.set_property('foreground', 'black')
+	else:
+	    row_color = type_colors['block']
+	    cell.set_property('foreground', 'white')
+	cell.set_property('cell-background', row_color)
+
+    column_names = ['Address', 'Type', 'Value']
+    view.set_model(make_value_tree_store())
+    for n in range(0, len(column_names)):
+	renderer = gtk.CellRendererText()
+	column = gtk.TreeViewColumn(column_names[n], renderer, text=n)
+	column.set_cell_data_func(renderer, mem_color_code);
+	view.append_column(column)
+    view.set_search_column(1)
+
+
 # class CodeTreeModel {{{1
 class CodeTreeModel(gtk.GenericTreeModel):
     column_types = (str, int, gtk.gdk.Pixbuf, str, str)
@@ -98,13 +132,75 @@ class CodeTreeModel(gtk.GenericTreeModel):
     def on_iter_parent(child):
 	return None
 
+# class Capture {{{1
+class Capture:
+    # __init__ () {{{2
+    def __init__(self, data):
+	self._xml = gtk.glade.XML('gsam_capture.glade')
+	self._xml.signal_autoconnect(self)
+
+	self._main_window = self._xml.get_widget('main_window')
+	self._instructions_view = self._xml.get_widget('instructions_view')
+
+	widget_prefixes = ('inst', 'pc_label', 'fbr_label', 'sp_label',\
+		'stack_view', 'heap_view')
+	self._widgets = [ map(self._xml.get_widget,\
+		map(lambda x: "%s%d" % (x, i), widget_prefixes))\
+		for i in range(1, 4) ]
+	map(prepare_value_view, map(self._xml.get_widget,\
+		["stack_view%d" % i for i in range(1, 4)]))
+
+	self._data = data
+
+	for i in range(0, 3):
+	    self.show_data_at(data[i], i)
+
+	# Setup instructions view {{{4
+	column_names = ['Address', 'Code']
+	self._instructions_view.set_model(gtk.ListStore(str, str))
+	for n in range(0, len(column_names)):
+	    renderer = gtk.CellRendererText()
+	    column = gtk.TreeViewColumn(column_names[n], renderer, text=n)
+	    self._instructions_view.append_column(column)
+	self._instructions_view.set_search_column(1)
+	
+	# Insert data into instructions view {{{4
+	for row in data:
+	    self._instructions_view.get_model().append(\
+		    ("%i:%i" % (row['mc'], row['lc']), row['code']))
+
+    # show_data {{{2
+    def show_data_in(self, row, widgets):
+	(code_label, pc_label, fbr_label, sp_label, stack, heap) = widgets
+	if code_label:
+	    code_label.set_text('Stack after "%s"' % row['code'])
+	if pc_label:
+	    pc_label.set_text("%i:%i" % (row['mc'], row['lc']))
+	if fbr_label:
+	    fbr_label.set_text("%i" % row['fbr'])
+	if sp_label:
+	    sp_label.set_text("%i" % row['sp'])
+	if stack:
+	    stack.set_model(row['stack'])
+	    stack.expand_all()
+	if heap:
+	    heap.set_model(row['heap'])
+	    heap.expand_all()
+
+    def show_data_at(self, row, n):
+	self.show_data_in(row, self._widgets[n])
+
+    # show and hide {{{2
+    def show(self):
+	self._main_window.show()
+
+    def hide(self):
+	self._main_window.hide()
+
 # class GSam {{{1
 class GSam:
-    # __init__ () {{{2
-    def make_value_tree_store(self):
-	return gtk.TreeStore(gobject.TYPE_LONG,\
-	    gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_LONG)
-
+    # initization {{{2
+    # __init__ () {{{3
     def __init__(self, filename=None):
 	self._xml = gtk.glade.XML('gsam.glade')
 	self._xml.signal_autoconnect(self)
@@ -151,7 +247,7 @@ class GSam:
 	self._file = None
 	self._prog = None
 	self._breakpoints = None
-	self._breakreturn = None
+	self._break_return = None
 	self._capture = None
 
 	self._timer_id = None
@@ -190,40 +286,8 @@ class GSam:
 	self._code_view.set_search_column(3)
 
 	# Stack/heap display setup {{{4
-	self._type_colors = {'none': ('lightgray'),\
-			    'int':   ('white'),\
-			    'float': ('yellow'),\
-			    'sa':    ('pink'),\
-			    'ha':    ('purple'),\
-			    'pa':    ('green'),\
-			    'block': ('black')}
-	def mem_color_code(column, cell, model, iter):
-	    type_num = model.get_value(iter, 3)
-	    if type_num in range(0, len(sam.Types)):
-		row_color = self._type_colors[sam.Types[type_num]]
-		cell.set_property('foreground', 'black')
-	    else:
-		row_color = self._type_colors['block']
-		cell.set_property('foreground', 'white')
-	    cell.set_property('cell-background', row_color)
-
-	column_names = ['Address', 'Type', 'Value']
-	self._stack_view.set_model(self.make_value_tree_store())
-	for n in range(0, len(column_names)):
-	    renderer = gtk.CellRendererText()
-	    column = gtk.TreeViewColumn(column_names[n], renderer, text=n)
-	    column.set_cell_data_func(renderer, mem_color_code);
-	    self._stack_view.append_column(column)
-	self._stack_view.set_search_column(1)
-
-	# TODO heap done?
-	self._heap_view.set_model(self.make_value_tree_store())
-	for n in range(0, len(column_names)):
-	    renderer = gtk.CellRendererText()
-	    column = gtk.TreeViewColumn(column_names[n], renderer, text=n)
-	    column.set_cell_data_func(renderer, mem_color_code);
-	    self._heap_view.append_column(column)
-	self._heap_view.set_search_column(1)
+	prepare_value_view(self._stack_view)
+	prepare_value_view(self._heap_view)
 
 	# Handle file input if given {{{4
 	if filename:
@@ -261,7 +325,7 @@ class GSam:
 	self._code_view.set_model(None)
 	self._code_models = None
 	self._breakpoints = None
-	self._breakreturn = None
+	self._break_return = None
 	self._stack_view.get_model().clear()
 	self._heap_view.get_model().clear()
 	self._module_combobox.get_model().clear()
@@ -509,7 +573,7 @@ class GSam:
 	    elif next_asm_st == "JSR":
 		self._break_return = self._break_return + 1
 	rv = self.step()
-	if self._capture:
+	if not (self._capture is None):
 	    self._capture.append(self.capture_current())
 	if self._prog.lc in self._breakpoints[self._prog.mc]['normal']:
 	    return self.pause()
@@ -570,7 +634,7 @@ class GSam:
     def on_step_clicked(self, p):
 	self.single_step()
 
-    def on_capture_activate(self, p):
+    def on_capture_clicked(self, p):
 	self.capture()
 
     def on_start_activate(self, p):
@@ -666,12 +730,12 @@ class GSam:
 	while sourceChild:
 	    targetC = target.append(targetIter,\
 		    tuple([source.get_value(sourceChild, i)\
-		    for i in range(0, len(self.none_value_row()))]))
+		    for i in range(0, len(self.none_value_row(0)))]))
 	    self.copy_treestore_level(source, sourceChild, target, targetC)
-	    sourceChild = source.iterNext(sourceChild)
+	    sourceChild = source.iter_next(sourceChild)
 
-    def copy_value_treestore(self, model, types):
-	rv = self.make_value_tree_store()
+    def copy_value_treestore(self, model):
+	rv = make_value_tree_store()
 	self.copy_treestore_level(model, None, rv, None)
 	return rv
 
@@ -680,10 +744,19 @@ class GSam:
 		assembly
 
     def capture_current(self):
-	return (self._prog.mc, self._prog.lc, self._prog.fbr, self._prog.sp,\
-		self.get_current_instruction(),\
-		self.copy_value_treestore(self._stack_view.get_model()),\
-		self.copy_value_treestore(self._heap_view.get_model()))
+	return {'mc': self._prog.mc, 'lc': self._prog.lc,\
+		'fbr': self._prog.fbr, 'sp': self._prog.sp,\
+		'code': self.get_current_instruction(),\
+		'stack': self.copy_value_treestore(\
+		    self._stack_view.get_model()),\
+		'heap': self.copy_value_treestore(self._heap_view.get_model())}
+
+    # Display data {{{3
+    def display_capture(self):
+	if not (self._capture is None):
+	    capture_disp = Capture(self._capture)
+	    self._capture = None
+	    capture_disp.show()
 
     ### View menu handling {{{2
     def on_show_code_activate(self, p):
