@@ -173,27 +173,27 @@ class GSam:
 	self._code_view.set_search_column(3)
 
 	# Stack/heap display setup {{{4
-	self._stack_view.set_model(gtk.ListStore(gobject.TYPE_LONG,\
-	    gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_LONG))
-
 	self._type_colors = {'none': ('lightgray'),\
 			    'int':   ('white'),\
 			    'float': ('yellow'),\
 			    'sa':    ('pink'),\
 			    'ha':    ('purple'),\
 			    'pa':    ('green'),\
-			    'alloc': ('black')}
+			    'block': ('black')}
 
 	def mem_color_code(column, cell, model, iter):
 	    type_num = model.get_value(iter, 3)
 	    if type_num in range(0, len(sam.Types)):
 		row_color = self._type_colors[sam.Types[type_num]]
+		cell.set_property('foreground', 'black')
 	    else:
-		row_color = self._type_colors['alloc']
+		row_color = self._type_colors['block']
 		cell.set_property('foreground', 'white')
 	    cell.set_property('cell-background', row_color)
 
 	column_names = ['Address', 'Type', 'Value']
+	self._stack_view.set_model(gtk.TreeStore(gobject.TYPE_LONG,\
+	    gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_LONG))
 	for n in range(0, len(column_names)):
 	    renderer = gtk.CellRendererText()
 	    column = gtk.TreeViewColumn(column_names[n], renderer, text=n)
@@ -337,6 +337,7 @@ class GSam:
 	    self.refresh_code_display()
 
     ### Stack/Heap display handling {{{2
+    # Helpers {{{3
     def value_to_row(self, addr, v):
 	if sam.Types[v.type] == 'none':
 	    vstr = "-"
@@ -354,15 +355,17 @@ class GSam:
 	for i in range(0, len(row)):
 	    model.set(iter, i, row[i])
 
-    def get_nth_iter(self, model, n):
-	return model.iter_nth_child(None, n)
+    def get_nth_iter(self, model, iter, n):
+	if n < 0:
+	    return None
+	else:
+	    return model.iter_nth_child(iter, n)
 
-    def get_nth_path(self, model, n):
-	return model.get_path(self.get_nth_iter(model, n))
+    def get_last_iter(self, model, iter):
+	return self.get_nth_iter(model, iter, model.iter_n_children(iter)-1)
 
     # Get the iter at the allocation or immediately before where it would go
-    def get_heap_allocation_near_iter(self, addr):
-	model = self._heap_view.get_model()
+    def get_block_near_iter(self, model, addr):
 	piter = None
 	iter = model.get_iter_root()
 	# empty tree
@@ -377,15 +380,16 @@ class GSam:
 	    return None
 
     # Get the iter at the allocation exactly
-    def get_heap_allocation_iter(self, addr):
-	iter = self.get_heap_allocation_near_iter(addr)
+    def get_block_iter(self, model, addr):
+	iter = self.get_block_near_iter(model, addr)
 	if iter is None:
 	    return None
-	elif self._heap_view.get_model().get_value(iter, 0) == addr:
+	elif model.get_value(iter, 0) == addr:
 	    return iter
 	else:
 	    return None
 
+    # handle_changes () {{{3
     def handle_changes(self):
 	for change in self._prog.changes:
 	    ctype = sam.ChangeTypes[change.type]
@@ -394,18 +398,36 @@ class GSam:
 	    else:
 		model = self._heap_view.get_model()
 	    if ctype == "stack_push":
-		model.append(self.value_to_row(change.start, change.value))
-		self._stack_view.scroll_to_cell(\
-			self.get_nth_path(model, change.start))
+		v = self.value_to_row(change.start, change.value)
+		last = self.get_last_iter(model, None)
+		if last is None:
+		    fbr = None
+		else:
+		    fbr = model.get_value(last, 0)
+		if last is None or fbr is None or fbr < self._prog.fbr:
+		    # TODO smarter way to do this?
+		    insts = self._prog.modules[self._prog.mc].instructions
+		    prev = insts[self._prog.lc - 1]
+		    if len(prev.labels) == 0:
+			label = None
+		    else:
+			label = prev.labels[0]
+
+		    last = model.append(None,\
+			    (self._prog.fbr, 'SF', label, -1))
+		viter = model.append(last, v)
+		vpath = model.get_path(viter)
+		self._stack_view.expand_to_path(vpath)
+		self._stack_view.scroll_to_cell(vpath)
 	    elif ctype == "stack_pop":
-		end_iter = model.iter_nth_child(None, model.iter_n_children(\
-			None)-1)
-		model.remove(end_iter)
-	    elif ctype == "stack_change":
-		iter = model.iter_nth_child(None, change.start)
-		self.set_row_to_value(model, iter, change.start, change.value)
+		last = self.get_last_iter(model, None)
+		# If last is none, that is an error.
+		llast = self.get_last_iter(model, last)
+		model.remove(llast)
+		if model.iter_n_children(last) == 0:
+		    model.remove(last)
 	    elif ctype == "heap_alloc":
-		iter = self.get_heap_allocation_near_iter(change.start)
+		iter = self.get_block_near_iter(model, change.start)
 		# TODO heap allocation rows?
 		row = (change.start, "", change.size, -1)
 		if iter is None:
@@ -415,12 +437,12 @@ class GSam:
 		for i in [x + change.start for x in range(0, change.size)]:
 		    model.append(ai, self.none_value_row(i))
 	    elif ctype == "heap_free":
-		iter = self.get_heap_allocation_iter(change.start)
+		iter = self.get_block_iter(model, change.start)
 		# iter None here is an error
 		model.remove(iter)
-	    elif ctype == "heap_change":
-		iter = self.get_heap_allocation_near_iter(change.start)
-		base = model.get_value(iter, 0)
+	    elif ctype == "heap_change" or ctype == "stack_change":
+		iter = self.get_block_near_iter(model, change.start)
+		base = model.get_value(model.iter_nth_child(iter, 0), 0)
 		n = change.start - base
 		riter = model.iter_nth_child(iter, n)
 		self.set_row_to_value(model, riter, change.start, change.value)
