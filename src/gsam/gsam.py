@@ -146,14 +146,15 @@ class Capture:
 		'stack_view', 'heap_view')
 	self._widgets = [ map(self._xml.get_widget,\
 		map(lambda x: "%s%d" % (x, i), widget_prefixes))\
-		for i in range(1, 4) ]
+		for i in range(1, 6) ]
 	map(prepare_value_view, map(self._xml.get_widget,\
-		["stack_view%d" % i for i in range(1, 4)]))
+		["stack_view%d" % i for i in range(1, 6)]))
 
 	self._data = data
 
-	for i in range(0, 3):
-	    self.show_data_at(data[i], i)
+	for i in range(0, len(self._widgets)):
+	    if i < len(data):
+		self.show_data_at(data[i], i)
 
 	# Setup instructions view {{{4
 	column_names = ['Address', 'Code']
@@ -189,6 +190,27 @@ class Capture:
 
     def show_data_at(self, row, n):
 	self.show_data_in(row, self._widgets[n])
+
+    def on_instructions_view_cursor_changed(self, p):
+	(path, col) = p.get_cursor()
+	i = path[0]
+	num_widgets = len(self._widgets)
+	edge_dist = num_widgets / 2
+	num_insts = len(self._data)
+	if num_widgets > num_insts:
+	    return
+	min = i
+	max = i + num_widgets
+	if min - edge_dist >= 0:
+	    min = min - edge_dist
+	    max = max - edge_dist
+	if max > num_insts:
+	    diff = max - num_insts
+	    min = min - diff
+	    max = max - diff
+	for i in range(min, max):
+	    if i >= 0 and i < len(self._data):
+		self.show_data_at(self._data[i], i - min)
 
     # show and hide {{{2
     def show(self):
@@ -739,6 +761,10 @@ class GSam:
 	self.copy_treestore_level(model, None, rv, None)
 	return rv
 
+    def get_previous_instruction(self):
+	return self._prog.modules[self._prog.mc].\
+		instructions[self._prog.lc-1].assembly
+
     def get_current_instruction(self):
 	return self._prog.modules[self._prog.mc].instructions[self._prog.lc].\
 		assembly
@@ -746,7 +772,7 @@ class GSam:
     def capture_current(self):
 	return {'mc': self._prog.mc, 'lc': self._prog.lc,\
 		'fbr': self._prog.fbr, 'sp': self._prog.sp,\
-		'code': self.get_current_instruction(),\
+		'code': self.get_previous_instruction(),\
 		'stack': self.copy_value_treestore(\
 		    self._stack_view.get_model()),\
 		'heap': self.copy_value_treestore(self._heap_view.get_model())}
