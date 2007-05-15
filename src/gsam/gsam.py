@@ -414,7 +414,7 @@ class GSam:
 			label = prev.labels[0]
 
 		    last = model.append(None,\
-			    (self._prog.fbr, 'SF', label, -1))
+			    (self._prog.fbr, '', label, -1))
 		viter = model.append(last, v)
 		vpath = model.get_path(viter)
 		self._stack_view.expand_to_path(vpath)
