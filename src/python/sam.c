@@ -1126,8 +1126,11 @@ Program_step(Program *restrict self)
     }
 
     long err = sam_es_instructions_cur(self->es)->handler(self->es);
-    if(err != SAM_OK) {
+    if(err == SAM_STOP) {
 	Py_RETURN_FALSE;
+    } else if(err != SAM_OK) {
+	PyErr_SetObject(SamError, PyInt_FromLong(err));
+	return NULL;
     }
 
     sam_es_pc_pp(self->es);
@@ -1143,10 +1146,10 @@ Program_io_vfprintf(sam_io_stream ios,
 		    const char *restrict fmt,
 		    va_list ap)
 {
-    // TODO ios?
     int len = vsnprintf(NULL, 0, fmt, ap);
     char *str = malloc(len);
     vsprintf(str, fmt, ap);
+    printf("Format: %s; Program Output: %s\n", fmt, str); // XXX DEBUG
     PyObject *restrict arglist = Py_BuildValue("(s)", str);
     Program *restrict self = data;
     PyEval_CallObject(self->print_func, arglist);
@@ -1336,4 +1339,19 @@ initsam(void)
     Py_INCREF(ChangeTypes);
     PyModule_AddObject(m, "ChangeTypes", ChangeTypes);
 
+    PyObject *Errors = Py_BuildValue("(ssssssssssssssssss)",
+			    "OK", "Stop", "Unexpected optype",
+			    "Segmentation fault", "Illegal free",
+			    "Stack underflow", "Stack overflow",
+			    "Out of memory", "Illegal type conversion",
+			    "Too many elements on final stack",
+			    "Unknown identifier",
+			    "Illegal stack input type", "I/O error",
+			    "Division by zero", "Negative shift",
+			    "Unsupported opcode",
+			    "Failed to load dynamic linking",
+			    "Dynamic linking symbol "
+				"could not be resolved");
+    Py_INCREF(Errors);
+    PyModule_AddObject(m, "Errors", Errors);
 }

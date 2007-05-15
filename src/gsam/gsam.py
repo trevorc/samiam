@@ -342,6 +342,7 @@ class GSam:
     # close_file () {{{3
     def close_file(self):
 	if self._file:
+	    self.append_banner_to_console("CLOSED %s" % self._file)
 	    self._file = None
 	    self._prog = None
 	self._timer_id = None
@@ -375,24 +376,33 @@ class GSam:
 
     # init_program_display () {{{3
     def init_program_display(self, filename):
-	self._file = filename
-	self._main_window.set_title("%(title)s - %(file)s" %
-		{'title': self._default_title, 'file': filename})
-	self._prog = sam.Program(filename)
-	self._prog.print_func = self.sam_print
-	self._prog.input_func = self.sam_string_input
-	self._finished = False
+	try:
+	    self._file = filename
+	    self._prog = sam.Program(filename)
+	    self._prog.print_func = self.sam_print
+	    self._prog.input_func = self.sam_string_input
+	    self._finished = False
 
-	mods = self._prog.modules
-	modsm = self._module_combobox.get_model()
-	for i in range(0, len(mods)):
-	    self._module_combobox.append_text("%d - %s" % (i,mods[i].filename))
-	self._module_combobox.set_active(0)
-	self._breakpoints = [{'normal': set(), 'temporary': set()}\
-		for i in range(0, self.get_n_modules())]
-	self._code_models = [None for i in range(0, self.get_n_modules())]
-	self.update_code_display()
-	self.reset_memory_display()
+	    mods = self._prog.modules
+	    modsm = self._module_combobox.get_model()
+	    for i in range(0, len(mods)):
+		self._module_combobox.append_text("%d - %s" %
+			(i,mods[i].filename))
+	    self._module_combobox.set_active(0)
+	    self._breakpoints = [{'normal': set(), 'temporary': set()}\
+		    for i in range(0, self.get_n_modules())]
+	    self._code_models = [None for i in range(0, self.get_n_modules())]
+	    self.update_code_display()
+	    self.reset_memory_display()
+
+	    self._main_window.set_title("%(title)s - %(file)s" %
+		    {'title': self._default_title, 'file': filename})
+	    self.append_banner_to_console("OPENED %s" % filename)
+	except sam.ParseError:
+	    self._file = None
+	    self._prog = None
+	    self.append_to_console("Parse error loading file %s" % filename,\
+		    False)
 
     ### Code display handling {{{2
     def get_selected_code_line(self):
@@ -574,14 +584,20 @@ class GSam:
     def step(self):
 	if self._prog:
 	    if not self._finished:
-		self._finished = not self._prog.step()
-		if self._finished:
-		    self.append_to_console(\
+		try:
+		    self._finished = not self._prog.step()
+		    if self._finished:
+			self.append_to_console(\
 			    "Final Result: %d" % self._prog.stack[0].value)
+			self._timer_id = None
+			self.display_capture()
+			self.clear_temporary_breakpoints()
+		    self.update_display()
+		except sam.SamError, (errnum,):
+		    self._finished = True
 		    self._timer_id = None
-		    self.display_capture()
 		    self.clear_temporary_breakpoints()
-		self.update_display()
+		    self.append_to_console("Error: %s" % sam.Errors[errnum])
 	    return not self._finished
 
     # Single step, ignores breakpoints
@@ -656,7 +672,7 @@ class GSam:
 	    self._timer_id = None
 	    self._capture = None
 	    self.reset_input_box()
-	    self.append_to_console("----------------------------------- RESET -----------------------------------", False)
+	    self.append_banner_to_console("RESET")
 
     # GTK handlers {{{3
     def on_step_clicked(self, p):
@@ -824,6 +840,10 @@ class GSam:
 	    buf.insert(buf.get_end_iter(),\
 		    "%s%s" % (st, str))
 	self._console.scroll_mark_onscreen(self._console_end_mark)
+
+    def append_banner_to_console(self, str):
+	dashes = "-----------------------------------"
+	self.append_to_console("%s %s %s" % (dashes, str, ""), False)
 
     # on_clear_console {{{3
     def on_clear_console_activate(self, p):
