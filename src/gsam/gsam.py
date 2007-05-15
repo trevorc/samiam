@@ -937,6 +937,12 @@ class GSam:
 	self._inputs_view = self._xml.get_widget('inputs_view')
 	self._inputs_index = None
 
+	self._prepare_inputs_value_dialog =\
+		self._xml.get_widget('prepare_inputs_value_dialog')
+	self._prepare_inputs_value_dialog.add_buttons(\
+		gtk.STOCK_CANCEL, gtk.RESPONSE_REJECT,\
+		gtk.STOCK_OK, gtk.RESPONSE_ACCEPT)
+
 	self._inputs_view.set_model(gtk.ListStore(str))
 	cell = gtk.CellRendererPixbuf()
 	def inputs_curr(column, cell, model, iter, self):
@@ -963,7 +969,8 @@ class GSam:
 	self._prepare_inputs_window.hide()
 
     def show_add_input_dialog(self):
-	pass # XXX
+	res = self._prepare_inputs_value_dialog.run()
+	# XXX
 
     # GTK handles {{{3
     def on_show_prepare_inputs_activate(self, p):

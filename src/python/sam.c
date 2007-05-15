@@ -1141,10 +1141,12 @@ Program_io_vfprintf(sam_io_stream ios,
 		    const char *restrict fmt,
 		    va_list ap)
 {
+    va_list aq;
+    va_copy(aq, ap);
     int len = vsnprintf(NULL, 0, fmt, ap);
     char *str = malloc(len);
-    vsprintf(str, fmt, ap);
-    printf("Format: %s; Program Output: %s\n", fmt, str); // XXX DEBUG
+    vsprintf(str, fmt, aq);
+    va_end(aq);
     PyObject *restrict arglist = Py_BuildValue("(s)", str);
     Program *restrict self = data;
     PyEval_CallObject(self->print_func, arglist);
