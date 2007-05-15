@@ -133,7 +133,7 @@ sam_execute(/*@in@*/ sam_es *restrict es)
 {
     sam_error err = SAM_OK;
 
-    for (; sam_es_pc_get(es).l < sam_es_instructions_len(es) && err == SAM_OK;
+    for (; sam_es_pc_get(es).l < sam_es_instructions_len_cur(es) && err == SAM_OK;
 	 sam_es_pc_pp(es)) {
 	err = sam_es_instructions_cur(es)->handler(es);
     }

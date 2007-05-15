@@ -526,13 +526,9 @@ sam_input_read(const char *restrict path,
 sam_parse(sam_es *restrict es,
 	  const char *restrict file)
 {
-    char *input;
-
-    if (file == NULL) {
-	input = sam_string_read(stdin, sam_es_input_get(es));
-    } else {
-	input = sam_input_read(file, sam_es_input_get(es));
-    }
+    char *input = file == NULL?
+	sam_string_read(stdin, sam_es_input_get(es)):
+	sam_input_read(file, sam_es_input_get(es));
 
     if (input == NULL || *input == '\0') {
 	sam_error_empty_input(es);
@@ -546,6 +542,29 @@ sam_parse(sam_es *restrict es,
 	    ++input;
 	}
     }
+#if 0
+
+    /* Parse directives at the beginning of the file. */
+    while (*input != '\0') {
+	sam_eat_whitespace(&input);
+
+	if (*input == '\0' || *input != '.') {
+	    ++input;
+	    if (!sam_parse_directive(es)) {
+		sam_error_invalid_directive(es, input);
+		return false;
+	    }
+	    if (!sam_try_parse_ro_directive() ||
+		!sam_try_parse_global() ||
+		!sam_try_parse_import() ||
+		!sam_try_parse_export()) {
+		return false;
+	    }
+	    break;
+	}
+    }
+#endif
+
 #endif /* SAM_EXTENSIONS */
 
     /* Parse as many labels as we find, then parse an instruction. */

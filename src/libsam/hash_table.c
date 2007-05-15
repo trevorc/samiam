@@ -69,6 +69,10 @@ sam_hash_table_init(sam_hash_table *restrict h)
     h->alloc = SAM_INIT_ALLOC;
     h->nmemb = 0;
     h->arr = sam_calloc(sizeof (*h->arr), SAM_INIT_ALLOC);
+
+    for (size_t i = 0; i < h->alloc; ++i) {
+	h->arr[i].value = NULL;
+    }
 }
 
 static size_t
@@ -95,6 +99,10 @@ sam_hash_table_double(sam_hash_table *restrict h)
     tmp.nmemb = h->nmemb;
     tmp.arr = sam_calloc(tmp.alloc, sizeof (*tmp.arr));
 
+    for (size_t j = 0; j < h->alloc; ++j) {
+	tmp.arr[j].value = NULL;
+    }
+
     for (i = 0; i < h->alloc; ++i) {
 	if (h->arr[i].key != NULL) {
 	    sam_hash_table_ins(&tmp, h->arr[i].key, h->arr[i].value);
@@ -109,7 +117,7 @@ sam_hash_table_double(sam_hash_table *restrict h)
 bool
 sam_hash_table_ins(/*@in@*/ sam_hash_table *restrict h,
 		   /*@dependent@*/ const char *restrict key,
-		   size_t value)
+		   void *value)
 {
     if (h == NULL) {
 	return false;
@@ -136,25 +144,22 @@ sam_hash_table_ins(/*@in@*/ sam_hash_table *restrict h,
     }
 }
 
-bool
+void *
 sam_hash_table_get(/*@in@*/ const sam_hash_table *restrict h,
-		   /*@dependent@*/ const char *restrict key,
-		   /*@out@*/ size_t *restrict value)
+		   /*@dependent@*/ const char *restrict key)
 {
     size_t hash, start;
 
     if (h == NULL) {
-	return false;
+	return NULL;
     }
 
     start = hash = sam_hash(key, h->alloc);
-    *value = -1;
     for (;;) {
 	if (h->arr[hash].key == NULL) {
-	    return false;
+	    return NULL;
 	} else if (strcmp(h->arr[hash].key, key) == 0) {
-	    *value = h->arr[hash].value;
-	    return true;
+	    return h->arr[hash].value;
 	} else if (hash == h->alloc - 1) {
 	    hash = 0;
 	} else {
@@ -166,5 +171,9 @@ sam_hash_table_get(/*@in@*/ const sam_hash_table *restrict h,
 inline void
 sam_hash_table_free(sam_hash_table *restrict h)
 {
+    for (size_t i = 0; i < h->alloc; ++i) {
+	free(h->arr[i].value);
+    }
+
     free(h->arr);
 }

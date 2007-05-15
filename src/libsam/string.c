@@ -45,6 +45,7 @@ void
 sam_string_init(/*@out@*/ sam_string *s)
 {
     s->data = sam_malloc(SAM_INIT_ALLOC);
+    *s->data = '\0';
     s->alloc = SAM_INIT_ALLOC;
     s->len = 0;
 
@@ -106,6 +107,7 @@ sam_string_read(/*@in@*/  FILE *restrict in,
 		/*@out@*/ sam_string *restrict s)
 {
     sam_string_init(s);
+
     for (;;) {
 	char buf[16];
 	size_t n = fread(buf, sizeof (char), 16, in);

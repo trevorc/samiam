@@ -35,23 +35,22 @@
 
 #include <stdbool.h>
 
-/** Hash table of strings to size_t. */
+/** Hash table of strings to void *. */
 typedef struct {
     size_t   nmemb;
     size_t   alloc;
     struct {
 	const char *restrict key;
-	size_t value;
+	void *value;
     } *restrict arr;
 } sam_hash_table;
 
 extern void sam_hash_table_init(sam_hash_table *restrict h);
 extern bool sam_hash_table_ins(/*@in@*/ sam_hash_table *restrict h,
 			       /*@dependent@*/ const char *restrict key,
-			       size_t value);
-extern bool sam_hash_table_get(/*@in@*/ const sam_hash_table *restrict h,
-			       /*@dependent@*/ const char *restrict key,
-			       /*@out@*/ size_t *restrict value);
+			       void *value);
+extern void *sam_hash_table_get(/*@in@*/ const sam_hash_table *restrict h,
+				/*@dependent@*/ const char *restrict key);
 extern void sam_hash_table_free(sam_hash_table *restrict h);
 
 #endif /* LIBSAM_HASH_TABLE_H */

@@ -101,14 +101,36 @@ extern bool		     sam_es_labels_ins	     (sam_es *restrict es,
 						      sam_pa line_no);
 extern bool		     sam_es_labels_get	     (sam_es *restrict es,
 						      sam_pa *restrict pa,
+						      const char *restrict name,
+						      unsigned short module);
+extern bool		     sam_es_labels_get_cur   (sam_es *restrict es,
+						      sam_pa *restrict pa,
 						      const char *restrict name);
 extern inline sam_array	    *sam_es_locs_get	     (sam_es *restrict es);
+extern inline const char    *sam_es_file_get	     (sam_es *restrict es,
+						      unsigned short module);
 extern inline void	     sam_es_instructions_ins (sam_es *restrict es,
 						      sam_instruction *restrict i);
 extern inline sam_instruction *sam_es_instructions_get(const sam_es *restrict es,
 						      sam_pa pa);
+extern inline sam_instruction *sam_es_instructions_get_cur(const sam_es *restrict es,
+							   unsigned short line);
 extern inline sam_instruction *sam_es_instructions_cur(sam_es *restrict es);
-extern inline size_t	     sam_es_instructions_len (const sam_es *restrict es);
+extern inline size_t	     sam_es_instructions_len (const sam_es *restrict es,
+						      unsigned short module);
+extern inline size_t	     sam_es_instructions_len_cur(const sam_es *restrict es);
+extern void		     sam_es_ro_alloc	     (const sam_es *restrict es,
+						      const char *symbol,
+						      sam_ml_value value,
+						      sam_ml_type type);
+extern void		     sam_es_global_alloc     (const sam_es *restrict es,
+						      const char *symbol,
+						      sam_ml_value value,
+						      sam_ml_type type);
+extern void		     sam_es_export	     (const sam_es *restrict es,
+						      const char *symbol);
+extern void		     sam_es_import	     (const sam_es *restrict es,
+						      const char *symbol);
 extern sam_io_vfprintf_func  sam_es_io_func_vfprintf (const sam_es *restrict es);
 extern sam_io_vfscanf_func   sam_es_io_func_vfscanf  (const sam_es *restrict es);
 extern sam_io_afgets_func    sam_es_io_func_afgets   (const sam_es *restrict es);

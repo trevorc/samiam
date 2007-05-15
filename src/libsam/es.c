@@ -48,6 +48,10 @@
 # include <dlfcn.h>
 #endif /* HAVE_DLFCN_H */
 
+#define SAM_MODULE_CUR ((sam_es_module *)es->modules.arr[sam_es_pc_get(es).m])
+#define SAM_MODULE_LAST ((sam_es_module *)es->modules.arr[es->modules.len - 1])
+#define SAM_MODULE(n) ((sam_es_module *)es->modules.arr[(n)])
+
 #if defined(SAM_EXTENSIONS) && defined(HAVE_DLFCN_H)
 typedef struct {
     /*@dependent@*/ const char *restrict name;	/**< Name of symbol loaded. */
@@ -82,6 +86,18 @@ struct _sam_es_change_list {
     sam_es_change_list *prev;
 };
 
+typedef struct {
+    const char *file;	    /**< The name of the file. */
+    sam_array instructions; /**< A shallow copy of the instructions
+			     *   array allocated in main and initialized
+			     *   in sam_parse(). */
+    sam_hash_table labels;  /**< A shallow copy of the labels hash
+			     *   table allocated in main and initialized
+			     *   in sam_parse(). */
+    sam_array allocs;	    /**< Automatically allocated read-only data
+			         and globals. */
+} sam_es_module;
+
 /** The parsed instructions and labels along with the current state
  *  of execution. */
 struct _sam_es {
@@ -93,21 +109,19 @@ struct _sam_es {
 			     *   #sam_execute, not by the individual
 			     *   instruction handlers. */
     sam_sa fbr;		    /**< The frame base register. */
-
     /* stack pointer is stack->len */
+
+    sam_array modules;
+    sam_array locs;	    /**< An array of sam_es_locs ordered
+			         by pa. */
+
     sam_array  stack;	    /**< The sam stack, an array of {@link
 			     *  sam_ml}s.  The stack pointer register is
 			     *  simply the length of this array. */
     sam_heap   heap;	    /**< The sam heap, managed by the functions
 			     *   #sam_es_heap_alloc and #sam_heap_free. */
-    sam_array instructions; /**< A shallow copy of the instructions
-			     *   array allocated in main and initialized
-			     *   in sam_parse(). */
-    sam_array locs;	    /**< An array of sam_es_locs ordered
-			         by pa. */
-    sam_hash_table labels;  /**< A shallow copy of the labels hash
-			     *   table allocated in main and initialized
-			     *   in sam_parse(). */
+    sam_hash_table symbols; /**< Export symbol table. */
+
     sam_es_change_list *first_change;
     sam_es_change_list *last_change;
     sam_io_dispatcher io_dispatcher;
@@ -246,26 +260,10 @@ sam_es_loc_ins(sam_es *restrict es,
     if (es->locs.len == 0 ||
 	!(locs[es->locs.len - 1]->pa.m == line_no.m &&
 	  locs[es->locs.len - 1]->pa.l == line_no.l)) {
-	sam_array_ins(&es->locs,
-		      sam_es_loc_new(line_no, label));
+	sam_array_ins(&es->locs, sam_es_loc_new(line_no, label));
     } else {
 	sam_array_ins(&locs[es->locs.len - 1]->labels, label);
     }
-}
-
-static size_t
-sam_pa_to_size_t(sam_pa pa)
-{
-    return (pa.m << (CHAR_BIT * sizeof (pa.m))) + pa.l;
-}
-
-static sam_pa
-sam_size_t_to_pa(size_t size)
-{
-    return (sam_pa) {
-	.m = size >> (CHAR_BIT * sizeof (unsigned short)),
-	.l = (unsigned short)size
-    };
 }
 
 #if 0
@@ -300,7 +298,7 @@ sam_asprintf(char **restrict p,
 
 inline void
 sam_es_bt_set(sam_es *restrict es,
-		       bool bt)
+	      bool bt)
 {
     es->bt = bt;
 }
@@ -481,12 +479,22 @@ sam_es_heap_set(sam_es *restrict es,
     return true;
 }
 
+static sam_pa *
+sam_es_pa_new(sam_pa pa)
+{
+    sam_pa *ptr = sam_malloc(sizeof (sam_pa));
+    *ptr = pa;
+    return ptr;
+}
+
 bool
 sam_es_labels_ins(sam_es *restrict es,
 		  char *restrict label,
 		  sam_pa line_no)
 {
-    if (sam_hash_table_ins(&es->labels, label, sam_pa_to_size_t(line_no))) {
+    if (sam_hash_table_ins(&SAM_MODULE_CUR->labels,
+			   label,
+			   sam_es_pa_new(line_no))) {
 	sam_es_loc_ins(es, line_no, label);
 	return true;
     } else {
@@ -497,12 +505,26 @@ sam_es_labels_ins(sam_es *restrict es,
 inline bool
 sam_es_labels_get(/*@in@*/ sam_es *restrict es,
 		  /*@out@*/ sam_pa *restrict pa,
-		  const char *restrict name)
+		  const char *restrict name,
+		  unsigned short module)
 {
-    size_t tmp;
-    bool rv = sam_hash_table_get(&es->labels, name, &tmp);
-    *pa = sam_size_t_to_pa(tmp);
-    return rv;
+    sam_pa *restrict tmp_pa =
+	sam_hash_table_get(&SAM_MODULE(module)->labels, name);
+
+    if (tmp_pa == NULL) {
+	return false;
+    }
+    *pa = *tmp_pa;
+
+    return true;
+}
+
+inline bool
+sam_es_labels_get_cur(/*@in@*/ sam_es *restrict es,
+		      /*@out@*/ sam_pa *restrict pa,
+		      const char *restrict name)
+{
+    return sam_es_labels_get(es, pa, name, sam_es_pc_get(es).m);
 }
 
 inline sam_array *
@@ -511,41 +533,81 @@ sam_es_locs_get(sam_es *restrict es)
     return &es->locs;
 }
 
-#if 0
 inline const char *
-sam_es_labels_get_by_pa(sam_es *restrict es,
-			sam_pa pa)
+sam_es_file_get(sam_es *restrict es,
+		unsigned short module)
 {
-    ;
+    return SAM_MODULE(module)->file;
 }
-#endif
 
 inline void
 sam_es_instructions_ins(sam_es *restrict es,
 			sam_instruction *restrict i)
 {
-    sam_array_ins(&es->instructions, i);
+    sam_array_ins(&SAM_MODULE_LAST->instructions, i);
 }
 
 /*@null@*/ inline sam_instruction *
 sam_es_instructions_get(/*@in@*/ const sam_es *restrict es,
 			sam_pa pa)
 {
-    /* TODO: module specific */
-    return pa.l < es->instructions.len? es->instructions.arr[pa.l]: NULL;
+    return pa.l < SAM_MODULE(pa.m)->instructions.len?
+	SAM_MODULE(pa.m)->instructions.arr[pa.l]: NULL;
+}
+
+/*@null@*/ inline sam_instruction *
+sam_es_instructions_get_cur(/*@in@*/ const sam_es *restrict es,
+			    unsigned short line)
+{
+    return line < SAM_MODULE_CUR->instructions.len?
+	SAM_MODULE_CUR->instructions.arr[line]: NULL;
 }
 
 sam_instruction *
 sam_es_instructions_cur(sam_es *restrict es)
 {
-    return es->instructions.arr[es->pc.l];
+    return SAM_MODULE_CUR->instructions.arr[es->pc.l];
 }
 
 inline size_t
-sam_es_instructions_len(const sam_es *restrict es)
+sam_es_instructions_len(const sam_es *restrict es,
+			unsigned short module)
 {
-    return es->instructions.len;
+    return SAM_MODULE(module)->instructions.len;
 }
+
+inline size_t
+sam_es_instructions_len_cur(const sam_es *restrict es)
+{
+    return SAM_MODULE_CUR->instructions.len;
+}
+
+#if 0
+void
+sam_es_ro_alloc(const sam_es *restrict es,
+		const char *symbol,
+		sam_ml_value value,
+		sam_ml_type type)
+{
+}
+
+void
+sam_es_global_alloc(const sam_es *restrict es,
+		    const char *symbol,
+		    sam_ml_value value,
+		    sam_ml_type type)
+{
+}
+void
+sam_es_export(const sam_es *restrict es, const char *symbol)
+{
+}
+
+void
+sam_es_import(const sam_es *restrict es, const char *symbol)
+{
+}
+#endif
 
 inline size_t
 sam_es_heap_len(const sam_es *restrict es)
@@ -729,7 +791,8 @@ sam_es_io_data_get(const sam_es *restrict es)
 }
 
 bool
-sam_es_options_get(const sam_es *restrict es, sam_options option)
+sam_es_options_get(const sam_es *restrict es,
+		   sam_options option)
 {
     return (~es->options & option) == 0;
 }
@@ -792,12 +855,41 @@ static void
 sam_es_clear(sam_es *restrict es)
 {
     sam_array_free(&es->stack);
+    sam_array_free(&es->locs);
     sam_es_heap_free(es);
 
     while (sam_es_change_get(es, NULL));
 #if defined(SAM_EXTENSIONS) && defined(HAVE_DLFCN_H)
     sam_array_free(&es->dlhandles);
 #endif /* SAM_EXTENSIONS && HAVE_DLFCN_H */
+}
+
+static void
+sam_es_module_free(sam_es_module *restrict module)
+{
+    sam_array_free(&module->instructions);
+    sam_array_init(&module->allocs);
+    sam_hash_table_free(&module->labels);
+}
+
+static sam_es_module *
+sam_es_module_new(sam_es *const restrict es,
+		  const char *file)
+{
+    sam_es_module *restrict module = sam_malloc(sizeof (sam_es_module));
+
+    module->file = file;
+    sam_array_init(&module->instructions);
+    sam_array_init(&module->allocs);
+    sam_hash_table_init(&module->labels);
+
+    sam_array_ins(&es->modules, module);
+
+    if (!sam_parse(es, file)) {
+	return NULL;
+    }
+
+    return module;
 }
 
 /*@only@*/ sam_es *
@@ -809,14 +901,15 @@ sam_es_new(const char *restrict file,
     sam_es *restrict es = sam_malloc(sizeof (sam_es));
     sam_es_init(es);
 
-    sam_array_init(&es->instructions);
-    sam_array_init(&es->locs);
-    sam_hash_table_init(&es->labels);
     es->options = options;
     es->io_dispatcher = io_dispatcher;
     es->io_data = io_data;
 
-    if (!sam_parse(es, file)) {
+    sam_array_init(&es->modules);
+    sam_array_init(&es->locs);
+    sam_es_module *module = sam_es_module_new(es, file);
+
+    if (module == NULL) {
 	sam_es_free(es);
 	return NULL;
     }
@@ -840,9 +933,10 @@ sam_es_free(/*@in@*/ /*@only@*/ sam_es *restrict es)
 	sam_string_free(&es->input);
     }
 
-    sam_array_free(&es->instructions);
-    sam_array_free(&es->locs);
-    sam_hash_table_free(&es->labels);
+    for (size_t i = 0; i < es->modules.len; ++i) {
+	sam_es_module_free(SAM_MODULE(i));
+    }
+
     free(es);
 }
 

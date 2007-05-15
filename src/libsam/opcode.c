@@ -90,7 +90,8 @@ sam_get_jump_target(/*@in@*/ sam_es *restrict es,
 	p->m = cur->operand.pa.m;
 	p->l = cur->operand.pa.l - 1;
     } else if (cur->optype == SAM_OP_TYPE_LABEL) {
-	if (sam_es_labels_get(es, p, cur->operand.s)) {
+	/* TODO: are jumps automatically module-agnostic? */
+	if (sam_es_labels_get_cur(es, p, cur->operand.s)) {
 	    /* as above */
 	    --p->l;
 	} else {
@@ -710,7 +711,8 @@ sam_op_pushimmpa(/*@in@*/ sam_es *restrict es)
 	}
     } else if (cur->optype == SAM_OP_TYPE_LABEL) {
 	sam_ml_value v;
-	if (sam_es_labels_get(es, &v.pa, cur->operand.s)) {
+	/* TODO: are jumps automatically module-agnostic? */
+	if (sam_es_labels_get_cur(es, &v.pa, cur->operand.s)) {
 	    if (!sam_es_stack_push(es, sam_ml_new(v, SAM_ML_TYPE_PA))) {
 		return sam_error_stack_overflow(es);
 	    }
@@ -1667,6 +1669,50 @@ sam_op_export(__attribute__((unused)) sam_es *restrict es)
 #endif
 
 static sam_error
+sam_op_pushimmha(/*@in@*/ sam_es *restrict es)
+{
+    sam_instruction *cur = sam_es_instructions_cur(es);
+
+    if (cur->optype != SAM_OP_TYPE_LABEL) {
+	return sam_error_optype(es);
+    }
+
+    sam_ml_value v = {.ha = 0};
+
+#if 0
+    if (!sam_es_symbols_get()) {
+	return sam_error_unknown_identifier();
+    }
+#endif
+
+    if (!sam_es_stack_push(es, sam_ml_new(v, SAM_ML_TYPE_HA))) {
+	return sam_error_stack_overflow(es);
+    }
+
+    return SAM_OK;
+}
+
+#if 0
+    sam_instruction *cur = sam_es_instructions_cur(es);
+
+    if (cur->optype == SAM_OP_TYPE_LABEL) {
+	/* TODO: are jumps automatically module-agnostic? */
+	if (sam_es_labels_get_cur(es, p, cur->operand.s)) {
+	    /* as above */
+	    --p->l;
+	} else {
+	    p->l = 0;
+	    return sam_error_unknown_identifier(es, cur->operand.s);
+	}
+    } else {
+	p->l = 0;
+	return sam_error_optype(es);
+    }
+
+    return SAM_OK;
+#endif
+
+static sam_error
 sam_op_patoi(/*@in@*/ sam_es *restrict es)
 {
     sam_ml *restrict m = sam_es_stack_pop(es);
@@ -1773,6 +1819,7 @@ static const struct {
     { "WRITESTR",	SAM_OP_TYPE_NONE,  sam_op_writestr	},
     { "STOP",		SAM_OP_TYPE_NONE,  sam_op_stop		},
 #if defined(SAM_EXTENSIONS)
+    { "pushimmha",	SAM_OP_TYPE_LABEL, sam_op_pushimmha	},
     { "patoi",		SAM_OP_TYPE_NONE,  sam_op_patoi		},
     { "load",		SAM_OP_TYPE_LABEL, sam_op_load		},
     { "call",		SAM_OP_TYPE_LABEL, sam_op_call		},

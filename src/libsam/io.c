@@ -193,7 +193,7 @@ sam_io_bt_default(const sam_es *restrict es)
 		   SAM_IOS_ERR,
 		   "Heap\t    Stack\t    Program\n");
     for (i = 0;
-	 i <= sam_es_instructions_len(es) ||
+	 i <= sam_es_instructions_len_cur(es) ||
 	 i <= sam_es_stack_len(es) ||
 	 i < sam_es_heap_len(es);
 	 ++i) {
@@ -228,15 +228,15 @@ sam_io_bt_default(const sam_es *restrict es)
 	} else {
 	    sam_io_fprintf(es, SAM_IOS_ERR, "    \t\t");
 	}
-	if (i <= sam_es_instructions_len(es)) {
+	if (i <= sam_es_instructions_len_cur(es)) {
 	    if (i == sam_es_pc_get(es).l) {
 		sam_io_fprintf(es, SAM_IOS_ERR, "==> ");
 	    } else {
 		sam_io_fprintf(es, SAM_IOS_ERR, "    ");
 	    }
-	    if (i < sam_es_instructions_len(es)) {
+	    if (i < sam_es_instructions_len_cur(es)) {
 		sam_instruction *restrict inst =
-		    sam_es_instructions_get(es, (sam_pa){.m = 0, .l = i});
+		    sam_es_instructions_get_cur(es, i);
 		sam_io_fprintf(es, SAM_IOS_ERR, "%s", inst->name);
 		if (inst->optype != SAM_OP_TYPE_NONE) {
 		    sam_io_fprintf(es, SAM_IOS_ERR, " ");
