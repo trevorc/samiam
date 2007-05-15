@@ -14,3 +14,4 @@ D    LOW  #04  Arbitrarily sized capture dialog?
 D    HI   #05  Multiple modules support
 D    LOW  #06  Sam file editing
 D    HI   #07  Printing wrong values for program output.
+D    HI   #08  Instructions lists are not wide enough.

@@ -656,6 +656,7 @@ class GSam:
 	    self._timer_id = None
 	    self._capture = None
 	    self.reset_input_box()
+	    self.append_to_console("----------------------------------- RESET -----------------------------------", False)
 
     # GTK handlers {{{3
     def on_step_clicked(self, p):
@@ -810,14 +811,18 @@ class GSam:
 
     ### Console handling {{{2
     # append_to_console () {{{3
-    def append_to_console(self, str):
+    def append_to_console(self, str, show_time=True):
 	buf = self._console.get_buffer()
 	if buf.get_char_count() == 0:
 	    st = ""
 	else:
 	    st = "\n"
-	buf.insert(buf.get_end_iter(),\
-		"%s[%s] %s" % (st, time.strftime('%X'), str))
+	if show_time:
+	    buf.insert(buf.get_end_iter(),\
+		    "%s[%s] %s" % (st, time.strftime('%X'), str))
+	else:
+	    buf.insert(buf.get_end_iter(),\
+		    "%s%s" % (st, str))
 	self._console.scroll_mark_onscreen(self._console_end_mark)
 
     # on_clear_console {{{3
