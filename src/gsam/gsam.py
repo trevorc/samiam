@@ -520,13 +520,23 @@ class GSam:
 		else:
 		    fbr = model.get_value(last, 0)
 		if last is None or fbr is None or fbr < self._prog.fbr:
-		    # TODO smarter way to do this?
 		    insts = self._prog.modules[self._prog.mc].instructions
 		    prev = insts[self._prog.lc - 1]
 		    if len(prev.labels) == 0:
-			label = None
+			plabel = None
 		    else:
-			label = prev.labels[0]
+			plabel = prev.labels[0]
+		    next = insts[self._prog.lc].assembly
+		    if next[0:3] == "JSR":
+			nlabel = next[4:]
+		    else:
+			nlabel = None
+		    if nlabel and not plabel:
+			label = nlabel
+		    elif plabel and not nlabel:
+			label = plabel
+		    else:
+			label = None
 
 		    last = model.append(None,\
 			    (self._prog.fbr, '', label, -1))

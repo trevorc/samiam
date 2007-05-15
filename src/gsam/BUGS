@@ -17,3 +17,5 @@ D    HI   #07  Printing wrong values for program output on x86-64.
 D    ---  #08  Instructions lists are not wide enough.
 D    ---  #09  In addition to reset message add close/load file messages
 D    ---  #10  What happens with buggy sam programs?
+D    LOW  #11  Accept sam file from standard input
+D    ***  #12  Use last JSR for stack frame title
