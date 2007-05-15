@@ -9,16 +9,21 @@ import sys
 # class CodeTreeModel {{{1
 class CodeTreeModel(gtk.GenericTreeModel):
     # TODO Last two may become images
-    column_types = (str, int, str, str, str)
+    column_types = (str, int, gtk.gdk.Pixbuf, str, str)
     column_names = ['Current', 'Line', 'Breakpoint', 'Code', 'Labels']
 
-    def __init__(self, prog, modnum, bp):
+    def __init__(self, prog, modnum, bp, bpnorm, bptemp):
 	gtk.GenericTreeModel.__init__(self)
 	self._prog = prog
 	self._module_n = modnum
 	self._instructions = prog.modules[modnum].instructions
 	self._breakpoints = bp[modnum]
-    
+
+	self._blank_pixbuf = gtk.gdk.Pixbuf(gtk.gdk.COLORSPACE_RGB, True, 8,\
+		bpnorm.get_width(), bpnorm.get_height())
+	self._bp_norm_pixbuf = bpnorm
+	self._bp_temp_pixbuf = bptemp
+   
     def on_get_flags(self):
 	return gtk.TREE_MODEL_LIST_ONLY | gtk.TREE_MODEL_ITERS_PERSIST
     
@@ -44,13 +49,13 @@ class CodeTreeModel(gtk.GenericTreeModel):
 	elif column is 1:
 	    return rowref
 	elif column is 2:
-	    # TODO breakpoints
 	    if rowref in self._breakpoints['normal']:
-		return gtk.STOCK_NO #TODO get some pixbufs
+		return self._bp_norm_pixbuf
 	    elif rowref in self._breakpoints['temporary']:
-		return gtk.STOCK_YES #TODO get some pixbufs
+		return self._bp_temp_pixbuf
+	    # Hack to fix "pixbuf required" bug
 	    elif rowref == 0:
-		return gtk.STOCK_NEW
+		return self._blank_pixbuf
 	    else:
 		return None
 	elif column is 3:
@@ -159,13 +164,22 @@ class GSam:
 	self._module_combobox.add_attribute(cell, 'text', 0)
 
 	# Code display setup {{{4
+	# TODO better pixbufs?
+	self._bp_norm = self._main_window.render_icon(gtk.STOCK_NO,\
+		gtk.ICON_SIZE_MENU)
+	self._bp_temp = self._main_window.render_icon(gtk.STOCK_YES,\
+		gtk.ICON_SIZE_MENU)
+
 	column_names = ['Current', 'Line', 'Breakpoint', 'Code', 'Labels']
 
 	for n in range(0, len(column_names)):
 	    if n == 2 or n == 0:
 		cell = gtk.CellRendererPixbuf()
 		tvcolumn = gtk.TreeViewColumn(column_names[n], cell, text=n)
-		tvcolumn.set_attributes(cell, stock_id=n)
+		if n == 0:
+		    tvcolumn.set_attributes(cell, stock_id=n)
+		if n == 2:
+		    tvcolumn.set_attributes(cell, pixbuf=n)
 	    else:
 		cell = gtk.CellRendererText()
 		tvcolumn = gtk.TreeViewColumn(column_names[n], cell, text=n)
@@ -320,8 +334,9 @@ class GSam:
 
     def update_code_display(self):
 	if self.get_current_code_model() is None:
-	    self.set_current_code_model(CodeTreeModel(self._prog, \
-		    self.get_current_module_num(), self._breakpoints))
+	    self.set_current_code_model(CodeTreeModel(self._prog,\
+		    self.get_current_module_num(), self._breakpoints,\
+		    self._bp_norm, self._bp_temp))
 	self._code_view.set_model(self.get_current_code_model())
 
     def on_module_combobox_changed(self, p):
