@@ -131,6 +131,9 @@ extern bool		     sam_es_globals_get     (const sam_es *restrict es,
 						      sam_ha *restrict ha,
 						      const char *restrict symbol,
 						      unsigned short module);
+extern bool		     sam_es_globals_get_cur   (sam_es *restrict es,
+						      sam_ha *restrict ha,
+						      const char *restrict name);
 extern void		     sam_es_export	     (const sam_es *restrict es,
 						      const char *symbol);
 extern void		     sam_es_import	     (const sam_es *restrict es,

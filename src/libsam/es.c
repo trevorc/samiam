@@ -568,6 +568,14 @@ sam_es_globals_get(/*@in@*/ const sam_es *restrict es,
     return true;
 }
 
+inline bool
+sam_es_globals_get_cur(/*@in@*/ sam_es *restrict es,
+		      /*@out@*/ sam_ha *restrict ha,
+		      const char *restrict name)
+{
+    return sam_es_globals_get(es, ha, name, sam_es_pc_get(es).m);
+}
+
 inline sam_array *
 sam_es_locs_get(sam_es *restrict es)
 {

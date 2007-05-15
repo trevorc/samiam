@@ -1672,6 +1672,24 @@ static sam_error
 sam_op_pushimmha(/*@in@*/ sam_es *restrict es)
 {
     sam_instruction *cur = sam_es_instructions_cur(es);
+    if (cur->optype == SAM_OP_TYPE_LABEL) {
+	sam_ml_value v;
+	/* TODO: are jumps automatically module-agnostic? */
+	if (sam_es_globals_get_cur(es, &v.ha, cur->operand.s)) {
+	    if (!sam_es_stack_push(es, sam_ml_new(v, SAM_ML_TYPE_HA))) {
+		return sam_error_stack_overflow(es);
+	    }
+	} else {
+	    return sam_error_unknown_identifier(es, cur->operand.s);
+	}
+    } else {
+	return sam_error_optype(es);
+    }
+
+    return SAM_OK;
+}
+/*{
+    sam_instruction *cur = sam_es_instructions_cur(es);
 
     if (cur->optype != SAM_OP_TYPE_LABEL) {
 	return sam_error_optype(es);
@@ -1690,7 +1708,7 @@ sam_op_pushimmha(/*@in@*/ sam_es *restrict es)
     }
 
     return SAM_OK;
-}
+}*/
 
 #if 0
     sam_instruction *cur = sam_es_instructions_cur(es);
