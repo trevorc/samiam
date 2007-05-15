@@ -137,7 +137,7 @@ typedef struct {
 static PyObject *
 InstructionsIter_next(InstructionsIterObject *restrict self)
 {
-    if (self->idx >= sam_es_instructions_len(self->es)) {
+    if (self->idx >= sam_es_instructions_len(self->es, self->module_num)) {
 	return NULL;
     }
 
@@ -197,7 +197,7 @@ Instructions_iter(Instructions *restrict self)
 static long
 Instructions_length(Instructions *self)
 {
-    return sam_es_instructions_len(self->es);
+    return sam_es_instructions_len(self->es, self->module_num);
 }
 
 /* Instructions_item {{{2 */
@@ -205,7 +205,7 @@ static PyObject *
 Instructions_item(Instructions *self, unsigned i)
 {
     /* i is unsigned, no check for i < 0 */
-    if(i >= sam_es_instructions_len(self->es)) {
+    if(i >= sam_es_instructions_len(self->es, self->module_num)) {
 	PyErr_SetNone(PyExc_IndexError);
 	return NULL;
     }
@@ -908,8 +908,10 @@ Program_lc_set(Program *restrict self, PyObject *v)
 			"Program.pc must be set to a long integer.");
 	return -1;
     }
-    sam_es_pc_set(self->es, (sam_pa) { .m = sam_es_pc_get(self->es).m,
-		  .l = PyLong_AsLong(v)});
+    sam_es_pc_set(self->es, (sam_pa) {
+	.m = sam_es_pc_get(self->es).m,
+	.l = PyLong_AsLong(v)
+    });
 
     return 0;
 }
@@ -918,6 +920,7 @@ Program_lc_set(Program *restrict self, PyObject *v)
 static PyObject *
 Program_mc_get(Program *restrict self)
 {
+    printf("%hu\n", sam_es_pc_get(self->es).m);
     return PyLong_FromUnsignedLong(sam_es_pc_get(self->es).m);
 }
 
@@ -1120,11 +1123,6 @@ static PyObject *
 Program_step(Program *restrict self)
 {
     // TODO multi-modules
-    if (sam_es_pc_get(self->es).l >=
-	sam_es_instructions_len(self->es)) {
-	Py_RETURN_FALSE;
-    }
-
     long err = sam_es_instructions_cur(self->es)->handler(self->es);
     if(err == SAM_STOP) {
 	Py_RETURN_FALSE;
