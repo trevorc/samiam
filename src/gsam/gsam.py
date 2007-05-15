@@ -8,7 +8,6 @@ import sys
 
 # class CodeTreeModel {{{1
 class CodeTreeModel(gtk.GenericTreeModel):
-    # TODO Last two may become images
     column_types = (str, int, gtk.gdk.Pixbuf, str, str)
     column_names = ['Current', 'Line', 'Breakpoint', 'Code', 'Labels']
 
@@ -65,7 +64,7 @@ class CodeTreeModel(gtk.GenericTreeModel):
 		return str(item.labels)
 	    else:
 		return ""
-	# TODO and if the column is invalid... ?
+	# and if the column is invalid... (error: it never happens)
 	else:
 	    return "%(a)s (Error: %(c)d)" % {'a': item.assembly, 'c': column}
     
@@ -102,6 +101,10 @@ class CodeTreeModel(gtk.GenericTreeModel):
 # class GSam {{{1
 class GSam:
     # __init__ () {{{2
+    def make_value_tree_store(self):
+	return gtk.TreeStore(gobject.TYPE_LONG,\
+	    gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_LONG)
+
     def __init__(self, filename=None):
 	self._xml = gtk.glade.XML('gsam.glade')
 	self._xml.signal_autoconnect(self)
@@ -149,9 +152,9 @@ class GSam:
 	self._prog = None
 	self._breakpoints = None
 	self._breakreturn = None
+	self._capture = None
 
 	self._timer_id = None
-	# TODO decide on best default speeds?
 	self._speeds = {'full': 0, 'fast': 10, 'medium': 100, 'slow': 1000}
 	self._timeout_interval = self._speeds['fast']
 
@@ -194,7 +197,6 @@ class GSam:
 			    'ha':    ('purple'),\
 			    'pa':    ('green'),\
 			    'block': ('black')}
-
 	def mem_color_code(column, cell, model, iter):
 	    type_num = model.get_value(iter, 3)
 	    if type_num in range(0, len(sam.Types)):
@@ -206,8 +208,7 @@ class GSam:
 	    cell.set_property('cell-background', row_color)
 
 	column_names = ['Address', 'Type', 'Value']
-	self._stack_view.set_model(gtk.TreeStore(gobject.TYPE_LONG,\
-	    gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_LONG))
+	self._stack_view.set_model(self.make_value_tree_store())
 	for n in range(0, len(column_names)):
 	    renderer = gtk.CellRendererText()
 	    column = gtk.TreeViewColumn(column_names[n], renderer, text=n)
@@ -216,8 +217,7 @@ class GSam:
 	self._stack_view.set_search_column(1)
 
 	# TODO heap done?
-	self._heap_view.set_model(gtk.TreeStore(gobject.TYPE_LONG,\
-	    gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_LONG))
+	self._heap_view.set_model(self.make_value_tree_store())
 	for n in range(0, len(column_names)):
 	    renderer = gtk.CellRendererText()
 	    column = gtk.TreeViewColumn(column_names[n], renderer, text=n)
@@ -256,6 +256,7 @@ class GSam:
 	    self._file = None
 	    self._prog = None
 	self._timer_id = None
+	self._capture = None
 	self._main_window.set_title(self._default_title)
 	self._code_view.set_model(None)
 	self._code_models = None
@@ -443,7 +444,6 @@ class GSam:
 		    model.remove(last)
 	    elif ctype == "heap_alloc":
 		iter = self.get_block_near_iter(model, change.start)
-		# TODO heap allocation rows?
 		row = (change.start, "", change.size, -1)
 		if iter is None:
 		    ai = model.insert_before(None, None, row)
@@ -469,7 +469,7 @@ class GSam:
 
     def update_registers(self):
 	self._mc_label.set_text("MC: %d" % self._prog.mc)
-	self._lc_label.set_text("LC: %d" % self._prog.lc) # TODO pc --> lc
+	self._lc_label.set_text("LC: %d" % self._prog.lc)
 	self._fbr_label.set_text("FBR: %d" % self._prog.fbr)
 	self._sp_label.set_text("SP: %d" % self._prog.sp)
 
@@ -490,6 +490,7 @@ class GSam:
 		    self.append_to_console(\
 			    "Final Result: %d" % self._prog.stack[0].value)
 		    self._timer_id = None
+		    self.display_capture()
 		    self.clear_temporary_breakpoints()
 		self.update_display()
 	    return not self._finished
@@ -502,32 +503,35 @@ class GSam:
     # Step for while running. Supports breakpoints, etc.
     def run_step(self):
 	if self._break_return: # check for nested functions
-	    next_asm_st = self.get_current_module().\
-		    instructions[self._prog.lc].assembly[0:3]
+	    next_asm_st = self.get_current_instruction()[0:3]
 	    if next_asm_st == "RST":
 		self._break_return = self._break_return - 1
 	    elif next_asm_st == "JSR":
 		self._break_return = self._break_return + 1
 	rv = self.step()
+	if self._capture:
+	    self._capture.append(self.capture_current())
 	if self._prog.lc in self._breakpoints[self._prog.mc]['normal']:
-	    self._timer_id = None
-	    return False
+	    return self.pause()
 	elif self._prog.lc in self._breakpoints[self._prog.mc]['temporary']:
-	    self._timer_id = None
 	    self._breakpoints[self._prog.mc]['temporary'].remove(self._prog.lc)
-	    return False
+	    return self.pause()
 	elif not (self._break_return is None) and self._break_return == 0:
-	    self._timer_id = None
 	    self._break_return = None
-	    return False
+	    return self.pause()
 	else:
 	    return rv
 
-    def pause(self):
+    def pause_no_capture(self):
 	if not self.is_waiting_for_input():
 	    if self._timer_id:
 		gobject.source_remove(self._timer_id)
 		self._timer_id = None
+		return False
+
+    def pause(self):
+	self.pause_no_capture()
+	self.display_capture()
 
     def start(self):
 	if not self.is_waiting_for_input():
@@ -535,6 +539,12 @@ class GSam:
 		if self.run_step():
 		    self._timer_id = gobject.timeout_add(\
 			self._timeout_interval, self.run_step)
+    
+    def capture(self):
+	if not self.is_waiting_for_input() and self._prog and\
+		self._timer_id is None and self._capture is None:
+	    self._capture = []
+	    self.start()
 
     def start_pause(self):
 	if self._prog:
@@ -553,11 +563,15 @@ class GSam:
 	    self.reset_memory_display()
 	    self._finished = False
 	    self._timer_id = None
+	    self._capture = None
 	    self.reset_input_box()
 
     # GTK handlers {{{3
     def on_step_clicked(self, p):
 	self.single_step()
+
+    def on_capture_activate(self, p):
+	self.capture()
 
     def on_start_activate(self, p):
 	self.start()
@@ -607,7 +621,6 @@ class GSam:
 	if self._prog:
 	    self.run_to_line(self._prog.mc, self._prog.lc + 1)
 
-    # TODO semantics of non-normal breakpoints?
     def clear_normal_breakpoints(self):
 	if self._breakpoints:
 	    for bps in self._breakpoints:
@@ -645,6 +658,32 @@ class GSam:
     def on_run_to_line_activate(self, p):
 	self.run_to_line(self.get_current_module_num(),\
 		self.get_selected_code_line())
+
+    ### Capture {{{2
+    # Collect data {{{3
+    def copy_treestore_level(self, source, sourceIter, target, targetIter):
+	sourceChild = source.iter_children(sourceIter)
+	while sourceChild:
+	    targetC = target.append(targetIter,\
+		    tuple([source.get_value(sourceChild, i)\
+		    for i in range(0, len(self.none_value_row()))]))
+	    self.copy_treestore_level(source, sourceChild, target, targetC)
+	    sourceChild = source.iterNext(sourceChild)
+
+    def copy_value_treestore(self, model, types):
+	rv = self.make_value_tree_store()
+	self.copy_treestore_level(model, None, rv, None)
+	return rv
+
+    def get_current_instruction(self):
+	return self._prog.modules[self._prog.mc].instructions[self._prog.lc].\
+		assembly
+
+    def capture_current(self):
+	return (self._prog.mc, self._prog.lc, self._prog.fbr, self._prog.sp,\
+		self.get_current_instruction(),\
+		self.copy_value_treestore(self._stack_view.get_model()),\
+		self.copy_value_treestore(self._heap_view.get_model()))
 
     ### View menu handling {{{2
     def on_show_code_activate(self, p):
@@ -686,7 +725,7 @@ class GSam:
     def change_speed(self, newSpeed):
 	self._timeout_interval = newSpeed
 	if self._prog and self._timer_id:
-	    self.pause()
+	    self.pause_no_capture()
 	    self.start()
 
     def change_to_def_speed(self, newSpeedIndex):
@@ -731,7 +770,6 @@ class GSam:
 	self._input_ready = False
 	self._input_box.show_all()
 	self._input.grab_focus() # Hmm... focus grabbing...
-	# TODO Hang until response, fonctionne?
 	gtk.main()
 	if self._input_ready:
 	    res = self._input.get_text()
