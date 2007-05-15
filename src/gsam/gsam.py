@@ -7,11 +7,12 @@ import time
 import sys
 
 # prepare_value_view {{{1
-# make_value_tree_store {{{3
+# make_value_tree_store () {{{2
 def make_value_tree_store():
     return gtk.TreeStore(gobject.TYPE_LONG,\
 	gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_LONG)
 
+# prepare_value_view () {{{2
 def prepare_value_view(view):
     type_colors = {'none': ('lightgray'),\
 			'int':   ('white'),\
@@ -38,7 +39,6 @@ def prepare_value_view(view):
 	column.set_cell_data_func(renderer, mem_color_code);
 	view.append_column(column)
     view.set_search_column(1)
-
 
 # class CodeTreeModel {{{1
 class CodeTreeModel(gtk.GenericTreeModel):
@@ -287,6 +287,8 @@ class GSam:
 	cell = gtk.CellRendererText()
 	self._module_combobox.pack_start(cell, True)
 	self._module_combobox.add_attribute(cell, 'text', 0)
+
+	self.init_prepare_inputs_window()
 
 	# Code display setup {{{4
 	# TODO better pixbufs?
@@ -933,12 +935,42 @@ class GSam:
 	self._prepare_inputs_window = self._xml.get_widget(\
 		'prepare_inputs_window')
 	self._inputs_view = self._xml.get_widget('inputs_view')
+	self._inputs_index = None
+
+	self._inputs_view.set_model(gtk.ListStore(str))
+	cell = gtk.CellRendererPixbuf()
+	def inputs_curr(column, cell, model, iter, self):
+	    i = self.get_input_curr_index()
+	    if not (i is None) and i == model.get_path(iter)[0]:
+		stock = gtk.STOCK_GO_FORWARD
+	    else:
+		stock = None
+	    cell.set_property('stock_id', stock)
+	self._inputs_view.insert_column_with_data_func(-1, "curr", cell,\
+		inputs_curr, self)
+	cell = gtk.CellRendererText()
+	column = gtk.TreeViewColumn("input", cell, text=1)
+	self._inputs_view.append_column(column)
+	self._inputs_view.set_search_column(0)
+
+    def get_input_curr_index(self):
+	return self._inputs_index
 
     def show_prepare_inputs_window(self):
 	self._prepare_inputs_window.show()
 
     def hide_prepare_inputs_window(self):
 	self._prepare_inputs_window.hide()
+
+    def show_add_input_dialog(self):
+	pass # XXX
+
+    # GTK handles {{{3
+    def on_show_prepare_inputs_activate(self, p):
+	self.show_prepare_inputs_window()
+
+    def on_input_add_clicked(self, p):
+	self.show_add_input_dialog()
 
     # About dialog {{{2
     def on_about_activate(self, p):

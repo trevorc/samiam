@@ -115,6 +115,7 @@
                         <property name="label">C_lear Console</property>
                         <property name="use_underline">True</property>
                         <signal name="activate" handler="on_clear_console_activate"/>
+                        <accelerator key="L" modifiers="GDK_CONTROL_MASK" signal="activate"/>
                         <child internal-child="image">
                           <widget class="GtkImage" id="menu-item-image10">
                             <property name="stock">gtk-clear</property>
@@ -128,7 +129,6 @@
                         <property name="label" translatable="yes">Show Prepare Inputs...</property>
                         <property name="use_underline">True</property>
                         <signal name="activate" handler="on_show_prepare_inputs_activate"/>
-                        <accelerator key="F5" modifiers="" signal="activate"/>
                         <child internal-child="image">
                           <widget class="GtkImage" id="menu-item-image12">
                             <property name="visible">True</property>
@@ -660,7 +660,7 @@
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="can_default">True</property>
-                <signal name="clicked" handler="on_prepare_inputs_clicked"/>
+                <signal name="clicked" handler="on_show_prepare_inputs_activate"/>
                 <child>
                   <widget class="GtkAlignment" id="alignment8">
                     <property name="visible">True</property>
@@ -1045,7 +1045,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
-                    <property name="headers_clickable">True</property>
+                    <property name="headers_visible">False</property>
                     <property name="reorderable">True</property>
                   </widget>
                 </child>

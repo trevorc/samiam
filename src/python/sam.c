@@ -246,6 +246,7 @@ typedef struct {
     sam_es *es;
     PyObject *locs;
     Instructions *insts;
+    unsigned short module_num;
 } Module;
 
 /* Module_instructions_get () {{{2 */
@@ -274,8 +275,8 @@ Module_instructions_get(Module *restrict self)
 static PyObject *
 Module_filename_get(Module *restrict self)
 {
-    // TODO Need to get filename somehow.
-    return PyString_FromString("(ERROR: Filename unknown.)");
+    return PyString_FromString(sam_es_file_get(self->es,
+					       self->module_num));
 }
 
 /* PyGetSetDef Module_getset {{{2 */
@@ -311,11 +312,8 @@ typedef struct {
 static PyObject *
 ModulesIter_next(ModulesIterObject *restrict self)
 {
-    // TODO this is hackish because libsam lacks module support
-    if (self->idx != 0) {
+    if (self->idx >= sam_es_modules_len(self->es)) {
 	return NULL;
-    } else {
-	self->idx++;
     }
 
     Module *restrict module = PyObject_New(Module, &ModuleType);
@@ -327,6 +325,7 @@ ModulesIter_next(ModulesIterObject *restrict self)
     module->es = self->es;
     module->insts = NULL;
     module->locs = self->locs;
+    module->module_num = self->idx++;
     Py_INCREF(module);
     return (PyObject *) module;
 }
@@ -376,16 +375,14 @@ Modules_iter(Modules *restrict self)
 static long
 Modules_length(Modules *restrict self)
 {
-    // TODO this is hackish because libsam lacks module support
-    return 1;
+    return sam_es_modules_len(self->es);
 }
 
 /* Modules_item () {{{2 */
 static PyObject *
 Modules_item(Modules *restrict self, unsigned i)
 {
-    // TODO this is hackish because libsam lacks module support
-    if(i != 0) {
+    if(i >= sam_es_modules_len(self->es)) {
 	PyErr_SetNone(PyExc_IndexError);
 	return NULL;
     }
@@ -394,7 +391,8 @@ Modules_item(Modules *restrict self, unsigned i)
     rv->es = self->es;
     rv->insts = NULL;
     rv->locs = self->locs;
-    Py_INCREF(rv); // TODO Why is this required?
+    rv->module_num = i;
+    Py_INCREF(rv);
     return (PyObject *)rv;
 }
 
@@ -920,7 +918,6 @@ Program_lc_set(Program *restrict self, PyObject *v)
 static PyObject *
 Program_mc_get(Program *restrict self)
 {
-    printf("%hu\n", sam_es_pc_get(self->es).m);
     return PyLong_FromUnsignedLong(sam_es_pc_get(self->es).m);
 }
 
