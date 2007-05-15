@@ -157,7 +157,7 @@ class Capture:
 		self.show_data_at(data[i], i)
 
 	# Setup instructions view {{{4
-	column_names = ['Address', 'Code']
+	column_names = ['Addr', 'Code']
 	self._instructions_view.set_model(gtk.ListStore(str, str))
 	for n in range(0, len(column_names)):
 	    renderer = gtk.CellRendererText()
