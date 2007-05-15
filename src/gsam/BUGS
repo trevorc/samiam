@@ -15,3 +15,5 @@ D    HI   #05  Multiple modules support
 D    LOW  #06  Sam file editing
 D    HI   #07  Printing wrong values for program output.
 D    HI   #08  Instructions lists are not wide enough.
+D    HI   #09  In addition to reset message add close/load file messages
+D    HI   #10  What happens with buggy sam programs?
