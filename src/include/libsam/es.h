@@ -119,6 +119,7 @@ extern inline sam_instruction *sam_es_instructions_cur(sam_es *restrict es);
 extern inline size_t	     sam_es_instructions_len (const sam_es *restrict es,
 						      unsigned short module);
 extern inline size_t	     sam_es_instructions_len_cur(const sam_es *restrict es);
+extern inline unsigned short sam_es_modules_len	     (const sam_es *restrict es);
 extern void		     sam_es_ro_alloc	     (const sam_es *restrict es,
 						      const char *symbol,
 						      sam_ml_value value,

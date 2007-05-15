@@ -582,6 +582,12 @@ sam_es_instructions_len_cur(const sam_es *restrict es)
     return SAM_MODULE_CUR->instructions.len;
 }
 
+inline unsigned short
+sam_es_modules_len(const sam_es *restrict es)
+{
+    return es->modules.len;
+}
+
 #if 0
 void
 sam_es_ro_alloc(const sam_es *restrict es,
@@ -854,8 +860,13 @@ sam_es_init(sam_es *restrict es)
 static void
 sam_es_clear(sam_es *restrict es)
 {
-    sam_array_free(&es->stack);
+    for (size_t i = 0; i < es->locs.len; ++i) {
+	sam_es_loc *restrict loc = es->locs.arr[i];
+	free(loc->labels.arr);
+    }
     sam_array_free(&es->locs);
+
+    sam_array_free(&es->stack);
     sam_es_heap_free(es);
 
     while (sam_es_change_get(es, NULL));
@@ -868,7 +879,7 @@ static void
 sam_es_module_free(sam_es_module *restrict module)
 {
     sam_array_free(&module->instructions);
-    sam_array_init(&module->allocs);
+    sam_array_free(&module->allocs);
     sam_hash_table_free(&module->labels);
 }
 
@@ -936,6 +947,7 @@ sam_es_free(/*@in@*/ /*@only@*/ sam_es *restrict es)
     for (size_t i = 0; i < es->modules.len; ++i) {
 	sam_es_module_free(SAM_MODULE(i));
     }
+    sam_array_free(&es->modules);
 
     free(es);
 }
