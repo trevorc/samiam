@@ -860,12 +860,6 @@ sam_es_init(sam_es *restrict es)
 static void
 sam_es_clear(sam_es *restrict es)
 {
-    for (size_t i = 0; i < es->locs.len; ++i) {
-	sam_es_loc *restrict loc = es->locs.arr[i];
-	free(loc->labels.arr);
-    }
-    sam_array_free(&es->locs);
-
     sam_array_free(&es->stack);
     sam_es_heap_free(es);
 
@@ -932,6 +926,12 @@ void
 sam_es_free(/*@in@*/ /*@only@*/ sam_es *restrict es)
 {
     sam_es_clear(es);
+
+    for (size_t i = 0; i < es->locs.len; ++i) {
+	sam_es_loc *restrict loc = es->locs.arr[i];
+	free(loc->labels.arr);
+    }
+    sam_array_free(&es->locs);
 
     if (es->input.alloc > 0) {
 #if defined(HAVE_MMAN_H)
