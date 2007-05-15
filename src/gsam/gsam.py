@@ -54,6 +54,7 @@ class CodeTreeModel(gtk.GenericTreeModel):
 
 	self._blank_pixbuf = gtk.gdk.Pixbuf(gtk.gdk.COLORSPACE_RGB, True, 8,\
 		bpnorm.get_width(), bpnorm.get_height())
+	self._blank_pixbuf.fill(0x00000000)
 	self._bp_norm_pixbuf = bpnorm
 	self._bp_temp_pixbuf = bptemp
    
@@ -926,6 +927,18 @@ class GSam:
 
     def sam_print(self, str):
 	self.append_to_console("Program output: %s" % str)
+
+    ### Prepared Inputs {{{2
+    def init_prepare_inputs_window(self):
+	self._prepare_inputs_window = self._xml.get_widget(\
+		'prepare_inputs_window')
+	self._inputs_view = self._xml.get_widget('inputs_view')
+
+    def show_prepare_inputs_window(self):
+	self._prepare_inputs_window.show()
+
+    def hide_prepare_inputs_window(self):
+	self._prepare_inputs_window.hide()
 
     # About dialog {{{2
     def on_about_activate(self, p):
