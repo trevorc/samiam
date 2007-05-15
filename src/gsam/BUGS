@@ -1,0 +1,15 @@
+Key:
+LOW	Would be a nice feature.
+MED	Fix this by the next major version.
+HI	Release-critical bug.
+---	Fixed bug.
+***	Closed bug.
+
+ASGN SEV  NUM  DESC
+D    HI   #00  Fancy input caching/setup.
+D    MED  #01  Capture saving.
+D    MED  #02  Breakpoint on all instances of an instruction
+D    MED  #03  Breakpoint on access to a specific area of memory
+D    LOW  #04  Arbitrarily sized capture dialog?
+D    HI   #05  Multiple modules support
+D    LOW  #05  Sam file editing
