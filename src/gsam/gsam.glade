@@ -110,21 +110,6 @@
                       </widget>
                     </child>
                     <child>
-                      <widget class="GtkImageMenuItem" id="show_capture1">
-                        <property name="visible">True</property>
-                        <property name="label" translatable="yes">Show _Capture</property>
-                        <property name="use_underline">True</property>
-                        <signal name="activate" handler="on_show_capture1_activate"/>
-                        <child internal-child="image">
-                          <widget class="GtkImage" id="image116">
-                            <property name="visible">True</property>
-                            <property name="stock">gtk-convert</property>
-                            <property name="icon_size">1</property>
-                          </widget>
-                        </child>
-                      </widget>
-                    </child>
-                    <child>
                       <widget class="GtkImageMenuItem" id="clear_console">
                         <property name="visible">True</property>
                         <property name="label">C_lear Console</property>
@@ -360,16 +345,14 @@
                     </child>
                     <child>
                       <widget class="GtkSeparatorMenuItem" id="separator2">
-                        <property name="visible">True</property>
                       </widget>
                     </child>
                     <child>
-                      <widget class="GtkImageMenuItem" id="add_instruction_breakpoint1">
-                        <property name="visible">True</property>
+                      <widget class="GtkImageMenuItem" id="add_instruction_breakpoint">
                         <property name="tooltip" translatable="yes">Add a breakpoint that stops before every instance of a given instruction.</property>
                         <property name="label" translatable="yes">Add I_nstruction Breakpoint...</property>
                         <property name="use_underline">True</property>
-                        <signal name="activate" handler="on_add_instruction_breakpoint1_activate"/>
+                        <signal name="activate" handler="on_add_instruction_breakpoint_activate"/>
                         <child internal-child="image">
                           <widget class="GtkImage" id="image124">
                             <property name="visible">True</property>

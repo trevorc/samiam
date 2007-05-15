@@ -21,7 +21,6 @@
                   <widget class="GtkMenu" id="menuitem5_menu">
                     <child>
                       <widget class="GtkImageMenuItem" id="open">
-                        <property name="visible">True</property>
                         <property name="label">gtk-open</property>
                         <property name="use_underline">True</property>
                         <property name="use_stock">True</property>
@@ -30,7 +29,6 @@
                     </child>
                     <child>
                       <widget class="GtkImageMenuItem" id="save_as">
-                        <property name="visible">True</property>
                         <property name="label">gtk-save-as</property>
                         <property name="use_underline">True</property>
                         <property name="use_stock">True</property>
@@ -39,7 +37,6 @@
                     </child>
                     <child>
                       <widget class="GtkSeparatorMenuItem" id="separatormenuitem2">
-                        <property name="visible">True</property>
                       </widget>
                     </child>
                     <child>

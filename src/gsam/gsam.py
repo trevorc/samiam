@@ -219,6 +219,9 @@ class Capture:
     def hide(self):
 	self._main_window.hide()
 
+    def on_close_activate(self, p):
+	self.hide()
+
 # class GSam {{{1
 class GSam:
     # initization {{{2
@@ -594,9 +597,11 @@ class GSam:
 		self._break_return = self._break_return - 1
 	    elif next_asm_st == "JSR":
 		self._break_return = self._break_return + 1
+	if not (self._capture is None):
+	    prev_code = self.get_current_instruction()
 	rv = self.step()
 	if not (self._capture is None):
-	    self._capture.append(self.capture_current())
+	    self._capture.append(self.capture_current(prev_code))
 	if self._prog.lc in self._breakpoints[self._prog.mc]['normal']:
 	    return self.pause()
 	elif self._prog.lc in self._breakpoints[self._prog.mc]['temporary']:
@@ -641,7 +646,7 @@ class GSam:
 
     def reset(self):
 	if self._prog:
-	    self.pause()
+	    self.pause_no_capture()
 	    self._prog.reset()
 	    self.update_registers()
 	    self.clear_temporary_breakpoints()
@@ -769,10 +774,10 @@ class GSam:
 	return self._prog.modules[self._prog.mc].instructions[self._prog.lc].\
 		assembly
 
-    def capture_current(self):
+    def capture_current(self, prev_code):
 	return {'mc': self._prog.mc, 'lc': self._prog.lc,\
 		'fbr': self._prog.fbr, 'sp': self._prog.sp,\
-		'code': self.get_previous_instruction(),\
+		'code': prev_code,\
 		'stack': self.copy_value_treestore(\
 		    self._stack_view.get_model()),\
 		'heap': self.copy_value_treestore(self._heap_view.get_model())}
