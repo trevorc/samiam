@@ -249,7 +249,7 @@ class GSam:
 
 	self._show_code = self._xml.get_widget('show_code')
 	self._show_stack = self._xml.get_widget('show_stack')
-	self._show_heap = self._xml.get_widget('eshow_heap')
+	self._show_heap = self._xml.get_widget('show_heap')
 
 	self._mc_label = self._xml.get_widget('mc_label')
 	self._lc_label = self._xml.get_widget('lc_label')
