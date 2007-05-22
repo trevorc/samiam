@@ -64,7 +64,9 @@ sam_io_vfscanf(const sam_es *restrict es,
 	       va_list ap)
 {
     char *s;
-    sam_io_afgets(es, &s, ios);
+    if (sam_io_afgets(es, &s, ios) == NULL) {
+	return 0;
+    }
 
     int rv = vsscanf(s, fmt, ap);
     free(s);
