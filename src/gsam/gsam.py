@@ -358,7 +358,7 @@ class GSam:
 	self._stack_view.get_model().clear()
 	self._heap_view.get_model().clear()
 	self._module_combobox.get_model().clear()
-	self.reset_input_box()
+	self.reset_input_box('close')
 
     # on_close_activate () {{{3
     def on_close_activate(self, p):
@@ -694,7 +694,7 @@ class GSam:
 	    self._finished = False
 	    self._timer_id = None
 	    self._capture = None
-	    self.reset_input_box()
+	    self.reset_input_box('reset')
 	    self.append_banner_to_console("RESET")
 
     # GTK handlers {{{3
@@ -911,10 +911,11 @@ class GSam:
     def is_waiting_for_input(self):
 	return self._input_box.get_property("visible")
 
-    def reset_input_box(self):
+    def reset_input_box(self, reason=None):
 	if self.is_waiting_for_input():
 	    self._input_ready = False
 	    self._input_box.hide_all()
+	    self._input_canceled = reason
 	    gtk.main_quit()
 
     def sam_string_input(self):
@@ -930,8 +931,9 @@ class GSam:
 	    self._input_box.hide_all()
 	    self.append_to_console("User Input: %s" % res)
 	    return res
-	else: # Input canceled
-	    self._input_canceled = True
+	elif self._input_canceled == 'quit': # Input canceled
+	    self.gtk_main_quit()
+	else:
 	    return None
 
     def on_program_entry_activate(self, p):
@@ -999,6 +1001,7 @@ class GSam:
 
     # gtk_main_quit () {{{2
     def gtk_main_quit(*self):
+	self[0].reset_input_box('quit')
 	self[0].close_file()
 	gtk.main_quit()
 
