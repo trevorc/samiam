@@ -275,8 +275,10 @@ Module_instructions_get(Module *restrict self)
 static PyObject *
 Module_filename_get(Module *restrict self)
 {
-    return PyString_FromString(sam_es_file_get(self->es,
-					       self->module_num));
+    const char *restrict filename = sam_es_file_get(self->es,
+						    self->module_num);
+    return PyString_FromString(filename == NULL?
+			       "(Standard input)": filename);
 }
 
 /* PyGetSetDef Module_getset {{{2 */
@@ -1192,7 +1194,10 @@ Program_io_dispatcher(sam_io_func_name io_func, void *data)
 static int
 Program_load(Program *restrict self)
 {
-    self->es = sam_es_new(self->file, 1, Program_io_dispatcher, self);
+    // TODO shouldn't strcmp() work here?
+    self->es = sam_es_new(self->file[0] == '-' && self->file[1] == '\0'?
+			  NULL: self->file, 1, Program_io_dispatcher,
+			  self);
     if (self->es == NULL) {
 	PyErr_SetString(ParseError, "couldn't parse input file.");
 	return -1;
