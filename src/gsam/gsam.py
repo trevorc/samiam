@@ -358,6 +358,7 @@ class GSam:
 	self._stack_view.get_model().clear()
 	self._heap_view.get_model().clear()
 	self._module_combobox.get_model().clear()
+	self.reset_input_box()
 
     # on_close_activate () {{{3
     def on_close_activate(self, p):
@@ -607,10 +608,15 @@ class GSam:
 			self.clear_temporary_breakpoints()
 		    self.update_display()
 		except sam.SamError, (errnum,):
-		    self._finished = True
-		    self._timer_id = None
-		    self.clear_temporary_breakpoints()
-		    self.append_to_console("Error: %s" % sam.Errors[errnum])
+		    error = sam.Errors[errnum]
+		    if self._input_canceled and error == "I/O error":
+			# Not really an error, user canceled the input
+			return False
+		    else:
+			self._finished = True
+			self._timer_id = None
+			self.clear_temporary_breakpoints()
+			self.append_to_console("Error: %s" % error)
 	    return not self._finished
 
     # Single step, ignores breakpoints
@@ -629,18 +635,22 @@ class GSam:
 	if not (self._capture is None):
 	    prev_code = self.get_current_instruction()
 	rv = self.step()
-	if not (self._capture is None):
-	    self._capture.append(self.capture_current(prev_code))
-	if self._prog.lc in self._breakpoints[self._prog.mc]['normal']:
-	    return self.pause()
-	elif self._prog.lc in self._breakpoints[self._prog.mc]['temporary']:
-	    self._breakpoints[self._prog.mc]['temporary'].remove(self._prog.lc)
-	    return self.pause()
-	elif not (self._break_return is None) and self._break_return == 0:
-	    self._break_return = None
-	    return self.pause()
+	# if it got closed on an input...
+	if self._prog:
+	    if not (self._capture is None):
+		self._capture.append(self.capture_current(prev_code))
+	    if self._prog.lc in self._breakpoints[self._prog.mc]['normal']:
+		return self.pause()
+	    elif self._prog.lc in self._breakpoints[self._prog.mc]['temporary']:
+		self._breakpoints[self._prog.mc]['temporary'].remove(self._prog.lc)
+		return self.pause()
+	    elif not (self._break_return is None) and self._break_return == 0:
+		self._break_return = None
+		return self.pause()
+	    else:
+		return rv
 	else:
-	    return rv
+	    return False
 
     def pause_no_capture(self):
 	if not self.is_waiting_for_input():
@@ -899,10 +909,10 @@ class GSam:
 
     ### IO Funcs {{{2
     def is_waiting_for_input(self):
-	self._input_box.get_property("visible")
+	return self._input_box.get_property("visible")
 
     def reset_input_box(self):
-	if self._input_box.get_property("visible"):
+	if self.is_waiting_for_input():
 	    self._input_ready = False
 	    self._input_box.hide_all()
 	    gtk.main_quit()
@@ -910,6 +920,7 @@ class GSam:
     def sam_string_input(self):
 	self._input.set_text("")
 	self._input_ready = False
+	self._input_canceled = False
 	self._input_box.show_all()
 	self._input.grab_focus() # Hmm... focus grabbing...
 	gtk.main()
@@ -919,13 +930,13 @@ class GSam:
 	    self._input_box.hide_all()
 	    self.append_to_console("User Input: %s" % res)
 	    return res
-	else: # TODO failure?
-	    return self.sam_string_input()
+	else: # Input canceled
+	    self._input_canceled = True
+	    return None
 
     def on_program_entry_activate(self, p):
 	self._input_ready = True
 	gtk.main_quit()
-	# TODO return res in on_input_requested
 
     def sam_print(self, str):
 	self.append_to_console("Program output: %s" % str)
@@ -988,6 +999,7 @@ class GSam:
 
     # gtk_main_quit () {{{2
     def gtk_main_quit(*self):
+	self[0].close_file()
 	gtk.main_quit()
 
 # main {{{1

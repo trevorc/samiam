@@ -1166,7 +1166,12 @@ Program_io_afgets(char **restrict s,
     Program *restrict self = data;
     PyObject *res = PyEval_CallObject(self->input_func, arglist);
     Py_DECREF(arglist);
-    *s = strdup(PyString_AsString(res));
+    if (PyString_Check(res)) {
+	*s = strdup(PyString_AsString(res));
+    } else {
+	errno = 1; // uh, 1 means... whatever
+	*s = NULL;
+    }
     Py_DECREF(res);
     return *s;
 }
