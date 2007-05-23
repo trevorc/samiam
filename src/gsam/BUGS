@@ -6,7 +6,7 @@ HI	Release-critical bug.
 ***	Closed bug.
 
 ASGN SEV  NUM  DESC
-D    HI   #00  Fancy input caching/setup.
+D    ---  #00  Fancy input caching/setup.
 D    MED  #01  Capture saving.
 D    MED  #02  Breakpoint on all instances of an instruction
 D    MED  #03  Breakpoint on access to a specific area of memory
@@ -17,5 +17,5 @@ D    ---  #07  Printing wrong values for program output on x86-64.
 D    ---  #08  Instructions lists are not wide enough.
 D    ---  #09  In addition to reset message add close/load file messages
 D    ---  #10  What happens with buggy sam programs?
-D    LOW  #11  Accept sam file from standard input
+D    ---  #11  Accept sam file from standard input
 D    ***  #12  Use last JSR for stack frame title

@@ -919,6 +919,13 @@ class GSam:
 	    gtk.main_quit()
 
     def sam_string_input(self):
+	# If we have a prepared input ready, just go ahead and use it
+	if self.is_input_auto():
+	    auto_in = self.prepared_input_next()
+	    if not (auto_in is None):
+		self.append_to_console("Prepared Input: %s" % auto_in)
+		return auto_in
+
 	self._input.set_text("")
 	self._input_ready = False
 	self._input_canceled = False
@@ -944,11 +951,14 @@ class GSam:
 	self.append_to_console("Program output: %s" % str)
 
     ### Prepared Inputs {{{2
+    # Init {{{3
     def init_prepare_inputs_window(self):
 	self._prepare_inputs_window = self._xml.get_widget(\
 		'prepare_inputs_window')
 	self._inputs_view = self._xml.get_widget('inputs_view')
-	self._inputs_index = None
+	self._input_entry = self._xml.get_widget('input_entry')
+	self._input_auto = self._xml.get_widget('input_auto')
+	self._inputs_index = 0
 
 	self._prepare_inputs_value_dialog =\
 		self._xml.get_widget('prepare_inputs_value_dialog')
@@ -968,13 +978,46 @@ class GSam:
 	self._inputs_view.insert_column_with_data_func(-1, "curr", cell,\
 		inputs_curr, self)
 	cell = gtk.CellRendererText()
-	column = gtk.TreeViewColumn("input", cell, text=1)
+	cell.set_property('editable', True)
+	cell.connect('edited', self.inputs_cell_edited)
+	column = gtk.TreeViewColumn("input", cell, text=0)
 	self._inputs_view.append_column(column)
 	self._inputs_view.set_search_column(0)
 
+    def inputs_cell_edited(self, cell, path, new_text):
+	model = self._inputs_view.get_model()
+	iter = model.get_iter(path)
+	model.set_value(iter, 0, new_text)
+
+    # Helpers {{{3
     def get_input_curr_index(self):
 	return self._inputs_index
 
+    def is_input_auto(self):
+	return self._input_auto.get_active()
+
+    def get_inputs_focus_path(self):
+	focus = self._inputs_view.get_cursor()[0]
+	if focus is None:
+	    return None
+	else:
+	    return focus
+
+    def get_inputs_focus_iter(self):
+	path = self.get_inputs_focus_path()
+	if path is None:
+	    return None
+	else:
+	    return self._inputs_view.get_model().get_iter(path)
+
+    def get_inputs_focus_row(self):
+	path = self.get_inputs_focus_path()
+	if path is None:
+	    return None
+	else:
+	    return path[0]
+
+    # GUI/Editing data {{{3
     def show_prepare_inputs_window(self):
 	self._prepare_inputs_window.show()
 
@@ -982,15 +1025,68 @@ class GSam:
 	self._prepare_inputs_window.hide()
 
     def show_add_input_dialog(self):
+	self._input_entry.set_text('')
+	self._input_entry.grab_focus()
 	res = self._prepare_inputs_value_dialog.run()
-	# XXX
+	self._prepare_inputs_value_dialog.hide()
+	if res == gtk.RESPONSE_ACCEPT:
+	    self._inputs_view.get_model().append(
+		    (self._input_entry.get_text(),))
 
-    # GTK handles {{{3
+    # Using data {{{3
+    # iterates through prepared inputs
+    def prepared_input_next(self):
+	i = self.get_input_curr_index()
+	model = self._inputs_view.get_model()
+	if not (i is None) and i < model.iter_n_children(None):
+	    j = i + 1
+	    if j < model.iter_n_children(None):
+		self._inputs_index = j
+	    else:
+		self._inputs_index = None
+	    return model.get_value(model.iter_nth_child(None, i), 0)
+	return None
+
+    def use_prepared_input(self):
+	if self.is_waiting_for_input():
+	    input = self.prepared_input_next()
+	    if input is None:
+		return False
+	    else:
+		self._input.set_text(input)
+		self.on_program_entry_activate(None)
+		# Note: this will not return
+	else:
+	    return False
+
+    # GTK handlers {{{3
+    def on_input_entry_activate(self, p):
+	self._prepare_inputs_value_dialog.response(gtk.RESPONSE_ACCEPT)
+
     def on_show_prepare_inputs_activate(self, p):
 	self.show_prepare_inputs_window()
 
+    def on_input_close_clicked(self, p):
+	self.hide_prepare_inputs_window()
+
     def on_input_add_clicked(self, p):
 	self.show_add_input_dialog()
+
+    def on_input_remove_clicked(self, p):
+	model = self._inputs_view.get_model()
+	model.remove(self.get_inputs_focus_iter())
+	cur_index = self.get_input_curr_index()
+	if cur_index >= model.iter_n_children(None) and cur_index > 0:
+	    self._inputs_index = self._inputs_index - 1
+
+    def on_input_clear_clicked(self, p):
+	self._inputs_index = 0
+	self._inputs_view.get_model().clear()
+
+    def on_inputs_view_row_activated(self, treeview, path, column):
+	self._inputs_index = path[0]
+	self.hide_prepare_inputs_window()
+	self.use_prepared_input()
 
     # About dialog {{{2
     def on_about_activate(self, p):
