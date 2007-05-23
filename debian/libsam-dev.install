@@ -1,2 +1,2 @@
-usr/include/*
-usr/lib/pkgconfig/*
+src/include/*.h usr/include/
+src/include/libsam/*.h usr/include/libsam/
