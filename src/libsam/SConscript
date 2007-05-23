@@ -1,5 +1,6 @@
 Import('conf')
 Import('dirs')
+Import('version')
 
 conf.CheckLib('dl')
 libsam = conf.env.SharedLibrary('sam', [
@@ -17,6 +18,7 @@ libsam = conf.env.SharedLibrary('sam', [
 	'util.c',
 ])
 conf.env.Append(LIBS=['c', 'm'])
-conf.env.Install(dirs['install']['lib'], libsam)
 
+# Yeah, it's not even portable.
+Alias('install', conf.env.InstallAs(dirs['install']['lib'] + '/libsam' + conf.env['SHLIBSUFFIX'] + '.' + version, libsam))
 SConscript(['../samiam/SConscript'], ['conf', 'dirs', 'libsam'])

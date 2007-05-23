@@ -1,5 +1,6 @@
 Import('ccflags')
 Import('dirs')
+Import('version')
 
 conf = Configure(
     Environment(CCFLAGS=ccflags,
@@ -15,5 +16,5 @@ if conf.CheckCHeader('unistd.h'):
 if conf.CheckCHeader('locale.h'):
     conf.env.Append(CCFLAGS=' -DHAVE_LOCALE_H')
 
-SConscript(['libsam/SConscript'], ['conf', 'dirs'])
+SConscript(['libsam/SConscript'], ['conf', 'dirs', 'version'])
 env = conf.Finish()

@@ -12,5 +12,5 @@ else:
     sources += ['parse_options_plain.c']
 
 samiam = conf.env.Program('samiam', sources, LIBS='sam')
-conf.env.Install(dirs['install']['bin'], samiam)
+Alias('install', conf.env.Install(dirs['install']['bin'], samiam))
 Depends(samiam, libsam)

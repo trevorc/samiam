@@ -10,7 +10,6 @@ cflags = [
     '-Wall',
     '-Wmissing-prototypes',
     '-Wmissing-declarations',
-#    '-Wstrict-prototypes',
     '-Wpointer-arith',
     '-Wnested-externs',
     '-Wdisabled-optimization',
@@ -24,6 +23,7 @@ cflags = [
     '-Wmissing-format-attribute',
     '-Wredundant-decls',
     '-Wformat',
+    '-D_REENTRANT',
 #	'-msse3 -march=pentium-m',
 #	'-mpower -mpowerpc -mcpu=powerpc', 
 #	'-mthumb-interwork -msoft-float',
@@ -36,15 +36,12 @@ release = [
     '-O3',
 ]
 
-if int(ARGUMENTS.get('debug', debug_default)):
-    ccflags = ' '.join(debug + cflags)
-else:
-    ccflags = ' '.join(release + cflags)
+destdir = ARGUMENTS.get('DESTDIR', '')
 
 dirs = {
     'install': {
-	'bin': '/usr/local/bin',
-	'lib': '/usr/local/lib',
+	'bin': destdir + '/usr/bin',
+	'lib': destdir + '/usr/lib',
     },
     'build': {
 	'bin': '#build/samiam',
@@ -52,4 +49,15 @@ dirs = {
     },
 }
 
-SConscript('src/SConscript', ['ccflags', 'dirs'], build_dir='build', duplicate=0)
+version_file = file('VERSION')
+try:
+    version = version_file.readline().strip()
+finally:
+    version_file.close()
+
+if int(ARGUMENTS.get('debug', debug_default)):
+    ccflags = ' '.join(debug + cflags)
+else:
+    ccflags = ' '.join(release + cflags)
+
+SConscript('src/SConscript', ['ccflags', 'dirs', 'version'], build_dir='build', duplicate=0)
