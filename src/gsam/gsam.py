@@ -416,6 +416,11 @@ class GSam:
 	else:
 	    return None
 
+    def set_selected_code_line(self, line):
+	self._code_view.get_selection().select_path((line,))
+	self._code_view.scroll_to_cell((line,))
+	self.refresh_code_display()
+
     def refresh_code_display(self):
 	self._code_view.queue_draw() # TODO better way to do this?
 
@@ -426,6 +431,11 @@ class GSam:
     #	not one being executed
     def get_current_module_num(self):
 	return self._module_combobox.get_active()
+
+    def set_current_module_num(self, modnum):
+	if self._prog and self._code_models:
+	    self._module_combobox.set_active(modnum)
+	    self.update_code_display()
 
     def get_current_module(self):
 	return self._prog.modules[self.get_current_module_num()]
@@ -574,6 +584,36 @@ class GSam:
 		n = change.start - base
 		riter = model.iter_nth_child(iter, n)
 		self.set_row_to_value(model, riter, change.start, change.value)
+
+    ### Stack/heap value target jumping {{{2
+    def on_mem_view_row_activated(self, tview, path, col):
+	model = tview.get_model()
+	iter = model.get_iter(path)
+	typec = model.get_value(iter, 1)
+	val = model.get_value(iter, 2)
+	if typec == 'S' or typec == 'H':
+	    addr = int(val)
+	    if typec == 'S':
+		tv = self._stack_view
+	    elif typec == 'H':
+		tv = self._heap_view
+	    model = tv.get_model()
+	    baseIter = self.get_block_near_iter(model, addr)
+	    basePath = model.get_path(baseIter)
+	    baseAddr = model.get_value(model.iter_nth_child(baseIter, 0), 0)
+	    n = addr - baseAddr
+	    if n < model.iter_n_children(baseIter):
+		riter = model.iter_nth_child(baseIter, n)
+		rpath = model.get_path(riter)
+
+		tv.expand_row(basePath, False)
+		tv.get_selection().select_path(rpath)
+		tv.scroll_to_cell(rpath)
+		tv.queue_draw()
+	elif typec == 'P':
+	    pa = val.split(':')
+	    self.set_current_module_num(int(pa[0]))
+	    self.set_selected_code_line(int(pa[1]))
 
     ### General display updating {{{2
     def reset_memory_display(self):
