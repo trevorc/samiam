@@ -57,6 +57,22 @@
 #endif
 #define isspace(c) ((c) == ' ' || (c) == '\n' || (c) == '\t')
 
+typedef enum {
+    SAM_DIRECTIVE_NONE,
+    SAM_DIRECTIVE_ROI,
+    SAM_DIRECTIVE_ROF,
+    SAM_DIRECTIVE_ROS,
+    SAM_DIRECTIVE_ROC,
+    SAM_DIRECTIVE_GLOBAL,
+    SAM_DIRECTIVE_IMPORT,
+    SAM_DIRECTIVE_EXPORT,
+} sam_directive_symbol;
+
+typedef struct {
+    const char *restrict name;
+    sam_directive_symbol symbol;
+} sam_directive;
+
 static void
 sam_eat_whitespace(char *restrict *restrict s)
 {
@@ -115,6 +131,19 @@ sam_error_identifier(const sam_es *restrict es,
 	sam_io_fprintf(es,
 		       SAM_IOS_ERR,
 		       "error: couldn't parse identifier: %s.\n",
+		       s);
+    }
+}
+
+static inline void
+sam_error_invalid_directive(const sam_es *restrict es,
+			    char *s)
+{
+    if (!sam_es_options_get(es, SAM_QUIET)) {
+	sam_truncate(s);
+	sam_io_fprintf(es,
+		       SAM_IOS_ERR,
+		       "error: invalid directive: %s.\n",
 		       s);
     }
 }
@@ -522,6 +551,108 @@ sam_input_read(const char *restrict path,
 
 #endif /* HAVE_MMAN_H */
 
+static bool
+sam_directive_name(const char *restrict s)
+{
+    static const sam_directive directives[] = {
+	{"roi",	    SAM_DIRECTIVE_ROI},
+	{"rof",	    SAM_DIRECTIVE_ROF},
+	{"ros",	    SAM_DIRECTIVE_ROF},
+	{"roc",	    SAM_DIRECTIVE_ROC},
+	{"global",  SAM_DIRECTIVE_GLOBAL},
+	{"import",  SAM_DIRECTIVE_IMPORT},
+	{"export",  SAM_DIRECTIVE_EXPORT},
+	{NULL,	    SAM_DIRECTIVE_NONE},
+    };
+
+    for (size_t i = 0; directives[i].name != NULL; ++i) {
+	if (!strcmp(s, directives[i].name)) {
+	    return directives[i].symbol;
+	}
+    }
+
+    return SAM_DIRECTIVE_NONE;
+}
+
+static bool
+sam_try_parse_roi(sam_es *restrict es __attribute__((unused)),
+		  char **restrict input __attribute__((unused)))
+{
+    return false;
+}
+
+static bool
+sam_try_parse_rof(sam_es *restrict es __attribute__((unused)),
+		  char **restrict input __attribute__((unused)))
+{
+    return false;
+}
+
+static bool
+sam_try_parse_ros(sam_es *restrict es __attribute__((unused)),
+		  char **restrict input __attribute__((unused)))
+{
+    return false;
+}
+
+static bool
+sam_try_parse_roc(sam_es *restrict es __attribute__((unused)),
+		  char **restrict input __attribute__((unused)))
+{
+    return false;
+}
+
+static bool
+sam_try_parse_global(sam_es *restrict es __attribute__((unused)),
+		     char **restrict input __attribute__((unused)))
+{
+    return false;
+}
+
+static bool
+sam_try_parse_import(sam_es *restrict es __attribute__((unused)),
+		     char **restrict input __attribute__((unused)))
+{
+    return false;
+}
+
+static bool
+sam_try_parse_export(sam_es *restrict es __attribute__((unused)),
+		     char **restrict input __attribute__((unused)))
+{
+    return false;
+}
+
+static bool
+sam_parse_directive(sam_es *restrict es,
+		    char **restrict input)
+{
+    char *start = *input;
+
+    while (*start != '\0' && !isspace(*start++)) {
+	sam_eat_whitespace(&start);
+	break;
+    }
+
+    sam_directive_symbol symbol = sam_directive_name(start);
+    if (symbol == SAM_DIRECTIVE_NONE) {
+	return false;
+    }
+
+    if (!sam_try_parse_roi(es, &start) &&
+	!sam_try_parse_rof(es, &start) &&
+	!sam_try_parse_ros(es, &start) &&
+	!sam_try_parse_roc(es, &start) &&
+	!sam_try_parse_global(es, &start) &&
+	!sam_try_parse_export(es, &start) &&
+	!sam_try_parse_import(es, &start)) {
+	return false;
+    }
+
+    *input = start;
+    return true;
+}
+
 /*@null@*/ bool
 sam_parse(sam_es *restrict es,
 	  const char *restrict file)
@@ -542,28 +673,26 @@ sam_parse(sam_es *restrict es,
 	    ++input;
 	}
     }
-#if 0
 
     /* Parse directives at the beginning of the file. */
     while (*input != '\0') {
 	sam_eat_whitespace(&input);
 
 	if (*input == '\0' || *input != '.') {
-	    ++input;
-	    if (!sam_parse_directive(es)) {
-		sam_error_invalid_directive(es, input);
-		return false;
-	    }
-	    if (!sam_try_parse_ro_directive() ||
-		!sam_try_parse_global() ||
-		!sam_try_parse_import() ||
-		!sam_try_parse_export()) {
-		return false;
-	    }
+	    break;
+	}
+	++input;
+
+	if (!sam_parse_directive(es, &input)) {
+	    sam_error_invalid_directive(es, input);
+	    return false;
+	}
+	sam_eat_whitespace(&input);
+
+	if (*input != '.') {
 	    break;
 	}
     }
-#endif
 
 #endif /* SAM_EXTENSIONS */
 
