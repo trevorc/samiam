@@ -1,8 +1,10 @@
 Import('conf')
 Import('dirs')
 Import('libsam')
+Import('i18n')
 
 sources = ['samiam.c']
+domain = 'samiam'
 
 if conf.CheckFunc('getopt_long'):
     sources += ['parse_options_gnu.c']
@@ -11,6 +13,10 @@ elif conf.CheckFunc('getopt'):
 else:
     sources += ['parse_options_plain.c']
 
+conf.env['PACKAGE'] = domain
+conf.env['POTFILE'] = domain + '.pot'
+
+i18n(conf.env, sources)
 samiam = conf.env.Program('samiam', sources, LIBS='sam')
 Alias('install', conf.env.Install(dirs['install']['bin'], samiam))
 Depends(samiam, libsam)

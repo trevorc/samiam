@@ -1,9 +1,15 @@
+import os
+
 Import('conf')
 Import('dirs')
 Import('version')
+Import('i18n')
 
 conf.CheckLib('dl')
-libsam = conf.env.SharedLibrary('sam', [
+conf.CheckLib('intl')
+
+domain = 'libsam'
+sources = [
 	'array.c',
 	'error.c',
 	'es.c',
@@ -16,9 +22,15 @@ libsam = conf.env.SharedLibrary('sam', [
 	'parse.c',
 	'string.c',
 	'util.c',
-])
-conf.env.Append(LIBS=['c', 'm'])
+]
 
-# Yeah, it's not even portable.
-Alias('install', conf.env.InstallAs(dirs['install']['lib'] + '/libsam' + conf.env['SHLIBSUFFIX'] + '.' + version, libsam))
-SConscript(['../samiam/SConscript'], ['conf', 'dirs', 'libsam'])
+conf.env.Append(PACKAGE=domain)
+conf.env.Append(POTFILE=domain + '.pot')
+
+conf.env.Append(LIBS=['c', 'm'])
+i18n(conf.env, sources)
+libsam = conf.env.SharedLibrary('sam', sources)
+
+# TODO: portable
+Alias('install', conf.env.InstallAs(os.path.join(dirs['install']['lib'], 'libsam' + conf.env['SHLIBSUFFIX'] + '.' + version), libsam))
+SConscript(['../samiam/SConscript'], ['conf', 'dirs', 'libsam', 'i18n'])
