@@ -1,0 +1,55 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: samiam 1.1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2007-06-02 14:51+0800\n"
+"PO-Revision-Date: 2007-06-01 06:14+0800\n"
+"Last-Translator: Trevor Caira <toc3@cornell.edu>\n"
+"Language-Team: Chinese <zh-l10n@linux.org.tw>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: src/samiam/parse_options_gnu.c:75
+#, c-format
+msgid ""
+"Usage: %s [OPTION]... [FILE]\n"
+"Interpret and execute FILE as sam.\n"
+"\n"
+"  -q, --quiet    suppress most error messages\n"
+"      --help     display this help and exit\n"
+"      --version  output version information and exit\n"
+"\n"
+msgstr ""
+"用法: %s [<選項>]... [<檔案>]\n"
+"解讀和執行 <檔案> 為 sam。\n"
+"\n"
+"  -q, --quiet    去除大部份的錯誤訊息\n"
+"      --help     顯示此求助說明並離開\n"
+"      --version  顯示版本資訊並離開\n"
+"\n"
+
+#: src/samiam/parse_options_gnu.c:87
+#, c-format
+msgid "Try `%s --help' for more information.\n"
+msgstr "請嘗試執行‘%s --help’來獲取更多資訊。\n"
+
+# samiam l10n
+# Copyright (C) 2007 Trevor Caira
+# Trevor Caira <toc3@cornell.edu>, 2007
+#
+#~ msgid "usage: samiam [-q] [samfile]"
+#~ msgstr "用法: samiam [-q] [samfile]"
+
+#~ msgid ""
+#~ "usage: samiam [options ...] [samfile]\n"
+#~ "Interpret and execute a SaM source file.\n"
+#~ "\n"
+#~ "options:\n"
+#~ "    -q    suppress output\n"
+#~ msgstr ""
+#~ "usage: samiam [options ...] [samfile]\n"
+#~ "解讀和執行檔案為 sam。\n"
+#~ "\n"
+#~ "options:\n"
+#~ "    -q    suppress output\n"

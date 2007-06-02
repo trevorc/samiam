@@ -1,0 +1,33 @@
+# samiam l10n
+# Copyright (C) 2007 Trevor Caira
+# Trevor Caira <toc3@cornell.edu>, 2007
+#
+#: parse_options_bsd.c:40
+msgid "usage: samiam [-q] [samfile]"
+msgstr ""
+
+#: parse_options_gnu.c:73
+#, c-format
+msgid ""
+"Usage: %s [OPTION]... [FILE]\n"
+"Interpret and execute FILE as sam.\n"
+"\n"
+"  -q, --quiet    suppress most error messages\n"
+"      --help     display this help and exit\n"
+"      --version  output version information and exit\n"
+"\n"
+msgstr ""
+
+#: parse_options_gnu.c:85
+#, c-format
+msgid "Try `%s --help' for more information.\n"
+msgstr ""
+
+#: parse_options_plain.c:39
+msgid ""
+"usage: samiam [options ...] [samfile]\n"
+"Interpret and execute a SaM source file.\n"
+"\n"
+"options:\n"
+"    -q    suppress output\n"
+msgstr ""
