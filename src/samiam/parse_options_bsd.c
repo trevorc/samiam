@@ -27,6 +27,8 @@
  *
  */
 
+#include "samiam.h"
+
 #include <stdio.h>
 #include <string.h>
 #include <sam.h>
@@ -37,7 +39,7 @@
 static bool
 samiam_usage(void)
 {
-    puts("usage: samiam [-q] [samfile]");
+    puts(_("usage: samiam [-q] [samfile]"));
     return false;
 }
 

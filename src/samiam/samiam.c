@@ -28,9 +28,15 @@
  *
  */
 
+#include "samiam.h"
+
 #include <stdio.h>
 #include <string.h>
 #include <sam.h>
+
+#if defined(HAVE_LIBINTL_H)
+# include <locale.h>
+#endif /* HAVE_LIBINTL_H */
 
 #include "parse_options.h"
 
@@ -40,6 +46,12 @@ main(int argc,
 {
     sam_options options = 0;
     char *file = NULL;
+
+#if defined(HAVE_LIBINTL_H)
+    setlocale(LC_ALL, "");
+    bindtextdomain(PACKAGE, LOCALEDIR);
+    textdomain(PACKAGE);
+#endif /* HAVE_LIBINTL_H */
 
     return samiam_parse_options(argc, argv, &options, &file)?
 	sam_main(options, file, NULL): SAM_USAGE;

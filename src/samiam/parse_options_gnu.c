@@ -27,6 +27,8 @@
  *
  */
 
+#include "samiam.h"
+
 #define _GNU_SOURCE
 #include <stdio.h>
 #include <string.h>
@@ -39,7 +41,7 @@ __attribute__((noreturn))
 static int
 samiam_copyright(void)
 {
-    puts("samiam 0.1\n"
+    puts("samiam " VERSION "\n"
 	 "Copyright (c) 2007 Trevor Caira, Jimmy Hartzell\n");
 
     puts("Permission is hereby granted, free of charge, to any person "
@@ -70,11 +72,11 @@ __attribute__((noreturn))
 static int
 samiam_help(const char *restrict name)
 {
-    printf("Usage: %s [OPTION]... [FILE]\n"
-	   "Interpret and execute a SaM source file.\n\n"
-	   "  -q, --quiet    suppress verbose output\n"
-	   "      --help     display this help and exit\n"
-	   "      --version  output version information and exit\n\n",
+    printf(_("Usage: %s [OPTION]... [FILE]\n"
+	     "Interpret and execute FILE as sam.\n\n"
+	     "  -q, --quiet    suppress most error messages\n"
+	     "      --help     display this help and exit\n"
+	     "      --version  output version information and exit\n\n"),
 	   name);
     exit(0);
 }
@@ -82,7 +84,7 @@ samiam_help(const char *restrict name)
 static int
 samiam_usage(const char *restrict name)
 {
-    printf("Try `%s --help' for more information.\n", name);
+    printf(_("Try `%s --help' for more information.\n"), name);
     return false;
 }
 

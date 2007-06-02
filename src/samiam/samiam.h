@@ -3,7 +3,7 @@
  *
  * part of samiam - the fast sam interpreter
  *
- * Copyright (c) 2007 Trevor Caira, Jimmy Hartzell
+ * Copyright (c) 2007 Trevor Caira, Jimmy Hartzell, Daniel Perelman
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -27,36 +27,21 @@
  *
  */
 
-#include "samiam.h"
+#ifndef SAMIAM_H
+#define SAMIAM_H
 
-#include <stdio.h>
-#include <string.h>
-#include <sam.h>
+#define PACKAGE "samiam"
 
-#include "parse_options.h"
+#if defined(HAVE_LIBINTL_H)
+#include <libintl.h>
+#define _(String) gettext(String)
+#define gettext_noop(String) String
+#define N_(String) gettext_noop(String)
+# else /* !HAVE_LIBINTL_H */
+#define _(String) (String)
+#define N_(String) String
+#define textdomain(Domain)
+#define bindtextdomain(Package, Directory)
+#endif /* HAVE_LIBINTL_H */
 
-static bool
-samiam_usage(void)
-{
-    puts(_("usage: samiam [options ...] [samfile]\n"
-	   "Interpret and execute a SaM source file.\n\n"
-	   "options:\n"
-	   "    -q    suppress output\n"));
-
-    return false;
-}
-
-bool
-samiam_parse_options(int argc,
-		     char *const argv[restrict],
-		     sam_options *restrict options,
-		     char **restrict file)
-{
-    if (argc > 1 && (strcmp (argv[1], "-q") == 0)) {
-	*options |= SAM_QUIET;
-	++argv;
-	--argc;
-    }
-    *file = argc == 1? NULL: argv[1];
-    return argc > 2: samiam_usage(): true;
-}
+#endif /* SAMIAM_H */
