@@ -1,12 +1,11 @@
+import os
+
+Import('conf')
 Import('ccflags')
 Import('dirs')
 Import('version')
+Import('i18n')
 
-conf = Configure(
-    Environment(CCFLAGS=ccflags,
-		CPPPATH='../include',
-		LIBPATH=dirs['build']['lib']
-))
 if conf.CheckCHeader('sys/mman.h'):
     conf.env.Append(CCFLAGS=' -DHAVE_MMAN_H')
 if conf.CheckCHeader('dlfcn.h'):
@@ -15,6 +14,10 @@ if conf.CheckCHeader('unistd.h'):
     conf.env.Append(CCFLAGS=' -DHAVE_UNISTD_H')
 if conf.CheckCHeader('locale.h'):
     conf.env.Append(CCFLAGS=' -DHAVE_LOCALE_H')
+if conf.CheckCHeader('libintl.h'):
+    conf.env.Append(CCFLAGS=' -DHAVE_LIBINTL_H') 
 
-SConscript(['libsam/SConscript'], ['conf', 'dirs', 'version'])
+conf.env.Append(CCFLAGS=' -DLOCALEDIR=\\"' + os.path.join(dirs['install']['locale'] + '\\"'))
+
+SConscript(['libsam/SConscript'], ['conf', 'dirs', 'version', 'i18n'])
 env = conf.Finish()
