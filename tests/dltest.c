@@ -25,7 +25,7 @@ addemup(sam_es *restrict es)
 	if (m->type != SAM_ML_TYPE_INT) {
 	    sam_ml_type t = m->type;
 	    free(m);
-	    return sam_error_stack_input(es, "first", t, SAM_ML_TYPE_INT);
+	    return sam_error_stack_input(es, 1, t, SAM_ML_TYPE_INT);
 	}
 	i = m->value.i;
 	free(m);

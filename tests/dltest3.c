@@ -17,7 +17,7 @@ printy(sam_es *restrict es)
 	if (m->type != SAM_ML_TYPE_HA) {
 	    sam_ml_type t = m->type;
 	    free(m);
-	    return sam_error_stack_input(es, "first", t, SAM_ML_TYPE_HA);
+	    return sam_error_stack_input(es, 1, t, SAM_ML_TYPE_HA);
 	}
 	ha = m->value.ha;
 	free(m);
