@@ -22,7 +22,7 @@ clean:
 	dh_testroot
 	rm -f build-stamp configure-stamp
 
-	scons -c
+	scons -c scrub
 	make -C doc clean
 
 	dh_clean 
