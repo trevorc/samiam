@@ -90,7 +90,7 @@ extern sam_error sam_error_type_conversion   (sam_es *restrict es,
 extern sam_error sam_error_unknown_identifier(sam_es *restrict es,
 					      const char *restrict name);
 extern sam_error sam_error_stack_input	     (sam_es *restrict es,
-					      const char *restrict which,
+					      int which,
 					      sam_ml_type found,
 					      sam_ml_type expected);
 extern sam_error sam_error_negative_shift    (sam_es *restrict es,
@@ -101,6 +101,8 @@ extern void sam_error_uninitialized	     (sam_es *restrict es);
 extern void sam_error_number_format	     (sam_es *restrict es,
 					      const char *buf);
 extern sam_error sam_error_final_stack_state (sam_es *restrict es);
+extern sam_error sam_error_nosys	     (sam_es *restrict es,
+					      const char *restrict s);
 #if defined(SAM_EXTENSIONS) && defined(HAVE_DLFCN_H)
 extern sam_error sam_error_dlopen	     (sam_es *restrict es,
 					      const char *filename,

@@ -53,4 +53,6 @@ typedef float sam_float;
 /** Greatest value a sam_stack_address can hold. */
 #define SAM_STACK_PTR_MAX LONG_MAX
 
+#define VERSION "1.1.0"
+
 #endif /* LIBSAM_CONFIG_H */
