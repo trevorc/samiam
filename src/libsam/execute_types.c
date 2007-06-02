@@ -27,6 +27,8 @@
  *
  */
 
+#include "libsam.h"
+
 #include <libsam/util.h>
 #include <libsam/execute_types.h>
 
@@ -50,13 +52,13 @@ sam_ml_new(sam_ml_value v,
 sam_ml_type_to_string(sam_ml_type t)
 {
     switch (t) {
-	case SAM_ML_TYPE_INT:	return "integer";
-	case SAM_ML_TYPE_FLOAT:	return "float";
-	case SAM_ML_TYPE_HA:	return "heap address";
-	case SAM_ML_TYPE_SA:	return "stack address";
-	case SAM_ML_TYPE_PA:	return "program address";
+	case SAM_ML_TYPE_INT:	return _("integer");
+	case SAM_ML_TYPE_FLOAT:	return _("float");
+	case SAM_ML_TYPE_HA:	return _("heap address");
+	case SAM_ML_TYPE_SA:	return _("stack address");
+	case SAM_ML_TYPE_PA:	return _("program address");
 	case SAM_ML_TYPE_NONE: /*@fallthrough@*/
-	default:		return "nonetype";
+	default:		return _("nonetype");
     }
 }
 

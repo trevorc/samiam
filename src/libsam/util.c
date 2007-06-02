@@ -28,6 +28,8 @@
  *
  */
 
+#include "libsam.h"
+
 #include <stdlib.h>
 #include <libsam/util.h>
 
@@ -50,7 +52,7 @@ sam_malloc(size_t size)
 
     if ((p = malloc(size)) == NULL) {
 #if defined(HAVE_UNISTD_H)
-	write(STDERR_FILENO, "no memory\n", 10);
+	write(STDERR_FILENO, "no memory", 10);
 #endif
 	abort();
     }
@@ -65,7 +67,7 @@ sam_realloc(/*@only@*/ void *p,
     if ((p = realloc(p, size)) == NULL) {
 	free(p);
 #if defined(HAVE_UNISTD_H)
-	write(STDERR_FILENO, "no memory\n", 10);
+	write(STDERR_FILENO, "no memory", 10);
 #endif
 	abort();
     }

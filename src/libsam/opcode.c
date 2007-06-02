@@ -27,6 +27,8 @@
  *
  */
 
+#include "libsam.h"
+
 #include <math.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -259,12 +261,12 @@ sam_addition(/*@in@*/ sam_es *restrict es,
 	    t = m1->type;
 	    free(m1);
 	    free(m2);
-	    return sam_error_stack_input(es, "first", t, SAM_ML_TYPE_INT);
+	    return sam_error_stack_input(es, 1, t, SAM_ML_TYPE_INT);
     }
     t = m2->type;
     free(m1);
     free(m2);
-    return sam_error_stack_input(es, "second", t, SAM_ML_TYPE_INT);
+    return sam_error_stack_input(es, 2, t, SAM_ML_TYPE_INT);
 }
 
 static sam_error
@@ -286,20 +288,20 @@ sam_integer_arithmetic(sam_es *restrict es,
 	    sam_ml_type found = m2->type;
 	    free(m1);
 	    free(m2);
-	    return sam_error_stack_input(es, "second", found, expected);
+	    return sam_error_stack_input(es, 2, found, expected);
 	}
     } else {
 	if (m1->type != SAM_ML_TYPE_INT) {
 	    sam_ml_type t = m1->type;
 	    free(m1);
 	    free(m2);
-	    return sam_error_stack_input(es, "first", t, SAM_ML_TYPE_INT);
+	    return sam_error_stack_input(es, 1, t, SAM_ML_TYPE_INT);
 	}
 	if (m2->type != SAM_ML_TYPE_INT) {
 	    sam_ml_type t = m2->type;
 	    free(m1);
 	    free(m2);
-	    return sam_error_stack_input(es, "second", t, SAM_ML_TYPE_INT);
+	    return sam_error_stack_input(es, 2, t, SAM_ML_TYPE_INT);
 	}
     }
 
@@ -394,7 +396,7 @@ sam_float_arithmetic(sam_es *restrict es,
     if (m2->type != SAM_ML_TYPE_FLOAT) {
 	sam_ml_type t = m2->type;
 	free(m2);
-	return sam_error_stack_input(es, "first", t, SAM_ML_TYPE_FLOAT);
+	return sam_error_stack_input(es, 1, t, SAM_ML_TYPE_FLOAT);
     }
     sam_ml *restrict m1 = sam_es_stack_pop(es);
     if (m1 == NULL) {
@@ -405,7 +407,7 @@ sam_float_arithmetic(sam_es *restrict es,
 	sam_ml_type t = m1->type;
 	free(m1);
 	free(m2);
-	return sam_error_stack_input(es, "second", t, SAM_ML_TYPE_INT);
+	return sam_error_stack_input(es, 2, t, SAM_ML_TYPE_INT);
     }
 
     switch(op) {
@@ -446,7 +448,7 @@ sam_unary_arithmetic(sam_es			    *restrict es,
     if (m1->type != SAM_ML_TYPE_INT) {
 	sam_ml_type t = m1->type;
 	free(m1);
-	return sam_error_stack_input(es, "first", t, SAM_ML_TYPE_INT);
+	return sam_error_stack_input(es, 1, t, SAM_ML_TYPE_INT);
     }
 
     switch(op) {
@@ -502,7 +504,7 @@ sam_bitshift(/*@in@*/ sam_es    *restrict es,
     if (m->type != SAM_ML_TYPE_INT) {
 	sam_ml_type t = m->type;
 	free(m);
-	return sam_error_stack_input(es, "first", t, SAM_ML_TYPE_INT);
+	return sam_error_stack_input(es, 1, t, SAM_ML_TYPE_INT);
     }
     if (cur->operand.i < 0) {
 	sam_int i = m->value.i;
@@ -526,7 +528,7 @@ sam_bitshiftind(/*@in@*/ sam_es *restrict es,
     if (m2->type != SAM_ML_TYPE_INT) {
 	sam_ml_type t = m2->type;
 	free(m2);
-	return sam_error_stack_input(es, "first", t, SAM_ML_TYPE_INT);
+	return sam_error_stack_input(es, 1, t, SAM_ML_TYPE_INT);
     }
 
     sam_ml *restrict m1 = sam_es_stack_pop(es);
@@ -538,7 +540,7 @@ sam_bitshiftind(/*@in@*/ sam_es *restrict es,
 	sam_ml_type t = m1->type;
 	free(m1);
 	free(m2);
-	return sam_error_stack_input(es, "second", t, SAM_ML_TYPE_INT);
+	return sam_error_stack_input(es, 2, t, SAM_ML_TYPE_INT);
     }
     m1->value.i = sam_do_shift(m1->value.i, m2->value.i, type);
     free(m2);
@@ -784,7 +786,7 @@ sam_op_popsp(/*@in@*/ sam_es *restrict es)
     if (m->type != SAM_ML_TYPE_SA) {
 	sam_ml_type t = m->type;
 	free(m);
-	return sam_error_stack_input(es, "first", t, SAM_ML_TYPE_SA);
+	return sam_error_stack_input(es, 1, t, SAM_ML_TYPE_SA);
     }
     i = m->value.sa;
     free(m);
@@ -803,7 +805,7 @@ sam_op_popfbr(/*@in@*/ sam_es *restrict es)
     if (m->type != SAM_ML_TYPE_SA) {
 	sam_ml_type t = m->type;
 	free(m);
-	return sam_error_stack_input(es, "first", t, SAM_ML_TYPE_SA);
+	return sam_error_stack_input(es, 1, t, SAM_ML_TYPE_SA);
     }
     sam_es_fbr_set(es, m->value.sa);
     free(m);
@@ -875,7 +877,7 @@ sam_op_malloc(/*@in@*/ sam_es *restrict es)
     if (m->type != SAM_ML_TYPE_INT) {
 	sam_ml_type t = m->type;
 	free(m);
-	return sam_error_stack_input(es, "first", t, SAM_ML_TYPE_INT);
+	return sam_error_stack_input(es, 1, t, SAM_ML_TYPE_INT);
     }
     if (m->value.i == 0) {
 	m->value.i = 1;
@@ -908,7 +910,7 @@ sam_op_free(/*@in@*/ sam_es *restrict es)
     if (m->type != SAM_ML_TYPE_HA) {
 	sam_ml_type t = m->type;
 	free(m);
-	return sam_error_stack_input(es, "first", t, SAM_ML_TYPE_HA);
+	return sam_error_stack_input(es, 1, t, SAM_ML_TYPE_HA);
     }
     sam_ha ha = m->value.ha;
     free(m);
@@ -936,7 +938,7 @@ sam_op_pushind(/*@in@*/ sam_es *restrict es)
     }
     t = m->type;
     free(m);
-    return sam_error_stack_input(es, "first", t, SAM_ML_TYPE_SA);   /* XXX */
+    return sam_error_stack_input(es, 1, t, SAM_ML_TYPE_SA);   /* XXX */
 }
 
 static sam_error
@@ -967,7 +969,7 @@ sam_op_storeind(/*@in@*/ sam_es *restrict es)
     t = m1->type;
     free(m1);
     free(m2);
-    return sam_error_stack_input(es, "first", t, SAM_ML_TYPE_SA); /* XXX */
+    return sam_error_stack_input(es, 1, t, SAM_ML_TYPE_SA); /* XXX */
 }
 
 /* cannot be used to push from the heap. */
@@ -1327,7 +1329,7 @@ sam_op_jumpc(/*@in@*/ sam_es *restrict es)
     if (m->type != SAM_ML_TYPE_INT) {
 	sam_ml_type t = m->type;
 	free(m);
-	return sam_error_stack_input(es, "first", t, SAM_ML_TYPE_INT);
+	return sam_error_stack_input(es, 1, t, SAM_ML_TYPE_INT);
     }
     if (m->value.i == 0) {
 	free(m);
@@ -1356,7 +1358,7 @@ sam_op_jumpind(/*@in@*/ sam_es *restrict es)
     if (m->type != SAM_ML_TYPE_PA) {
 	sam_ml_type t = m->type;
 	free(m);
-	return sam_error_stack_input(es, "first", t, SAM_ML_TYPE_PA);
+	return sam_error_stack_input(es, 1, t, SAM_ML_TYPE_PA);
     }
     sam_es_pc_set(es, (sam_pa){.m = m->value.pa.m, .l = m->value.pa.l - 1});
     free(m);
@@ -1402,7 +1404,7 @@ sam_op_jsrind(/*@in@*/ sam_es *restrict es)
     if (m->type != SAM_ML_TYPE_PA) {
 	sam_ml_type t = m->type;
 	free(m);
-	return sam_error_stack_input(es, "first", t, SAM_ML_TYPE_PA);
+	return sam_error_stack_input(es, 1, t, SAM_ML_TYPE_PA);
     }
 
     v.pa = sam_es_pc_get(es);
@@ -1508,7 +1510,7 @@ sam_op_write(/*@in@*/ sam_es *restrict es)
     if (m->type != SAM_ML_TYPE_INT) {
 	sam_ml_type t = m->type;
 	free(m);
-	return sam_error_stack_input(es, "first", t, SAM_ML_TYPE_INT);
+	return sam_error_stack_input(es, 1, t, SAM_ML_TYPE_INT);
     }
     i = m->value.i;
     free(m);
@@ -1528,7 +1530,7 @@ sam_op_writef(/*@in@*/ sam_es *restrict es)
     if (m->type != SAM_ML_TYPE_FLOAT) {
 	sam_ml_type t = m->type;
 	free(m);
-	return sam_error_stack_input(es, "first", t, SAM_ML_TYPE_FLOAT);
+	return sam_error_stack_input(es, 1, t, SAM_ML_TYPE_FLOAT);
     }
     f = m->value.f;
     free(m);
@@ -1548,7 +1550,7 @@ sam_op_writech(/*@in@*/ sam_es *restrict es)
     if (m->type != SAM_ML_TYPE_INT) {
 	sam_ml_type t = m->type;
 	free(m);
-	return sam_error_stack_input(es, "first", t, SAM_ML_TYPE_INT);
+	return sam_error_stack_input(es, 1, t, SAM_ML_TYPE_INT);
     }
     c = m->value.i;
     free(m);
@@ -1570,7 +1572,7 @@ sam_op_writestr(/*@in@*/ sam_es *restrict es)
     if (m->type != SAM_ML_TYPE_HA) {
 	sam_ml_type t = m->type;
 	free(m);
-	return sam_error_stack_input(es, "first", t, SAM_ML_TYPE_HA);
+	return sam_error_stack_input(es, 1, t, SAM_ML_TYPE_HA);
     }
     ha = m->value.ha;
     free(m);
@@ -1629,17 +1631,13 @@ sam_op_call(sam_es *restrict es)
 static sam_error
 sam_op_load(__attribute__((unused)) sam_es *restrict es)
 {
-    fputs("error: samiam was not compiled with support for the load "
-	  "instruction.\n", stderr);
-    return SAM_ENOSYS;
+    return sam_error_nosys(es, "load");
 }
 
 static sam_error
 sam_op_call(__attribute__((unused)) sam_es *restrict es)
 {
-    fputs("error: samiam was not compiled with support for the call "
-	  "instruction.\n", stderr);
-    return SAM_ENOSYS;
+    return sam_error_nosys(es, "call");
 }
 
 # endif /* HAVE_DLFCN_H */

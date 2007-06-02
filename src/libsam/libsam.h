@@ -3,7 +3,7 @@
  *
  * part of samiam - the fast sam interpreter
  *
- * Copyright (c) 2007 Trevor Caira, Jimmy Hartzell
+ * Copyright (c) 2007 Trevor Caira, Jimmy Hartzell, Daniel Perelman
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -27,56 +27,21 @@
  *
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#ifndef LIBSAM_H
+#define LIBSAM_H
 
-#include "libsam.h"
+#define PACKAGE "libsam"
 
-#include <libsam/array.h>
-#include <libsam/util.h>
+#if defined(HAVE_LIBINTL_H)
+#include <libintl.h>
+#define _(String) gettext(String)
+#define gettext_noop(String) String
+#define N_(String) gettext_noop(String)
+# else /* !HAVE_LIBINTL_H */
+#define _(String) (String)
+#define N_(String) String
+#define textdomain(Domain)
+#define bindtextdomain(Package, Directory)
+#endif /* HAVE_LIBINTL_H */
 
-/** Initial size for array allocations. */
-static const size_t SAM_INIT_ALLOC = 4;
-
-void
-sam_array_init(sam_array *restrict a)
-{
-    a->alloc = SAM_INIT_ALLOC;
-    a->len = 0;
-    a->arr = sam_malloc(sizeof (*a->arr) * SAM_INIT_ALLOC);
-}
-
-void
-sam_array_ins(/*@in@*/	 sam_array *restrict a,
-	      /*@only@*/ void *restrict m)
-{
-    ++a->len;
-    if (a->alloc < a->len) {
-	while (a->alloc < a->len) {
-	    a->alloc *= 2;
-	}
-	a->arr = sam_realloc(a->arr, sizeof (*a->arr) * a->alloc);
-    }
-    a->arr[a->len - 1] = m;
-}
-
-/*@null@*/ inline void *
-sam_array_rem(/*@in@*/ sam_array *restrict a)
-{
-    if (a->len < a->alloc / 4) {
-	a->alloc /= 2;
-	a->arr = sam_realloc(a->arr, sizeof (*a->arr) * a->alloc);
-    }
-
-    return a->len == 0? NULL: a->arr[--a->len];
-}
-
-void
-sam_array_free(sam_array *restrict a)
-{
-    for (size_t i = 0; i < a->len; ++i) {
-	free(a->arr[i]);
-    }
-    free(a->arr);
-}
+#endif /* LIBSAM_H */

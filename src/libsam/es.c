@@ -32,6 +32,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "libsam.h"
+
 #include <libsam/array.h>
 #include <libsam/hash_table.h>
 #include <libsam/es.h>

@@ -34,6 +34,8 @@
 #include <errno.h>
 #include <math.h>
 
+#include "libsam.h"
+
 #include <libsam/es.h>
 #include <libsam/io.h>
 
@@ -49,7 +51,7 @@ sam_warning_forgot_stop(sam_es *restrict es)
     if (!sam_es_options_get(es, SAM_QUIET)) {
 	sam_io_fprintf(es,
 		       SAM_IOS_ERR,
-		       "warning: final instruction must be STOP.\n");
+		       _("warning: final instruction must be STOP.\n"));
 	sam_es_bt_set(es, true);
     }
 }
@@ -60,7 +62,7 @@ sam_warning_empty_stack(sam_es *restrict es)
     if (!sam_es_options_get(es, SAM_QUIET)) {
 	sam_io_fprintf(es,
 		       SAM_IOS_ERR,
-		       "warning: program terminated with an empty stack.\n");
+		      _("warning: program terminated with an empty stack.\n"));
 	sam_es_bt_set(es, true);
     }
 
@@ -80,8 +82,8 @@ sam_warning_retval_type(/*@in@*/ sam_es *restrict es)
 	sam_ml *restrict m = sam_es_stack_get(es, 0);
 	sam_io_fprintf(es,
 		       SAM_IOS_ERR,
-		       "warning: expected bottom of stack to contain an "
-		       "integer (found: %s).\n",
+		       _("warning: expected bottom of stack to contain an "
+			 "integer (found: %s).\n"),
 		       sam_ml_type_to_string(m->type));
 	sam_es_bt_set(es, true);
     }
@@ -97,8 +99,8 @@ sam_warning_leaks(/*@in@*/ const sam_es *restrict es)
 	sam_es_heap_leak_check(es, &block_count, &leak_size)) {
 	sam_io_fprintf(es,
 		       SAM_IOS_ERR,
-		       "warning: your program leaks %lu byte%s in %lu "
-		       "block%s.\n",
+		       _("warning: your program leaks %lu byte%s in %lu "
+			 "block%s.\n"),
 		       leak_size, leak_size == 1? "": "s",
 		       block_count, block_count == 1? "": "s");
     }

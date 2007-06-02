@@ -27,6 +27,8 @@
  *
  */
 
+#include "libsam.h"
+
 #include <stdio.h>
 #include <stdarg.h>
 #include <ctype.h>
@@ -174,7 +176,13 @@ sam_io_op_value_print(const sam_es *restrict es,
 }
 
 /* Die... with style! */
-/* TODO: module specific */
+
+/*
+ * TODO:
+ *  - module specific
+ *  - print labels
+ *  - i18n friendly
+ */
 static void
 sam_io_bt_default(const sam_es *restrict es)
 {
@@ -182,10 +190,10 @@ sam_io_bt_default(const sam_es *restrict es)
 
     sam_io_fprintf(es,
 		   SAM_IOS_ERR,
-		   "\nstate of execution:\n"
-		   "PC:\t%hu:%hu\n"
-		   "FBR:\t%lu\n"
-		   "SP:\t%lu\n\n",
+		   _("\nstate of execution:\n"
+		     "PC:\t%hu:%hu\n"
+		     "FBR:\t%lu\n"
+		     "SP:\t%lu\n\n"),
 		   sam_es_pc_get(es).m,
 		   sam_es_pc_get(es).l,
 		   (unsigned long)sam_es_fbr_get(es),
@@ -193,7 +201,7 @@ sam_io_bt_default(const sam_es *restrict es)
 
     sam_io_fprintf(es,
 		   SAM_IOS_ERR,
-		   "Heap\t    Stack\t    Program\n");
+		   _("Heap\t    Stack\t    Program\n"));
     for (i = 0;
 	 i <= sam_es_instructions_len_cur(es) ||
 	 i <= sam_es_stack_len(es) ||
@@ -202,7 +210,7 @@ sam_io_bt_default(const sam_es *restrict es)
 	if (i < sam_es_heap_len(es)) {
 	    sam_ml *m = sam_es_heap_get(es, i);
 	    if (m == NULL) {
-		sam_io_fprintf(es, SAM_IOS_ERR, "NULL");
+		sam_io_fprintf(es, SAM_IOS_ERR, _("NULL"));
 	    } else {
 		sam_io_fprintf(es,
 			       SAM_IOS_ERR,

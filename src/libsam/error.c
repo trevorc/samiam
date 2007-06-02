@@ -31,6 +31,8 @@
 #include <errno.h>
 #include <stdarg.h>
 
+#include "libsam.h"
+
 #include <libsam/error.h>
 #include <libsam/es.h>
 #include <libsam/io.h>
@@ -40,13 +42,13 @@
 sam_op_type_to_string(sam_op_type t)
 {
     switch (t) {
-	case SAM_OP_TYPE_INT:	return "integer";
-	case SAM_OP_TYPE_FLOAT:	return "float";
-	case SAM_OP_TYPE_CHAR:	return "character";
-	case SAM_OP_TYPE_LABEL:	return "label";
-	case SAM_OP_TYPE_STR:	return "string";
+	case SAM_OP_TYPE_INT:	return _("integer");
+	case SAM_OP_TYPE_FLOAT:	return _("float");
+	case SAM_OP_TYPE_CHAR:	return _("character");
+	case SAM_OP_TYPE_LABEL:	return _("label");
+	case SAM_OP_TYPE_STR:	return _("string");
 	case SAM_OP_TYPE_NONE: /*@fallthrough@*/
-	default:		return "nonetype";
+	default:		return _("nonetype");
     }
 }
 
@@ -56,7 +58,7 @@ sam_error_optype(/*@in@*/ sam_es *restrict es)
     if (!sam_es_options_get(es, SAM_QUIET)) {
 	sam_io_fprintf(es,
 		       SAM_IOS_ERR,
-		       "error: bad operand type given: %s.\n",
+		       _("error: bad operand type given: %s.\n"),
 		       sam_op_type_to_string(
 			   sam_es_instructions_cur(es)->optype));
 	sam_es_bt_set(es, true);
@@ -72,9 +74,11 @@ sam_error_segmentation_fault(sam_es *restrict es,
     if (!sam_es_options_get(es, SAM_QUIET)) {
 	sam_io_fprintf(es,
 		       SAM_IOS_ERR,
-		       "error: segmentation fault. attempt to access illegal "
-		       "memory at %s address %lu.\n",
-		       stack? "stack": "heap",
+		       stack?
+		       _("error: segmentation fault. attempt to access "
+			 "illegal memory at stack address %lu.\n"):
+		       _("error: segmentation fault. attempt to access "
+			 "illegal memory at heap address %lu.\n"),
 		       stack?
 		       (unsigned long)ma.sa:
 		       (unsigned long)ma.ha);
@@ -90,8 +94,8 @@ sam_error_free(sam_es *restrict es,
     if (!sam_es_options_get(es, SAM_QUIET)) {
 	sam_io_fprintf(es,
 		       SAM_IOS_ERR,
-		       "error: attempt to free nonexistant or unused heap "
-		       "address %luH\n",
+		       _("error: attempt to free nonexistant or unused heap "
+		       "address %luH\n"),
 		       (unsigned long)ha);
 	sam_es_bt_set(es, true);
     }
@@ -102,7 +106,7 @@ sam_error
 sam_error_stack_underflow(sam_es *es)
 {
     if (!sam_es_options_get(es, SAM_QUIET)) {
-	sam_io_fprintf(es, SAM_IOS_ERR, "error: stack underflow.\n");
+	sam_io_fprintf(es, SAM_IOS_ERR, _("error: stack underflow.\n"));
 	sam_es_bt_set(es, true);
     }
     return SAM_ESTACK_UNDRFLW;
@@ -112,7 +116,7 @@ sam_error
 sam_error_stack_overflow(sam_es *es)
 {
     if (!sam_es_options_get(es, SAM_QUIET)) {
-	sam_io_fprintf(es, SAM_IOS_ERR, "error: stack overflow.\n");
+	sam_io_fprintf(es, SAM_IOS_ERR, _("error: stack overflow.\n"));
 	sam_es_bt_set(es, true);
     }
     return SAM_ESTACK_OVERFLW;
@@ -122,7 +126,7 @@ sam_error
 sam_error_no_memory(sam_es *es)
 {
     if (!sam_es_options_get(es, SAM_QUIET)) {
-	sam_io_fprintf(es, SAM_IOS_ERR, "error: out of memory.\n");
+	sam_io_fprintf(es, SAM_IOS_ERR, _("error: out of memory.\n"));
 	sam_es_bt_set(es, true);
     }
     return SAM_ENOMEM;
@@ -137,9 +141,9 @@ sam_error_type_conversion(sam_es *es,
     if (!sam_es_options_get(es, SAM_QUIET)) {
 	sam_io_fprintf(es,
 		       SAM_IOS_ERR,
-		       "warning: invalid type conversion to %s.\n"
-		       "\texpected: %s.\n"
-		       "\tfound: %s.\n",
+		       _("warning: invalid type conversion to %s.\n"
+			 "\texpected: %s.\n"
+			 "\tfound: %s.\n"),
 		       sam_ml_type_to_string(to),
 		       sam_ml_type_to_string(found),
 		       sam_ml_type_to_string(expected));
@@ -155,7 +159,7 @@ sam_error_unknown_identifier(sam_es *es,
     if (!sam_es_options_get(es, SAM_QUIET)) {
 	sam_io_fprintf(es,
 		       SAM_IOS_ERR,
-		       "error: unknown identifier found: %s\n",
+		       _("error: unknown identifier found: %s\n"),
 		       name);
 	sam_es_bt_set(es, true);
     }
@@ -164,16 +168,16 @@ sam_error_unknown_identifier(sam_es *es,
 
 sam_error
 sam_error_stack_input(/*@in@*/ sam_es *es,
-		      const char  *which,
+		      int	   which,
 		      sam_ml_type  found,
 		      sam_ml_type  expected)
 {
     if (!sam_es_options_get(es, SAM_QUIET)) {
 	sam_io_fprintf(es,
 		       SAM_IOS_ERR,
-		       "error: invalid type of %s stack argument to %s.\n"
-		       "found: %s\n"
-		       "expected: %s\n",
+		       _("error: invalid type of stack argument #%d to %s.\n"
+			 "found: %s\n"
+			 "expected: %s\n"),
 		       which,
 		       sam_es_instructions_cur(es)->name,
 		       sam_ml_type_to_string(found),
@@ -191,8 +195,8 @@ sam_error_negative_shift(/*@in@*/ sam_es *es,
     if (!sam_es_options_get(es, SAM_QUIET)) {
 	sam_io_fprintf(es,
 		       SAM_IOS_ERR,
-		       "error: attempt to shift %ld by illegal negative value "
-		       "%ld.\n",
+		       _("error: attempt to shift %ld by illegal negative value "
+			 "%ld.\n"),
 		       i,
 		       sam_es_instructions_cur(es)->operand.i);
     }
@@ -204,7 +208,7 @@ sam_error
 sam_error_division_by_zero(sam_es *es)
 {
     if (!sam_es_options_get(es, SAM_QUIET)) {
-	sam_io_fprintf(es, SAM_IOS_ERR, "error: division by zero.\n");
+	sam_io_fprintf(es, SAM_IOS_ERR, _("error: division by zero.\n"));
 	sam_es_bt_set(es, true);
     }
 
@@ -215,7 +219,7 @@ sam_error
 sam_error_io(sam_es *es)
 {
     if (!sam_es_options_get(es, SAM_QUIET)) {
-	sam_io_fprintf(es, SAM_IOS_ERR, "error: input/output error.\n");
+	sam_io_fprintf(es, SAM_IOS_ERR, _("error: input/output error.\n"));
 	sam_es_bt_set(es, true);
     }
 
@@ -229,8 +233,8 @@ sam_error_uninitialized(/*@in@*/ sam_es *es)
     if (!sam_es_options_get(es, SAM_QUIET)) {
 	sam_io_fprintf(es,
 		       SAM_IOS_ERR,
-		       "warning: use of uninitialized memory in module number "
-		       "%hu, line %hu.\n",
+		       _("warning: use of uninitialized memory in module number "
+			 "%hu, line %hu.\n"),
 		       sam_es_pc_get(es).m,
 		       sam_es_pc_get(es).l);
     }
@@ -243,7 +247,7 @@ sam_error_number_format(sam_es *es,
     if (!sam_es_options_get(es, SAM_QUIET)) {
 	sam_io_fprintf(es,
 		       SAM_IOS_ERR,
-		       "warning: \"%s\" could not be parsed as an integer.\n",
+		       _("warning: \"%s\" could not be parsed as an integer.\n"),
 		       buf);
 	sam_es_bt_set(es, true);
     }
@@ -255,10 +259,25 @@ sam_error_final_stack_state(sam_es *es)
     if (!sam_es_options_get(es, SAM_QUIET)) {
 	sam_io_fprintf(es,
 		       SAM_IOS_ERR,
-		       "warning: more than one element left on stack.\n");
+		       _("warning: more than one element left on stack.\n"));
 	sam_es_bt_set(es, true);
     }
     return SAM_EFINAL_STACK;
+}
+
+sam_error
+sam_error_nosys(sam_es *restrict es,
+		const char *restrict s)
+{
+    if (!sam_es_options_get(es, SAM_QUIET)) {
+	sam_io_fprintf(es,
+		       SAM_IOS_ERR,
+		       _("error: samiam was not compiled with support for "
+			 "the %s instruction.\n"),
+		       s);
+	sam_es_bt_set(es, true);
+    }
+    return SAM_ENOSYS;
 }
 
 #if defined(SAM_EXTENSIONS) && defined(HAVE_DLFCN_H)
@@ -270,7 +289,7 @@ sam_error_dlopen(sam_es *es,
     if (!sam_es_options_get(es, SAM_QUIET)) {
 	sam_io_fprintf(es,
 		       SAM_IOS_ERR,
-		       "error: couldn't import library %s (%s).\n",
+		       _("error: couldn't import library %s (%s).\n"),
 		       filename, reason);
 	sam_es_bt_set(es, true);
     }
@@ -284,7 +303,7 @@ sam_error_dlsym(sam_es *restrict es)
     if (!sam_es_options_get(es, SAM_QUIET)) {
 	sam_io_fprintf(es,
 		       SAM_IOS_ERR,
-		       "error: couldn't call %s (not found).\n",
+		       _("error: couldn't call %s (not found).\n"),
 		       sam_es_instructions_cur(es)->operand.s);
 	sam_es_bt_set(es, true);
     }

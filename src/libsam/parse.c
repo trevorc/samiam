@@ -27,6 +27,8 @@
  *
  */
 
+#include "libsam.h"
+
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -117,7 +119,7 @@ static inline void
 sam_error_empty_input(const sam_es *restrict es)
 {
     if (!sam_es_options_get(es, SAM_QUIET)) {
-	sam_io_fprintf(es, SAM_IOS_ERR, "error: empty source file.\n");
+	sam_io_fprintf(es, SAM_IOS_ERR, _("error: empty source file.\n"));
     }
 }
 
@@ -130,7 +132,7 @@ sam_error_identifier(const sam_es *restrict es,
 	sam_truncate(s);
 	sam_io_fprintf(es,
 		       SAM_IOS_ERR,
-		       "error: couldn't parse identifier: %s.\n",
+		       _("error: couldn't parse identifier: %s.\n"),
 		       s);
     }
 }
@@ -143,7 +145,7 @@ sam_error_invalid_directive(const sam_es *restrict es,
 	sam_truncate(s);
 	sam_io_fprintf(es,
 		       SAM_IOS_ERR,
-		       "error: invalid directive: %s.\n",
+		       _("error: invalid directive: %s.\n"),
 		       s);
     }
 }
@@ -157,7 +159,7 @@ sam_error_opcode(const sam_es *restrict es,
 	sam_truncate(s);
 	sam_io_fprintf(es,
 		       SAM_IOS_ERR,
-		       "error: unknown opcode found: %s.\n",
+		       _("error: unknown opcode found: %s.\n"),
 		       s);
     }
 }
@@ -173,7 +175,7 @@ sam_error_operand(const sam_es *restrict es,
 
 	sam_io_fprintf(es,
 		       SAM_IOS_ERR,
-		       "error: couldn't parse operand for %s: %s.\n",
+		       _("error: couldn't parse operand for %s: %s.\n"),
 		       opcode,
 		       operand);
     }
@@ -188,14 +190,17 @@ sam_error_duplicate_label(const sam_es *restrict es,
     if (!sam_es_options_get(es, SAM_QUIET)) {
 	sam_io_fprintf(es,
 		       SAM_IOS_ERR,
-		       "error: duplicate label \"%s\" was found in module "
-		       "number %hu, line %hu.\n",
+		       _("error: duplicate label \"%s\" was found in module "
+			 "number %hu, line %hu.\n"),
 		       label,
 		       pa.m,
 		       pa.l);
     }
 }
 
+/*
+ *  IDENT ::= [A-Za-z_]+
+ */
 static bool
 sam_try_parse_identifier(char **restrict input,
 			 /*@out@*/ char **restrict identifier,
@@ -409,6 +414,9 @@ sam_try_parse_operand(/*@in@*/ char	    **restrict input,
 	  sam_try_parse_identifier(input, &operand->s, optype)));
 }
 
+/*
+ *  INSTRUCTION ::= IDENT 
+ */
 /*@null@*/ static inline sam_instruction *
 sam_parse_instruction(const sam_es *restrict es,
 		      char **restrict input)
@@ -439,30 +447,37 @@ sam_parse_instruction(const sam_es *restrict es,
     return i;
 }
 
+/*
+ *  Returns true if there is a colon in s before the next non-whitespace
+ *  character, otherwise returns false.
+ */
 static inline bool
-sam_check_for_colon(char **restrict s)
+sam_check_for_colon(char *restrict s)
 {
-    char *start = *s;
-
-    if (start == NULL || *start == '\0') {
+    if (s == NULL || *s == '\0') {
 	return false;
     }
     for (;;) {
-	if (*start == ':') {
-	    *s = start;
+	if (*s == ':') {
 	    return true;
-	} else if (isspace(*start)) {
-	    ++start;
+	} else if (isspace(*s)) {
+	    ++s;
 	} else {
 	    return false;
 	}
     }
 }
 
+/*
+ *  GENERIC-STRING ::= IDENT || STRING
+ *
+ *  LABEL ::= GENERIC-STRING :
+ */
 /*@null@*/ static inline char *
-sam_parse_label(char **restrict input)
+sam_parse_label(char **restrict input,
+		bool colon_expected)
 {
-    char *label, *start = *input, *lookahead;
+    char *label, *start = *input;
 
     if (*start == '"') {
 	if (!sam_try_parse_string(&start, &label, NULL)) {
@@ -472,8 +487,7 @@ sam_parse_label(char **restrict input)
 	return NULL;
     }
 
-    lookahead = start;
-    if (!sam_check_for_colon(&lookahead)) {
+    if (colon_expected && !sam_check_for_colon(start)) {
 	return NULL;
     }
     sam_eat_whitespace(&start);
@@ -486,7 +500,8 @@ sam_parse_label(char **restrict input)
 #if defined(HAVE_MMAN_H)
 
 /*@null@*/ static inline char *
-sam_input_read(/*@observer@*/ const char *restrict path,
+sam_input_read(const sam_es *restrict es,
+	       /*@observer@*/ const char *restrict path,
 	       /*@out@*/ sam_string *restrict s)
 {
     struct stat sb;
@@ -505,7 +520,7 @@ sam_input_read(/*@observer@*/ const char *restrict path,
 	return NULL;
     }
     if (!S_ISREG(sb.st_mode)) {
-	fprintf(stderr, "%s is not a regular file\n", path);
+	sam_io_fprintf(es, SAM_IOS_ERR, _("error: %s is not a regular file\n"), path);
 	if (close(fd) < 0) {
 	    perror("close");
 	}
@@ -529,7 +544,8 @@ sam_input_read(/*@observer@*/ const char *restrict path,
 #else /* HAVE_MMAN_H */
 
 /*@null@*/ static inline char *
-sam_input_read(const char *restrict path,
+sam_input_read(const sam_es *restrict es __attribute__((unused)),
+	       const char *restrict path,
 	       sam_string *restrict s)
 {
     FILE *restrict in = fopen(path, "r");
@@ -565,22 +581,31 @@ sam_directive_name(const char *restrict s)
 	{NULL,	    SAM_DIRECTIVE_NONE},
     };
 
+    printf("sam_directive_name: '%s'\n", s);
     for (size_t i = 0; directives[i].name != NULL; ++i) {
 	if (!strcmp(s, directives[i].name)) {
 	    return directives[i].symbol;
 	}
     }
 
+    puts("none");
     return SAM_DIRECTIVE_NONE;
 }
 
+/*
+ *  ROI ::= .roi IDENT INT ( , INT )*
+ */
 static bool
 sam_try_parse_roi(sam_es *restrict es __attribute__((unused)),
 		  char **restrict input __attribute__((unused)))
 {
+    puts("roi");
     return false;
 }
 
+/*
+ *  ROF ::= .rof IDENT FLOAT ( , FLOAT )*
+ */
 static bool
 sam_try_parse_rof(sam_es *restrict es __attribute__((unused)),
 		  char **restrict input __attribute__((unused)))
@@ -588,13 +613,19 @@ sam_try_parse_rof(sam_es *restrict es __attribute__((unused)),
     return false;
 }
 
+/*  TODO: is this necessary/possible?
+ *  ROS ::= .ros IDENT STRING ( , STRING )*
 static bool
 sam_try_parse_ros(sam_es *restrict es __attribute__((unused)),
 		  char **restrict input __attribute__((unused)))
 {
     return false;
 }
+ */
 
+/*
+ *  ROC ::= .roc IDENT CHAR ( , STRING )*
+ */
 static bool
 sam_try_parse_roc(sam_es *restrict es __attribute__((unused)),
 		  char **restrict input __attribute__((unused)))
@@ -602,6 +633,9 @@ sam_try_parse_roc(sam_es *restrict es __attribute__((unused)),
     return false;
 }
 
+/*
+ *  GLOBAL ::= .global IDENT ( INT )?
+ */
 static bool
 sam_try_parse_global(sam_es *restrict es __attribute__((unused)),
 		     char **restrict input __attribute__((unused)))
@@ -609,6 +643,9 @@ sam_try_parse_global(sam_es *restrict es __attribute__((unused)),
     return false;
 }
 
+/*
+ *  IMPORT ::= .import IDENT
+ */
 static bool
 sam_try_parse_import(sam_es *restrict es __attribute__((unused)),
 		     char **restrict input __attribute__((unused)))
@@ -616,6 +653,9 @@ sam_try_parse_import(sam_es *restrict es __attribute__((unused)),
     return false;
 }
 
+/*
+ *  EXPORT ::= .export IDENT
+ */
 static bool
 sam_try_parse_export(sam_es *restrict es __attribute__((unused)),
 		     char **restrict input __attribute__((unused)))
@@ -623,16 +663,26 @@ sam_try_parse_export(sam_es *restrict es __attribute__((unused)),
     return false;
 }
 
+/*
+ *  DIRECTIVE ::= ROI ||
+ *		  ROF ||
+ *		  ROC ||
+ *		  GLOBAL ||
+ *		  IMPORT ||
+ *		  EXPORT
+ */
 static bool
 sam_parse_directive(sam_es *restrict es,
 		    char **restrict input)
 {
     char *start = *input;
 
+    /*
     while (*start != '\0' && !isspace(*start++)) {
 	sam_eat_whitespace(&start);
 	break;
     }
+    */
 
     sam_directive_symbol symbol = sam_directive_name(start);
     if (symbol == SAM_DIRECTIVE_NONE) {
@@ -641,7 +691,6 @@ sam_parse_directive(sam_es *restrict es,
 
     if (!sam_try_parse_roi(es, &start) &&
 	!sam_try_parse_rof(es, &start) &&
-	!sam_try_parse_ros(es, &start) &&
 	!sam_try_parse_roc(es, &start) &&
 	!sam_try_parse_global(es, &start) &&
 	!sam_try_parse_export(es, &start) &&
@@ -653,13 +702,60 @@ sam_parse_directive(sam_es *restrict es,
     return true;
 }
 
+#if defined(SAM_EXTENSIONS)
+/* ignore a shebang line */
+static void
+sam_ignore_shebang(char **restrict s)
+{
+    if ((*s)[0] == '#' && (*s)[1] == '!') {
+	while (**s != '\0' && **s != '\n') {
+	    ++*s;
+	}
+    }
+}
+
+/*
+ * Parse directives at the beginning of the file.
+ *
+ * @return true if all directives were parsed successfully or none were
+ *	   parsed at all, otherwise false.
+ */
+static bool
+sam_parse_directives(sam_es *restrict es,
+		     char **restrict input)
+{
+    char *start = *input;
+
+    while (*start != '\0') {
+	sam_eat_whitespace(&start);
+
+	if (*start == '\0' || *start != '.') {
+	    return true;
+	}
+	++start;
+
+	if (!sam_parse_directive(es, &start)) {
+	    sam_error_invalid_directive(es, start);
+	    return false;
+	}
+	sam_eat_whitespace(&start);
+
+	if (*start != '.') {
+	    return true;
+	}
+    }
+
+    return false;
+}
+#endif /* SAM_EXTENSIONS */
+
 /*@null@*/ bool
 sam_parse(sam_es *restrict es,
 	  const char *restrict file)
 {
     char *input = file == NULL?
 	sam_string_read(stdin, sam_es_input_get(es)):
-	sam_input_read(file, sam_es_input_get(es));
+	sam_input_read(es, file, sam_es_input_get(es));
 
     if (input == NULL || *input == '\0') {
 	sam_error_empty_input(es);
@@ -667,45 +763,24 @@ sam_parse(sam_es *restrict es,
     }
 
 #if defined(SAM_EXTENSIONS)
-    /* ignore a shebang line */
-    if (input[0] == '#' && input[1] == '!') {
-	while (*input != '\0' && *input != '\n') {
-	    ++input;
-	}
+    sam_ignore_shebang(&input);
+
+    if (!sam_parse_directives(es, &input)) {
+	return false;
     }
-
-    /* Parse directives at the beginning of the file. */
-    while (*input != '\0') {
-	sam_eat_whitespace(&input);
-
-	if (*input == '\0' || *input != '.') {
-	    break;
-	}
-	++input;
-
-	if (!sam_parse_directive(es, &input)) {
-	    sam_error_invalid_directive(es, input);
-	    return false;
-	}
-	sam_eat_whitespace(&input);
-
-	if (*input != '.') {
-	    break;
-	}
-    }
-
 #endif /* SAM_EXTENSIONS */
 
     /* Parse as many labels as we find, then parse an instruction. */
     sam_pa cur_line = {
-	.l = 0
+	.l = 0,
+	.m = sam_es_modules_len(es) - 1,
     };
 
     while (*input != '\0') {
 	sam_eat_whitespace(&input);
 
 	char *label;
-	while ((label = sam_parse_label(&input))) {
+	while ((label = sam_parse_label(&input, true))) {
 	    if (!sam_es_labels_ins(es, label, cur_line)) {
 		sam_error_duplicate_label(es, label, cur_line);
 		return false;
