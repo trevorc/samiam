@@ -2,5 +2,5 @@
 # $Id$
 
 valgrind=`which valgrind`
-. paths.sh
+. scripts/paths
 $valgrind --tool=memcheck --leak-check=yes samiam $@

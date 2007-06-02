@@ -1,0 +1,11 @@
+#!/bin/sh
+
+set -e
+
+name=samiam
+version=`cat VERSION`
+srcdir=`basename $PWD`
+
+fakeroot debian/rules clean
+rm -f .sconsign.dblite
+tar cfz ../$name-$version.tar.gz ../$srcdir -Xscripts/excludes

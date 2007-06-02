@@ -2,5 +2,5 @@
 # $Id$
 
 gdb=`which gdb`
-. paths.sh
+. scripts/paths
 $gdb samiam

@@ -1,0 +1,21 @@
+#!/bin/sh
+
+set -e
+
+name=`basename $PWD`
+version=`cat VERSION`
+tmpdir="/tmp/rpm"
+
+rm -Rf $tmpdir
+mkdir -p $tmpdir/{BUILD,SOURCES,SPECS,RPMS,SRPMS,tmp}
+cp samiam.spec $tmpdir/SPECS
+if [ ! -f ../$name-version.tar.gz ]; then
+    scripts/dist
+fi
+cp ../$name-$version.tar.gz $tmpdir/SOURCES
+
+(cd $tmpdir &&
+ rpmbuild -ba SPECS/samiam.spec)
+
+cp $tmpdir/SRPMS/* $tmpdir/RPMS/*/* ..
+rm -Rf $tmpdir

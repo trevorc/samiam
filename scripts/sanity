@@ -1,7 +1,7 @@
 #!/bin/sh
 # $Id$
 
-. paths.sh
+. scripts/paths
 printf 'PUSHIMM 123 STOP' | samiam
 ret=$?
 if [ $ret == 123 ]; then
