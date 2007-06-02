@@ -1,0 +1,15 @@
+src/libsam/array.c
+src/libsam/error.c
+src/libsam/es.c
+src/libsam/execute.c
+src/libsam/execute.h
+src/libsam/execute_types.c
+src/libsam/hash_table.c
+src/libsam/io.c
+src/libsam/libsam.h
+src/libsam/main.c
+src/libsam/opcode.c
+src/libsam/parse.c
+src/libsam/parse.h
+src/libsam/string.c
+src/libsam/util.c
