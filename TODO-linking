@@ -1,7 +1,7 @@
 Write a control file parser.
 
 Change parse.c to understand the following directives:
-    .ro
+    .roi, .rof, .ros, .roc
     .global
     .export
     .import
@@ -26,17 +26,17 @@ Extend sam_es to keep a list of ha's that are automatically memory managed.
 .import calls sam_es_import():
     
 
-sam_es changes:
-    * changes to program counter:
-	* make it a struct:
-	    .module
-	    .line
-	* change addition
-	* 
-    * make module-specific data structure
-	* allocs
-	* instructions
-	* labels
+#sam_es changes:
+#    * changes to program counter:
+#	* make it a struct:
+#	    .module
+#	    .line
+#	* change addition
+#	* 
+#    * make module-specific data structure
+#	* allocs
+#	* instructions
+#	* labels
 
 symbol resolving:
     * new opcodes
