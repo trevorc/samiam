@@ -49,3 +49,4 @@ T    ---  #29  tester needs to understand the return value of 'inf'
      LOW  #31  there still is a config.h
      LOW  #32  decide what errors go in error.c and which should be static
      LOW  #33  doesn't run on cygwin
+     LOW  #34  rpm spec doesn't install manpage or locale data
