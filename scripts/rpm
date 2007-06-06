@@ -6,9 +6,13 @@ name=`basename $PWD`
 version=`cat VERSION`
 tmpdir="/tmp/rpm"
 
+if ! grep _topdir $HOME/.rpmmacros 2>/dev/null >/dev/null; then
+    echo "%_topdir $tmpdir" >>$HOME/.rpmmacros
+fi
+
 rm -Rf $tmpdir
 mkdir -p $tmpdir/{BUILD,SOURCES,SPECS,RPMS,SRPMS,tmp}
-cp samiam.spec $tmpdir/SPECS
+cp scripts/samiam.spec $tmpdir/SPECS
 if [ ! -f ../$name-version.tar.gz ]; then
     scripts/dist
 fi
