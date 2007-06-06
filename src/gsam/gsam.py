@@ -5,22 +5,29 @@ import gtk, gtk.glade, gobject
 import sam
 import time
 import sys
+import pango
+import re
 
 # prepare_value_view {{{1
 # make_value_tree_store () {{{2
 def make_value_tree_store():
-    return gtk.TreeStore(gobject.TYPE_LONG,\
-	gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_LONG)
+    return gtk.TreeStore(gobject.TYPE_LONG,
+			 gobject.TYPE_STRING,
+			 gobject.TYPE_STRING,
+			 gobject.TYPE_LONG)
 
 # prepare_value_view () {{{2
 def prepare_value_view(view):
-    type_colors = {'none': ('lightgray'),\
-			'int':   ('white'),\
-			'float': ('yellow'),\
-			'sa':    ('pink'),\
-			'ha':    ('purple'),\
-			'pa':    ('green'),\
-			'block': ('black')}
+    type_colors = {
+	'none':  ('lightgray'),
+	'int':   ('white'),
+	'float': ('yellow'),
+	'sa':    ('pink'),
+	'ha':    ('purple'),
+	'pa':    ('green'),
+	'block': ('black')
+    }
+
     def mem_color_code(column, cell, model, iter):
 	type_num = model.get_value(iter, 3)
 	if type_num in range(0, len(sam.Types)):
@@ -31,7 +38,7 @@ def prepare_value_view(view):
 	    cell.set_property('foreground', 'white')
 	cell.set_property('cell-background', row_color)
 
-    column_names = ['Address', 'Type', 'Value']
+    column_names = ('Address', 'Type', 'Value')
     view.set_model(make_value_tree_store())
     for n in range(0, len(column_names)):
 	renderer = gtk.CellRendererText()
@@ -43,7 +50,7 @@ def prepare_value_view(view):
 # class CodeTreeModel {{{1
 class CodeTreeModel(gtk.GenericTreeModel):
     column_types = (str, int, gtk.gdk.Pixbuf, str, str)
-    column_names = ['Current', 'Line', 'Breakpoint', 'Code', 'Labels']
+    column_names = ('Current', 'Line', 'Breakpoint', 'Code', 'Labels')
 
     def __init__(self, prog, modnum, bp, bpnorm, bptemp):
 	gtk.GenericTreeModel.__init__(self)
@@ -52,15 +59,26 @@ class CodeTreeModel(gtk.GenericTreeModel):
 	self._instructions = prog.modules[modnum].instructions
 	self._breakpoints = bp[modnum]
 
-	self._blank_pixbuf = gtk.gdk.Pixbuf(gtk.gdk.COLORSPACE_RGB, True, 8,\
-		bpnorm.get_width(), bpnorm.get_height())
+	self._blank_pixbuf = gtk.gdk.Pixbuf(gtk.gdk.COLORSPACE_RGB,
+					    True,
+					    8,
+					    bpnorm.get_width(),
+					    bpnorm.get_height())
 	self._blank_pixbuf.fill(0x00000000)
 	self._bp_norm_pixbuf = bpnorm
 	self._bp_temp_pixbuf = bptemp
-   
+
+    def _format_labels(self, labels):
+	format = '(' + labels[0]
+	for i in labels[1:]:
+	    format += ', ' + i
+	format += ')'
+
+	return format
+
     def on_get_flags(self):
 	return gtk.TREE_MODEL_LIST_ONLY | gtk.TREE_MODEL_ITERS_PERSIST
-    
+
     def on_get_n_columns(self):
 	return len(self.column_types)
 
@@ -96,12 +114,15 @@ class CodeTreeModel(gtk.GenericTreeModel):
 	    return item.assembly
 	elif column is 4:
 	    if len(item.labels) > 0:
-		return str(item.labels)
+		return self._format_labels(item.labels)
 	    else:
 		return ""
 	# and if the column is invalid... (error: it never happens)
 	else:
-	    return "%(a)s (Error: %(c)d)" % {'a': item.assembly, 'c': column}
+	    return "%(a)s (Error: %(c)d)" % {
+		'a': item.assembly,
+		'c': column
+	    }
     
     def on_iter_next(self, rowref):
 	if rowref + 1 < len(self._instructions):
@@ -143,13 +164,23 @@ class Capture:
 	self._main_window = self._xml.get_widget('main_window')
 	self._instructions_view = self._xml.get_widget('instructions_view')
 
-	widget_prefixes = ('inst', 'pc_label', 'fbr_label', 'sp_label',\
-		'stack_view', 'heap_view')
-	self._widgets = [ map(self._xml.get_widget,\
-		map(lambda x: "%s%d" % (x, i), widget_prefixes))\
-		for i in range(1, 6) ]
-	map(prepare_value_view, map(self._xml.get_widget,\
-		["stack_view%d" % i for i in range(1, 6)]))
+	widget_prefixes = (
+	    'inst',
+	    'pc_label',
+	    'fbr_label',
+	    'sp_label',
+	    'stack_view',
+	    'heap_view'
+	)
+	self._widgets = [
+	    map(self._xml.get_widget,
+		map(lambda x: "%s%d" % (x, i), widget_prefixes))
+	    for i in range(1, 6)
+	]
+	map(prepare_value_view,
+	    map(self._xml.get_widget, [
+		"stack_view%d" % i for i in range(1, 6)
+	    ]))
 
 	self._data = data
 
@@ -158,7 +189,7 @@ class Capture:
 		self.show_data_at(data[i], i)
 
 	# Setup instructions view {{{4
-	column_names = ['Addr', 'Code']
+	column_names = ('Addr', 'Code')
 	self._instructions_view.set_model(gtk.ListStore(str, str))
 	for n in range(0, len(column_names)):
 	    renderer = gtk.CellRendererText()
@@ -168,8 +199,10 @@ class Capture:
 	
 	# Insert data into instructions view {{{4
 	for row in data:
-	    self._instructions_view.get_model().append(\
-		    ("%i:%i" % (row['mc'], row['lc']), row['code']))
+	    self._instructions_view.get_model().append(("%i:%i" %
+							(row['mc'],
+							 row['lc']),
+							 row['code']))
 
     # show_data {{{2
     def show_data_in(self, row, widgets):
@@ -265,10 +298,15 @@ class GSam:
 	self._custom_entry = self._xml.get_widget('custom_entry')
 	self._custom_speed = self._xml.get_widget('custom_speed')
 
+	# Prepare console tags
+	self._console.get_buffer().create_tag('bold', weight=pango.WEIGHT_BOLD)
+
 	# Setup custom speed dialog {{{4
-	self._custom_dialog.add_buttons(gtk.STOCK_CANCEL, gtk.RESPONSE_REJECT,\
-                      gtk.STOCK_OK, gtk.RESPONSE_ACCEPT)
-	
+	self._custom_dialog.add_buttons(gtk.STOCK_CANCEL,
+					gtk.RESPONSE_REJECT,
+					gtk.STOCK_OK,
+					gtk.RESPONSE_ACCEPT)
+
 	# Set default values {{{4
 	self._file = None
 	self._prog = None
@@ -280,9 +318,9 @@ class GSam:
 	self._speeds = {'full': 0, 'fast': 10, 'medium': 100, 'slow': 1000}
 	self._timeout_interval = self._speeds['fast']
 
-	self._console_end_mark = self._console.get_buffer().create_mark("end",\
-		self._console.get_buffer().get_end_iter(), False)
-	
+	self._console_end_mark = self._console.get_buffer().create_mark("end",
+	    self._console.get_buffer().get_end_iter(), False)
+
 	self._module_combobox.set_model(gtk.ListStore(str))
 	cell = gtk.CellRendererText()
 	self._module_combobox.pack_start(cell, True)
@@ -292,12 +330,12 @@ class GSam:
 
 	# Code display setup {{{4
 	# TODO better pixbufs?
-	self._bp_norm = self._main_window.render_icon(gtk.STOCK_NO,\
-		gtk.ICON_SIZE_MENU)
-	self._bp_temp = self._main_window.render_icon(gtk.STOCK_YES,\
-		gtk.ICON_SIZE_MENU)
+	self._bp_norm = self._main_window.render_icon(gtk.STOCK_NO,
+						      gtk.ICON_SIZE_MENU)
+	self._bp_temp = self._main_window.render_icon(gtk.STOCK_YES,
+						      gtk.ICON_SIZE_MENU)
 
-	column_names = ['Current', 'Line', 'Breakpoint', 'Code', 'Labels']
+	column_names = ('Current', 'Line', 'Breakpoint', 'Code', 'Labels')
 
 	for n in range(0, len(column_names)):
 	    if n == 2 or n == 0:
@@ -324,14 +362,16 @@ class GSam:
     ### Open/close file methods {{{2
     # _filechooser_factory () {{{3
     def _filechooser_factory(self, title, p):
-	dialog = gtk.FileChooserDialog(title=title, \
-		parent=self._main_window,\
-		buttons=(gtk.STOCK_CANCEL,gtk.RESPONSE_CANCEL,\
-		    gtk.STOCK_OPEN,gtk.RESPONSE_OK))
+	dialog = gtk.FileChooserDialog(title=title,
+				       parent=self._main_window,
+				       buttons=(gtk.STOCK_CANCEL,
+						gtk.RESPONSE_CANCEL,
+						gtk.STOCK_OPEN,
+						gtk.RESPONSE_OK))
 	dialog.set_default_response(gtk.RESPONSE_OK)
 
 	filter = gtk.FileFilter()
-	filter.set_name("SaM files")
+	filter.set_name("sam files")
 	filter.add_pattern("*.sam")
 	dialog.add_filter(filter)
 
@@ -345,7 +385,7 @@ class GSam:
     # close_file () {{{3
     def close_file(self):
 	if self._file:
-	    self.append_banner_to_console("CLOSED %s" % self._file)
+	    self.append_banner_to_console("Closed %s." % self._file)
 	    self._file = None
 	    self._prog = None
 	self._timer_id = None
@@ -372,7 +412,7 @@ class GSam:
 
     # on_open_activate () {{{3
     def on_open_activate(self, p):
-	filechooser = self._filechooser_factory("Select a SaM file", p)
+	filechooser = self._filechooser_factory("Select a sam file", p)
 	response = filechooser.run()
 	if response == gtk.RESPONSE_OK:
 	    self.open_file(filechooser.get_filename())
@@ -393,20 +433,25 @@ class GSam:
 		self._module_combobox.append_text("%d - %s" %
 			(i,mods[i].filename))
 	    self._module_combobox.set_active(0)
-	    self._breakpoints = [{'normal': set(), 'temporary': set()}\
-		    for i in range(0, self.get_n_modules())]
+	    self._breakpoints = [
+		{
+		    'normal': set(),
+		    'temporary': set()
+		}
+		for i in range(0, self.get_n_modules())
+	    ]
 	    self._code_models = [None for i in range(0, self.get_n_modules())]
 	    self.update_code_display()
 	    self.reset_memory_display()
 
 	    self._main_window.set_title("%(title)s - %(file)s" %
 		    {'title': self._default_title, 'file': filename})
-	    self.append_banner_to_console("OPENED %s" % filename)
+	    self.append_banner_to_console("Opened %s." % filename)
 	except sam.ParseError:
 	    self._file = None
 	    self._prog = None
-	    self.append_to_console("Parse error loading file %s" % filename,\
-		    False)
+	    self.append_to_console("Parse error loading file %s" % filename,
+				   False)
 
     ### Code display handling {{{2
     def get_selected_code_line(self):
@@ -448,9 +493,11 @@ class GSam:
 
     def update_code_display(self):
 	if self.get_current_code_model() is None:
-	    self.set_current_code_model(CodeTreeModel(self._prog,\
-		    self.get_current_module_num(), self._breakpoints,\
-		    self._bp_norm, self._bp_temp))
+	    self.set_current_code_model(CodeTreeModel(self._prog,
+					self.get_current_module_num(),
+					self._breakpoints,
+					self._bp_norm,
+					self._bp_temp))
 	self._code_view.set_model(self.get_current_code_model())
 
     def on_module_combobox_changed(self, p):
@@ -552,8 +599,11 @@ class GSam:
 		    else:
 			label = None
 
-		    last = model.append(None,\
-			    (self._prog.fbr, '', label, -1))
+		    last = model.append(None,
+					(self._prog.fbr,
+					 '',
+					 label,
+					 -1))
 		viter = model.append(last, v)
 		vpath = model.get_path(viter)
 		self._stack_view.expand_to_path(vpath)
@@ -641,12 +691,17 @@ class GSam:
 		try:
 		    self._finished = not self._prog.step()
 		    if self._finished:
-			self.append_to_console(\
+			self.append_to_console(
 			    "Final Result: %d" % self._prog.stack[0].value)
 			self._timer_id = None
 			self.display_capture()
 			self.clear_temporary_breakpoints()
 		    self.update_display()
+		except IndexError:
+		    # TODO: what should we do here?
+		    self.append_to_console(
+			"warning: terminated with empty stack")
+		    return False
 		except sam.SamError, (errnum,):
 		    error = sam.Errors[errnum]
 		    if self._input_canceled and error == "I/O error":
@@ -707,12 +762,15 @@ class GSam:
 	if not self.is_waiting_for_input():
 	    if self._prog and self._timer_id is None:
 		if self.run_step():
-		    self._timer_id = gobject.timeout_add(\
-			self._timeout_interval, self.run_step)
+		    self._timer_id = gobject.timeout_add(
+			self._timeout_interval,
+			self.run_step)
     
     def capture(self):
-	if not self.is_waiting_for_input() and self._prog and\
-		self._timer_id is None and self._capture is None:
+	if not self.is_waiting_for_input() and \
+	   self._prog and \
+	   self._timer_id is None and \
+	   self._capture is None:
 	    self._capture = []
 	    self.start()
 
@@ -735,7 +793,7 @@ class GSam:
 	    self._timer_id = None
 	    self._capture = None
 	    self.reset_input_box('reset')
-	    self.append_banner_to_console("RESET")
+	    self.append_banner_to_console("Reset.")
 
     # GTK handlers {{{3
     def on_step_clicked(self, p):
@@ -770,8 +828,8 @@ class GSam:
 
     def toggle_breakpoint_selected(self):
 	if self._prog:
-	    self.toggle_breakpoint(self.get_current_module_num(),\
-		    self.get_selected_code_line())
+	    self.toggle_breakpoint(self.get_current_module_num(),
+				   self.get_selected_code_line())
 
     def set_temp_bp(self, module, line):
 	if not self._finished:
@@ -827,17 +885,19 @@ class GSam:
 	self.step_return()
 
     def on_run_to_line_activate(self, p):
-	self.run_to_line(self.get_current_module_num(),\
-		self.get_selected_code_line())
+	self.run_to_line(self.get_current_module_num(),
+			 self.get_selected_code_line())
 
     ### Capture {{{2
     # Collect data {{{3
     def copy_treestore_level(self, source, sourceIter, target, targetIter):
 	sourceChild = source.iter_children(sourceIter)
 	while sourceChild:
-	    targetC = target.append(targetIter,\
-		    tuple([source.get_value(sourceChild, i)\
-		    for i in range(0, len(self.none_value_row(0)))]))
+	    targetC = target.append(targetIter, tuple([
+					source.get_value(sourceChild, i)
+					for i in range(
+					    0, len(self.none_value_row(0)))
+				    ]))
 	    self.copy_treestore_level(source, sourceChild, target, targetC)
 	    sourceChild = source.iter_next(sourceChild)
 
@@ -847,20 +907,24 @@ class GSam:
 	return rv
 
     def get_previous_instruction(self):
-	return self._prog.modules[self._prog.mc].\
+	return self._prog.modules[self._prog.mc]. \
 		instructions[self._prog.lc-1].assembly
 
     def get_current_instruction(self):
-	return self._prog.modules[self._prog.mc].instructions[self._prog.lc].\
-		assembly
+	return self._prog.modules[self._prog.mc].instructions[self._prog.lc]. \
+	    assembly
 
     def capture_current(self, prev_code):
-	return {'mc': self._prog.mc, 'lc': self._prog.lc,\
-		'fbr': self._prog.fbr, 'sp': self._prog.sp,\
-		'code': prev_code,\
-		'stack': self.copy_value_treestore(\
-		    self._stack_view.get_model()),\
-		'heap': self.copy_value_treestore(self._heap_view.get_model())}
+	return {
+	    'mc': self._prog.mc,
+	    'lc': self._prog.lc,
+	    'fbr': self._prog.fbr,
+	    'sp': self._prog.sp,
+	    'code': prev_code,
+	    'stack': self.copy_value_treestore(
+		self._stack_view.get_model()),
+	    'heap': self.copy_value_treestore(self._heap_view.get_model())
+	}
 
     # Display data {{{3
     def display_capture(self):
@@ -890,23 +954,28 @@ class GSam:
 
     ### Console handling {{{2
     # append_to_console () {{{3
-    def append_to_console(self, str, show_time=True):
+    def append_to_console(self, str, show_time=True, tag=None):
 	buf = self._console.get_buffer()
 	if buf.get_char_count() == 0:
 	    st = ""
 	else:
 	    st = "\n"
 	if show_time:
-	    buf.insert(buf.get_end_iter(),\
-		    "%s[%s] %s" % (st, time.strftime('%X'), str))
+	    timestamp = '[%s] ' % time.strftime('%X')
+	    message = re.sub('\n', '\n%s' % timestamp, str.rstrip())
+	    text = '%s%s%s' % (st, timestamp, message)
 	else:
-	    buf.insert(buf.get_end_iter(),\
-		    "%s%s" % (st, str))
+	    text = "%s%s" % (st, str)
+	if tag:
+	    buf.insert_with_tags_by_name(buf.get_end_iter(),
+					 text,
+					 tag)
+	else:
+	    buf.insert(buf.get_end_iter(), text)
 	self._console.scroll_mark_onscreen(self._console_end_mark)
 
     def append_banner_to_console(self, str):
-	dashes = "-----------------------------------"
-	self.append_to_console("%s %s %s" % (dashes, str, ""), False)
+	self.append_to_console(str, False, 'bold')
 
     # on_clear_console {{{3
     def on_clear_console_activate(self, p):
@@ -987,24 +1056,28 @@ class GSam:
 	self._input_ready = True
 	gtk.main_quit()
 
-    def sam_print(self, str):
-	self.append_to_console("Program output: %s" % str)
+    def sam_print(self, str, stream):
+	if stream == 'stdout':
+	    stream_prefix = 'Program output: '
+	else:
+	    stream_prefix = ''
+	self.append_to_console('%s%s' % (stream_prefix, str))
 
     ### Prepared Inputs {{{2
     # Init {{{3
     def init_prepare_inputs_window(self):
-	self._prepare_inputs_window = self._xml.get_widget(\
+	self._prepare_inputs_window = self._xml.get_widget(
 		'prepare_inputs_window')
 	self._inputs_view = self._xml.get_widget('inputs_view')
 	self._input_entry = self._xml.get_widget('input_entry')
 	self._input_auto = self._xml.get_widget('input_auto')
 	self._inputs_index = 0
 
-	self._prepare_inputs_value_dialog =\
-		self._xml.get_widget('prepare_inputs_value_dialog')
-	self._prepare_inputs_value_dialog.add_buttons(\
-		gtk.STOCK_CANCEL, gtk.RESPONSE_REJECT,\
-		gtk.STOCK_OK, gtk.RESPONSE_ACCEPT)
+	self._prepare_inputs_value_dialog = self._xml.get_widget(
+	    'prepare_inputs_value_dialog')
+	self._prepare_inputs_value_dialog.add_buttons(
+	    gtk.STOCK_CANCEL, gtk.RESPONSE_REJECT,
+	    gtk.STOCK_OK, gtk.RESPONSE_ACCEPT)
 
 	self._inputs_view.set_model(gtk.ListStore(str))
 	cell = gtk.CellRendererPixbuf()
@@ -1015,8 +1088,8 @@ class GSam:
 	    else:
 		stock = None
 	    cell.set_property('stock_id', stock)
-	self._inputs_view.insert_column_with_data_func(-1, "curr", cell,\
-		inputs_curr, self)
+	self._inputs_view.insert_column_with_data_func(-1, "curr", cell,
+	    inputs_curr, self)
 	cell = gtk.CellRendererText()
 	cell.set_property('editable', True)
 	cell.connect('edited', self.inputs_cell_edited)

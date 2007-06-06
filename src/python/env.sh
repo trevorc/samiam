@@ -4,7 +4,8 @@ sam_so_err() {
     exit 1
 }
 
-SAM_SO=`find build -name sam.so 2>/dev/null` || sam_so_err
+basedir=../python
+SAM_SO=`find $basedir/build/ -name sam.so 2>/dev/null` || sam_so_err
 
-export LD_LIBRARY_PATH=../../build/libsam
-export PYTHONPATH=`dirname $SAM_SO`
+export LD_LIBRARY_PATH=$basedir/../../build/libsam
+export PYTHONPATH=$basedir/`dirname $SAM_SO`

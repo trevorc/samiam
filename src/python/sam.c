@@ -497,6 +497,7 @@ static Value *
 StackIter_next(StackIter *restrict self)
 {
     if (self->idx >= sam_es_stack_len(self->es)) {
+	PyErr_SetNone(PyExc_IndexError);
 	return NULL;
     }
 
@@ -549,6 +550,7 @@ static Value *
 Stack_item(Stack *restrict self, unsigned i)
 {
     if (i >= sam_es_stack_len(self->es)) {
+	PyErr_SetNone(PyExc_IndexError);
 	return NULL;
     }
 
@@ -1025,8 +1027,8 @@ Program_changes_get(Program *restrict self)
 static PyObject *
 Program_print_func_get(Program *restrict self)
 {
-    PyObject *restrict rv = self->print_func == NULL
-	? Py_None : self->print_func;
+    PyObject *restrict rv = self->print_func == NULL?
+	Py_None: self->print_func;
     Py_INCREF(rv);
     return rv;
 }
@@ -1051,8 +1053,8 @@ Program_print_func_set(Program *restrict self, PyObject *func)
 static PyObject *
 Program_input_func_get(Program *restrict self)
 {
-    PyObject *restrict rv = self->input_func == NULL
-	? Py_None : self->input_func;
+    PyObject *restrict rv = self->input_func == NULL?
+	Py_None : self->input_func;
     Py_INCREF(rv);
     return rv;
 }
@@ -1149,7 +1151,10 @@ Program_io_vfprintf(sam_io_stream ios,
     char *str = malloc(len);
     vsprintf(str, fmt, aq);
     va_end(aq);
-    PyObject *restrict arglist = Py_BuildValue("(s)", str);
+    const char *restrict stream = ios == SAM_IOS_IN?
+	"stdin": ios == SAM_IOS_OUT?
+	    "stdout": "stderr";
+    PyObject *restrict arglist = Py_BuildValue("(ss)", str, stream);
     Program *restrict self = data;
     PyEval_CallObject(self->print_func, arglist);
     Py_DECREF(arglist);
@@ -1201,7 +1206,9 @@ Program_load(Program *restrict self)
 {
     // TODO shouldn't strcmp() work here?
     self->es = sam_es_new(self->file[0] == '-' && self->file[1] == '\0'?
-			  NULL: self->file, 1, Program_io_dispatcher,
+			  NULL: self->file,
+			  0,
+			  Program_io_dispatcher,
 			  self);
     if (self->es == NULL) {
 	PyErr_SetString(ParseError, "couldn't parse input file.");
@@ -1330,35 +1337,56 @@ initsam(void)
     Py_INCREF(&ProgramType);
     PyModule_AddObject(m, "Program", (PyObject *)&ProgramType);
     
-    PyObject *Types = Py_BuildValue("(ssssss)", "none", "int",
-				    "float", "sa", "ha", "pa");
+    PyObject *Types = Py_BuildValue("(ssssss)",
+				    "none",
+				    "int",
+				    "float",
+				    "sa",
+				    "ha",
+				    "pa");
     Py_INCREF(Types);
     PyModule_AddObject(m, "Types", Types);
 
-    PyObject *TypeChars = Py_BuildValue("(ssssss)", "N", "I", "F", "S",
-					"H", "P");
+    PyObject *TypeChars = Py_BuildValue("(ssssss)",
+					"N",
+					"I",
+					"F",
+					"S",
+					"H",
+					"P");
     Py_INCREF(TypeChars);
     PyModule_AddObject(m, "TypeChars", TypeChars);
 
     PyObject *ChangeTypes = Py_BuildValue("(ssssss)",
-			    "heap_alloc", "heap_free", "heap_change",
-			    "stack_push", "stack_pop", "stack_change");
+					  "heap_alloc",
+					  "heap_free",
+					  "heap_change",
+					  "stack_push",
+					  "stack_pop",
+					  "stack_change");
     Py_INCREF(ChangeTypes);
     PyModule_AddObject(m, "ChangeTypes", ChangeTypes);
 
     PyObject *Errors = Py_BuildValue("(ssssssssssssssssss)",
-			    "OK", "Stop", "Unexpected optype",
-			    "Segmentation fault", "Illegal free",
-			    "Stack underflow", "Stack overflow",
-			    "Out of memory", "Illegal type conversion",
-			    "Too many elements on final stack",
-			    "Unknown identifier",
-			    "Illegal stack input type", "I/O error",
-			    "Division by zero", "Negative shift",
-			    "Unsupported opcode",
-			    "Failed to load dynamic linking",
-			    "Dynamic linking symbol "
-				"could not be resolved");
+				     "OK",
+				     "Stop",
+				     "Unexpected optype",
+				     "Segmentation fault",
+				     "Illegal free",
+				     "Stack underflow",
+				     "Stack overflow",
+				     "Out of memory",
+				     "Illegal type conversion",
+				     "Too many elements on final stack",
+				     "Unknown identifier",
+				     "Illegal stack input type",
+				     "I/O error",
+				     "Division by zero",
+				     "Negative shift",
+				     "Unsupported opcode",
+				     "Failed to load dynamic linking",
+				     "Dynamic linking symbol could not be "
+				     "resolved");
     Py_INCREF(Errors);
     PyModule_AddObject(m, "Errors", Errors);
 }

@@ -1,3 +1,5 @@
+set -e
+
 if [ $# = 0 ]; then
     echo "need sam input file as first arg."
     echo "usage: $0 [pyfile] samfile"
