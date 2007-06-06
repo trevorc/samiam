@@ -32,5 +32,8 @@ i18n(conf.env, sources)
 libsam = conf.env.SharedLibrary('sam', sources)
 
 # TODO: portable
-Alias('install', conf.env.InstallAs(os.path.join(dirs['install']['lib'], 'libsam' + conf.env['SHLIBSUFFIX'] + '.' + version), libsam))
+Alias('install',
+      conf.env.InstallAs(os.path.join(dirs['install']['lib'],
+			 'libsam' + conf.env['SHLIBSUFFIX'] + '.' + version),
+			 libsam))
 SConscript(['../samiam/SConscript'], ['conf', 'dirs', 'libsam', 'i18n'])
