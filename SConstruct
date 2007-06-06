@@ -101,7 +101,7 @@ def pot_builder(target, source, env):
 	 "--default-domain=" + env['PACKAGE'],
 	 '--copyright-holder="Trevor Caira"'
     ]
-    args += [ src.get_path() for src in source ]
+    args += [src.get_path() for src in source]
     print args
 
     return os.spawnvp(os.P_WAIT, 'xgettext', args)
@@ -112,14 +112,14 @@ def i18n(env, sources):
 
     env.PotBuild(potfile, sources)
 
-    p_oze = [ os.path.basename(po) for po in glob.glob('po/*.po') ]
-    languages = [ po.replace('.po', '') for po in p_oze ]
-    m_oze = [ po.replace (".po", ".mo") for po in p_oze ]
+    p_oze = [os.path.basename(po) for po in glob.glob('po/*.po')]
+    languages = [po.replace('.po', '') for po in p_oze]
+    m_oze = [po.replace('.po', '.mo') for po in p_oze]
 
     for mo in m_oze:
 	po = 'po/' + mo.replace ('.mo', '.po')
-#	env.MoBuild(mo, [po, potfile])
-	env.Alias('install', env.MoBuild(mo, [po, potfile]))
+	mo_b = env.MoBuild(mo, [po, potfile])
+	env.Alias('install', env.Install(dirs['install']['locale'], mo_b))
 
 #    for po_file in p_oze:
 #	env.PotBuild(po_file, ['po/' + po_file, potfile])
