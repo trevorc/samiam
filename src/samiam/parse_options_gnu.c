@@ -37,7 +37,7 @@
 
 #include "parse_options.h"
 
-__attribute__((noreturn))
+NORETURN
 static int
 samiam_copyright(void)
 {
@@ -68,7 +68,7 @@ samiam_copyright(void)
     exit(0);
 }
 
-__attribute__((noreturn))
+NORETURN
 static int
 samiam_help(const char *restrict name)
 {

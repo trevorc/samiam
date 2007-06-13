@@ -1629,13 +1629,13 @@ sam_op_call(sam_es *restrict es)
 # else /* HAVE_DLFCN_H */
 
 static sam_error
-sam_op_load(__attribute__((unused)) sam_es *restrict es)
+sam_op_load(UNUSED sam_es *restrict es)
 {
     return sam_error_nosys(es, "load");
 }
 
 static sam_error
-sam_op_call(__attribute__((unused)) sam_es *restrict es)
+sam_op_call(UNUSED sam_es *restrict es)
 {
     return sam_error_nosys(es, "call");
 }
@@ -1660,7 +1660,7 @@ sam_op_import(sam_es *restrict es)
 }
 
 static sam_error
-sam_op_export(__attribute__((unused)) sam_es *restrict es)
+sam_op_export(UNUSED sam_es *restrict es)
 {
     return SAM_OK;
 }

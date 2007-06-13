@@ -54,10 +54,12 @@
 # include <unistd.h>
 #endif /* HAVE_MMAN_H */
 
+#if 0
 #if defined(isspace)
 # undef isspace
 #endif
 #define isspace(c) ((c) == ' ' || (c) == '\n' || (c) == '\t')
+#endif
 
 typedef enum {
     SAM_DIRECTIVE_NONE,
@@ -544,7 +546,7 @@ sam_input_read(const sam_es *restrict es,
 #else /* HAVE_MMAN_H */
 
 /*@null@*/ static inline char *
-sam_input_read(const sam_es *restrict es __attribute__((unused)),
+sam_input_read(const sam_es *restrict es UNUSED,
 	       const char *restrict path,
 	       sam_string *restrict s)
 {
@@ -596,8 +598,8 @@ sam_directive_name(const char *restrict s)
  *  ROI ::= .roi IDENT INT ( , INT )*
  */
 static bool
-sam_try_parse_roi(sam_es *restrict es __attribute__((unused)),
-		  char **restrict input __attribute__((unused)))
+sam_try_parse_roi(sam_es *restrict es UNUSED,
+		  char **restrict input UNUSED)
 {
     puts("roi");
     return false;
@@ -607,28 +609,28 @@ sam_try_parse_roi(sam_es *restrict es __attribute__((unused)),
  *  ROF ::= .rof IDENT FLOAT ( , FLOAT )*
  */
 static bool
-sam_try_parse_rof(sam_es *restrict es __attribute__((unused)),
-		  char **restrict input __attribute__((unused)))
+sam_try_parse_rof(sam_es *restrict es UNUSED,
+		  char **restrict input UNUSED)
 {
     return false;
 }
-
-/*  TODO: is this necessary/possible?
- *  ROS ::= .ros IDENT STRING ( , STRING )*
-static bool
-sam_try_parse_ros(sam_es *restrict es __attribute__((unused)),
-		  char **restrict input __attribute__((unused)))
-{
-    return false;
-}
- */
 
 /*
- *  ROC ::= .roc IDENT CHAR ( , STRING )*
+ * ROS ::= .ros IDENT STRING ( , STRING )*
  */
 static bool
-sam_try_parse_roc(sam_es *restrict es __attribute__((unused)),
-		  char **restrict input __attribute__((unused)))
+sam_try_parse_ros(sam_es *restrict es UNUSED,
+		  char **restrict input UNUSED)
+{
+    return false;
+}
+
+/*
+ *  ROC ::= .roc IDENT CHAR ( , CHAR )*
+ */
+static bool
+sam_try_parse_roc(sam_es *restrict es UNUSED,
+		  char **restrict input UNUSED)
 {
     return false;
 }
@@ -637,8 +639,8 @@ sam_try_parse_roc(sam_es *restrict es __attribute__((unused)),
  *  GLOBAL ::= .global IDENT ( INT )?
  */
 static bool
-sam_try_parse_global(sam_es *restrict es __attribute__((unused)),
-		     char **restrict input __attribute__((unused)))
+sam_try_parse_global(sam_es *restrict es UNUSED,
+		     char **restrict input UNUSED)
 {
     return false;
 }
@@ -647,8 +649,8 @@ sam_try_parse_global(sam_es *restrict es __attribute__((unused)),
  *  IMPORT ::= .import IDENT
  */
 static bool
-sam_try_parse_import(sam_es *restrict es __attribute__((unused)),
-		     char **restrict input __attribute__((unused)))
+sam_try_parse_import(sam_es *restrict es UNUSED,
+		     char **restrict input UNUSED)
 {
     return false;
 }
@@ -657,8 +659,8 @@ sam_try_parse_import(sam_es *restrict es __attribute__((unused)),
  *  EXPORT ::= .export IDENT
  */
 static bool
-sam_try_parse_export(sam_es *restrict es __attribute__((unused)),
-		     char **restrict input __attribute__((unused)))
+sam_try_parse_export(sam_es *restrict es UNUSED,
+		     char **restrict input UNUSED)
 {
     return false;
 }
@@ -692,6 +694,7 @@ sam_parse_directive(sam_es *restrict es,
     if (!sam_try_parse_roi(es, &start) &&
 	!sam_try_parse_rof(es, &start) &&
 	!sam_try_parse_roc(es, &start) &&
+	!sam_try_parse_ros(es, &start) &&
 	!sam_try_parse_global(es, &start) &&
 	!sam_try_parse_export(es, &start) &&
 	!sam_try_parse_import(es, &start)) {
@@ -724,6 +727,8 @@ static bool
 sam_parse_directives(sam_es *restrict es,
 		     char **restrict input)
 {
+    return true;
+
     char *start = *input;
 
     while (*start != '\0') {

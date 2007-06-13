@@ -44,4 +44,10 @@
 #define bindtextdomain(Package, Directory)
 #endif /* HAVE_LIBINTL_H */
 
+#if defined(__GNUC__)
+# define NORETURN __attribute__((noreturn))
+#else /* __GNUC__ */
+# define NORETURN
+#endif /* __GNUC__ */
+
 #endif /* SAMIAM_H */
