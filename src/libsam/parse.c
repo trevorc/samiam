@@ -77,8 +77,11 @@ typedef struct {
     sam_directive_symbol symbol;
 } sam_directive;
 
+/*
+ * WHITESPACE ::= [ \n\t]+
+ */
 static void
-sam_eat_whitespace(char *restrict *restrict s)
+sam_parse_whitespace(char *restrict *restrict s)
 {
     if (*s == NULL || **s == '\0') {
 	return;
@@ -227,6 +230,9 @@ sam_try_parse_identifier(char **restrict input,
     }
 }
 
+/*
+ *  STRING ::= " CHAR* "
+ */
 static bool
 sam_try_parse_string(/*@in@*/  char **restrict input,
 		     /*@out@*/ char **restrict string,
@@ -262,6 +268,11 @@ sam_try_parse_string(/*@in@*/  char **restrict input,
     }
 }
 
+/*
+ *  FLOAT and INT as defined by C99
+ *
+ *  NUMBER ::= FLOAT | INT
+ */
 static inline bool
 sam_try_parse_number(/*@in@*/ char **restrict input,
 		     sam_op_value *restrict operand,
@@ -354,6 +365,11 @@ sam_try_parse_escape_sequence(char **restrict input,
     return true;
 }
 
+/*
+ * CHAR as in C99
+ *
+ * CHAR-TOKEN ::= ' CHAR '
+ */
 static inline bool
 sam_try_parse_char(/*@in@*/ char **restrict input,
 		   int		  *restrict c,
@@ -389,6 +405,8 @@ sam_try_parse_char(/*@in@*/ char **restrict input,
  *  Advance past the operand of a certain type if we can find one, and set
  *  the type to what we find.
  *
+ *  OPERAND ::= INT | FLOAT | CHAR | STRING | IDENT
+ *
  *  @param input A pointer to the string which should be tested for
  *		 containing an operand. Update to the point after the
  *		 operand if it's found, otherwise print an error.
@@ -417,7 +435,7 @@ sam_try_parse_operand(/*@in@*/ char	    **restrict input,
 }
 
 /*
- *  INSTRUCTION ::= IDENT 
+ *  INSTRUCTION ::= IDENT OPERAND?
  */
 /*@null@*/ static inline sam_instruction *
 sam_parse_instruction(const sam_es *restrict es,
@@ -429,7 +447,7 @@ sam_parse_instruction(const sam_es *restrict es,
 	sam_error_identifier(es, start);
 	return NULL;
     }
-    sam_eat_whitespace(&start);
+    sam_parse_whitespace(&start);
 
     sam_instruction *restrict i = sam_opcode_get(opcode);
     if (i == NULL) {
@@ -444,7 +462,7 @@ sam_parse_instruction(const sam_es *restrict es,
 	}
     }
 
-    sam_eat_whitespace(&start);
+    sam_parse_whitespace(&start);
     *input = start;
     return i;
 }
@@ -492,7 +510,7 @@ sam_parse_label(char **restrict input,
     if (colon_expected && !sam_check_for_colon(start)) {
 	return NULL;
     }
-    sam_eat_whitespace(&start);
+    sam_parse_whitespace(&start);
     *start++ = '\0';
     *input = start;
 
@@ -681,7 +699,7 @@ sam_parse_directive(sam_es *restrict es,
 
     /*
     while (*start != '\0' && !isspace(*start++)) {
-	sam_eat_whitespace(&start);
+	sam_parse_whitespace(&start);
 	break;
     }
     */
@@ -720,6 +738,8 @@ sam_ignore_shebang(char **restrict s)
 /*
  * Parse directives at the beginning of the file.
  *
+ * DIRECTIVE-SECTION ::= DIRECTIVE*
+ *
  * @return true if all directives were parsed successfully or none were
  *	   parsed at all, otherwise false.
  */
@@ -732,7 +752,7 @@ sam_parse_directives(sam_es *restrict es,
     char *start = *input;
 
     while (*start != '\0') {
-	sam_eat_whitespace(&start);
+	sam_parse_whitespace(&start);
 
 	if (*start == '\0' || *start != '.') {
 	    return true;
@@ -743,7 +763,7 @@ sam_parse_directives(sam_es *restrict es,
 	    sam_error_invalid_directive(es, start);
 	    return false;
 	}
-	sam_eat_whitespace(&start);
+	sam_parse_whitespace(&start);
 
 	if (*start != '.') {
 	    return true;
@@ -754,6 +774,9 @@ sam_parse_directives(sam_es *restrict es,
 }
 #endif /* SAM_EXTENSIONS */
 
+/*
+ * PROGRAM ::= DIRECTIVE-SECTION ( LABEL* INSTRUCTION )*
+ */
 /*@null@*/ bool
 sam_parse(sam_es *restrict es,
 	  const char *restrict file)
@@ -782,7 +805,7 @@ sam_parse(sam_es *restrict es,
     };
 
     while (*input != '\0') {
-	sam_eat_whitespace(&input);
+	sam_parse_whitespace(&input);
 
 	char *label;
 	while ((label = sam_parse_label(&input, true))) {
@@ -790,7 +813,7 @@ sam_parse(sam_es *restrict es,
 		sam_error_duplicate_label(es, label, cur_line);
 		return false;
 	    }
-	    sam_eat_whitespace(&input);
+	    sam_parse_whitespace(&input);
 	}
 
 	sam_instruction *restrict i = sam_parse_instruction(es, &input);
