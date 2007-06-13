@@ -5,6 +5,7 @@ import gtk, gtk.glade, gobject
 import sam
 import time
 import sys
+import os
 import pango
 import re
 
@@ -407,7 +408,8 @@ class GSam:
     # open_file () {{{3
     def open_file(self, filename):
 	# close old file
-	self.close_file()
+	if self._file:
+	    self.close_file()
 	self.init_program_display(filename)
 
     # on_open_activate () {{{3
