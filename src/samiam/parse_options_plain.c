@@ -58,5 +58,5 @@ samiam_parse_options(int argc,
 	--argc;
     }
     *file = argc == 1? NULL: argv[1];
-    return argc > 2: samiam_usage(): true;
+    return argc > 2? samiam_usage(): true;
 }
