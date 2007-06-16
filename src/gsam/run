@@ -3,4 +3,4 @@
 set -e
 
 . ../python/env.sh
-python gsam.py "$*"
+python gsam.py $*
