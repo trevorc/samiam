@@ -18,7 +18,7 @@ T    ---  #06  ordering of sam_op_*()
 T    ---  #07  sam_op_equal just uses memcmp. this is a bad bug. should
 	       sam_op_equal do something smart?
 T    ---  #08  dashes in label names
-     MED  #09  ieee 754 floating point exceptions not handled.
+     LOW  #09  ieee 754 floating point exceptions not handled.
 T    ---  #10  floating point < and > might be wrong.
 T    ---  #11  sam_round IS wrong.
 J    ---  #12  non integer return values don't work. (when the bottom of
