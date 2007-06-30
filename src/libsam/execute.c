@@ -89,6 +89,8 @@ sam_warning_retval_type(/*@in@*/ sam_es *restrict es)
     }
 }
 
+/*TODO: do we want or need this function*/
+#if 0
 static inline void
 sam_warning_leaks(/*@in@*/ const sam_es *restrict es)
 {
@@ -105,7 +107,9 @@ sam_warning_leaks(/*@in@*/ const sam_es *restrict es)
 		       block_count, block_count == 1? "": "s");
     }
 }
+#endif
 
+/*TODO: do we want or need this function?*/
 static inline int
 sam_convert_to_int(sam_es *restrict es,
 		   /*@in@*/ sam_ml *restrict m)
@@ -121,7 +125,7 @@ sam_convert_to_int(sam_es *restrict es,
 	case SAM_ML_TYPE_PA:
 	    return m->value.pa.l;
 	case SAM_ML_TYPE_HA:
-	    return m->value.ha;
+	    return m->value.ha.index;
 	case SAM_ML_TYPE_SA:
 	    return m->value.sa;
 	case SAM_ML_TYPE_NONE: /*@fallthrough@*/
@@ -135,7 +139,8 @@ sam_execute(/*@in@*/ sam_es *restrict es)
 {
     sam_error err = SAM_OK;
 
-    for (; sam_es_pc_get(es).l < sam_es_instructions_len_cur(es) && err == SAM_OK;
+    for (; sam_es_pc_get(es).l < sam_es_instructions_len_cur(es) &&
+	    err == SAM_OK;
 	 sam_es_pc_pp(es)) {
 	err = sam_es_instructions_cur(es)->handler(es);
     }
@@ -143,7 +148,7 @@ sam_execute(/*@in@*/ sam_es *restrict es)
 #if defined(SAM_EXTENSIONS) && defined(HAVE_DLFCN_H)
     sam_es_dlhandles_close(es);
 #endif /* SAM_EXTENSIONS && HAVE_DLFCN_H */
-    sam_warning_leaks(es);
+    /*sam_warning_leaks(es);*/
     if (err == SAM_OK) {
 	sam_warning_forgot_stop(es);
     }

@@ -110,7 +110,7 @@ sam_get_jump_target(/*@in@*/ sam_es *restrict es,
 
 static sam_error
 sam_sp_shift(sam_es *restrict es,
-	     sam_ha sp)
+	     sam_sa sp)
 {
     while (sp < sam_es_stack_len(es)) {
 	sam_ml *m;
@@ -120,8 +120,9 @@ sam_sp_shift(sam_es *restrict es,
 	free(m);
     }
     while (sp > sam_es_stack_len(es)) {
-	if (!sam_es_stack_push(es, sam_ml_new((sam_ml_value){.i = 0},
-					      SAM_ML_TYPE_NONE))) {
+	if (!sam_es_stack_push(es,
+			       sam_ml_new((sam_ml_value){.i = 0},
+					  SAM_ML_TYPE_NONE))) {
 	    return sam_error_stack_overflow(es);
 	}
     }
@@ -197,12 +198,14 @@ sam_addition(/*@in@*/ sam_es *restrict es,
 	    /* user could set an illegal index here or could overflow
 	     * the address */
 	    if (m2->type == SAM_ML_TYPE_INT) {
-		m1->value.ha = m1->value.ha + sign * m2->value.i;
+		m1->value.ha.index += sign * m2->value.i;
 		free(m2);
 		return sam_es_stack_push(es, m1)?
 		    SAM_OK: sam_error_stack_overflow(es);
 	    } else if (m2->type == SAM_ML_TYPE_HA && sign == -1) {
-		m1->value.i = m1->value.ha - m2->value.ha;
+		if(m1->value.ha.alloc != m2->value.ha.alloc)
+		    break;
+		m1->value.i = m1->value.ha.index - m2->value.ha.index;
 		m1->type = SAM_ML_TYPE_INT;
 		free(m2);
 		return sam_es_stack_push(es, m1)?
@@ -242,7 +245,10 @@ sam_addition(/*@in@*/ sam_es *restrict es,
 	    }
 	    if (m2->type == SAM_ML_TYPE_HA) {
 		/* user could set an illegal index here or overflow */
-		m1->value.ha = m1->value.i + sign * m2->value.ha;
+		if(sign != 1)
+		    break;
+		m1->value.ha.index = m1->value.i + m2->value.ha.index;
+		m1->value.ha.alloc = m2->value.ha.alloc;
 		m1->type = SAM_ML_TYPE_HA;
 		free(m2);
 		return sam_es_stack_push(es, m1)?
@@ -732,25 +738,16 @@ static sam_error
 sam_op_pushimmstr(/*@in@*/ sam_es *restrict es)
 {
     sam_instruction *cur = sam_es_instructions_cur(es);
-    sam_ml *m;
     sam_ml_value v;
-    size_t len, i;
+    sam_error rv;
 
     if (cur->optype != SAM_OP_TYPE_STR) {
 	return sam_error_optype(es);
     }
-    len = strlen(cur->operand.s);
-    if ((v.ha = sam_es_heap_alloc(es, len + 1)) == SAM_HEAP_PTR_MAX) {
-	return sam_error_no_memory(es);
+
+    if((rv=sam_es_string_alloc(es,cur->operand.s,&v.ha))!=SAM_OK) {
+	return rv;
     }
-    for (i = 0; i < len; ++i) {
-	m = sam_es_heap_get(es, i + v.ha);
-	m->value.i = cur->operand.s[i];
-	m->type = SAM_ML_TYPE_INT;
-    }
-    m = sam_es_heap_get(es, i + v.ha);
-    m->value.i = '\0';
-    m->type = SAM_ML_TYPE_INT;
 
     return sam_es_stack_push(es, sam_ml_new(v, SAM_ML_TYPE_HA))?
 	SAM_OK: sam_error_stack_overflow(es);
@@ -867,7 +864,6 @@ sam_op_addsp(/*@in@*/ sam_es *restrict es)
 static sam_error
 sam_op_malloc(/*@in@*/ sam_es *restrict es)
 {
-    size_t i;
     sam_ml_value v;
     sam_ml *restrict m = sam_es_stack_pop(es);
 
@@ -882,15 +878,17 @@ sam_op_malloc(/*@in@*/ sam_es *restrict es)
     if (m->value.i == 0) {
 	m->value.i = 1;
     }
+
+    /* XXX?
     if ((v.ha = sam_es_heap_alloc(es, m->value.i)) == SAM_HEAP_PTR_MAX) {
 	free(m);
 	return sam_error_no_memory(es);
     }
-    for (i = v.ha; i < (size_t)m->value.i + v.ha; ++i) {
-	sam_ml *m_i = sam_es_heap_get(es, i);
-	m_i->type = SAM_ML_TYPE_NONE;
-	m_i->value.i = 0;
-    }
+    */
+    v.ha = sam_es_heap_alloc(es, m->value.i);
+    
+    /*sam_es_heap_alloc makes sure values are properly marked uninited*/
+
     free(m);
     if (!sam_es_stack_push(es, sam_ml_new(v, SAM_ML_TYPE_HA))) {
 	return sam_error_stack_overflow(es);
@@ -914,7 +912,7 @@ sam_op_free(/*@in@*/ sam_es *restrict es)
     }
     sam_ha ha = m->value.ha;
     free(m);
-    return ha >= sam_es_heap_len(es)? sam_error_free(es, ha): sam_es_heap_dealloc(es, ha);
+    return sam_es_heap_dealloc(es, ha);
 }
 
 static sam_error
@@ -1259,7 +1257,9 @@ sam_op_equal(/*@in@*/ sam_es *restrict es)
 	    break;
 	case SAM_ML_TYPE_HA:
 	    if (m2->type == SAM_ML_TYPE_HA) {
-		m1->value.i = m1->value.ha == m2->value.ha;
+		m1->value.i =
+		    m1->value.ha.index == m2->value.ha.index &&
+		    m1->value.ha.alloc == m2->value.ha.alloc;
 	    } else {
 		m1->value.i = false;
 	    }
@@ -1476,23 +1476,17 @@ static sam_error
 sam_op_readstr(/*@in@*/ sam_es *restrict es)
 {
     char   *str;
-    size_t  len, i;
     sam_ml_value v;
+    sam_error rv;
 
     if (sam_io_afgets(es, &str, SAM_IOS_IN) == NULL) {
 	return sam_error_io(es);
     }
-    len = strlen(str);
 
-    if ((v.ha = sam_es_heap_alloc(es, len + 1)) == SAM_HEAP_PTR_MAX) {
-	free(str);
-	return sam_error_no_memory(es);
+    if((rv=sam_es_string_alloc(es,str,&v.ha))!=SAM_OK) {
+	return rv;
     }
-    for (i = 0; i <= len; ++i) {
-	sam_ml *restrict m = sam_es_heap_get(es, i + v.ha);
-	m->value.i = str[i];
-	m->type = SAM_ML_TYPE_INT;
-    }
+
     free(str);
     return sam_es_stack_push(es, sam_ml_new(v, SAM_ML_TYPE_HA))?
 	SAM_OK: sam_error_stack_overflow(es);
@@ -1562,7 +1556,7 @@ static sam_error
 sam_op_writestr(/*@in@*/ sam_es *restrict es)
 {
     sam_ml    *m;
-    sam_ha     ha, i;
+    sam_ha     ha;
     sam_error  rv;
     char      *str;
 
@@ -1577,15 +1571,10 @@ sam_op_writestr(/*@in@*/ sam_es *restrict es)
     ha = m->value.ha;
     free(m);
 
-    if (ha >= sam_es_heap_len(es)) {
-	sam_ma ma = {.ha = ha};
-	return sam_error_segmentation_fault(es, false, ma);
-    }
-    i = ha;
-
     if ((rv = sam_es_string_get(es, &str, ha)) != SAM_OK) {
 	return rv;
     }
+
     rv = sam_io_printf(es, "%s", str) > 0? SAM_OK: sam_error_io(es);
     free(str);
     return rv;

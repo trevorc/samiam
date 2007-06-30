@@ -72,16 +72,20 @@ sam_error_segmentation_fault(sam_es *restrict es,
 			     sam_ma ma)
 {
     if (!sam_es_options_get(es, SAM_QUIET)) {
-	sam_io_fprintf(es,
-		       SAM_IOS_ERR,
-		       stack?
-		       _("error: segmentation fault. attempt to access "
-			 "illegal memory at stack address %lu.\n"):
-		       _("error: segmentation fault. attempt to access "
-			 "illegal memory at heap address %lu.\n"),
-		       stack?
-		       (unsigned long)ma.sa:
-		       (unsigned long)ma.ha);
+	if(stack)
+	    sam_io_fprintf(es,
+			   SAM_IOS_ERR,
+			   _("error: segmentation fault. attempt to access"
+			     " illegal memory at stack address %lu.\n"),
+			   (unsigned long)ma.sa);
+	else
+	    sam_io_fprintf(es,
+			   SAM_IOS_ERR,
+			   _("error: segmentation fault. attempt to access"
+			     " illegal memory at heap address "
+			     "%u:%u.\n"),
+			   ma.ha.alloc,
+			   ma.ha.index);
 	sam_es_bt_set(es, true);
     }
     return SAM_ESEGFAULT;
@@ -94,9 +98,10 @@ sam_error_free(sam_es *restrict es,
     if (!sam_es_options_get(es, SAM_QUIET)) {
 	sam_io_fprintf(es,
 		       SAM_IOS_ERR,
-		       _("error: attempt to free nonexistant or unused heap "
-		       "address %luH\n"),
-		       (unsigned long)ha);
+		       _("error: attempt to free nonexistant or unused "
+			 "heap address %u:%uH\n"),
+		       ha.alloc,
+		       ha.index);
 	sam_es_bt_set(es, true);
     }
     return SAM_EFREE;

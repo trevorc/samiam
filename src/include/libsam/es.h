@@ -72,6 +72,9 @@ extern inline size_t	     sam_es_sp_get	     (sam_es *restrict es);
 extern inline sam_sa	     sam_es_fbr_get	     (const sam_es *restrict es);
 extern inline void	     sam_es_fbr_set	     (sam_es *restrict es,
 						      sam_sa  fbr);
+extern sam_error	     sam_es_string_alloc     (sam_es *restrict es,
+						      char *str,
+						      sam_ha *restrict res);
 extern sam_error	     sam_es_string_get	     (sam_es *restrict es, char **restrict str,
 						      sam_ha ha);
 extern sam_ml		    *sam_es_stack_pop	     (sam_es *restrict es);
@@ -88,14 +91,10 @@ extern inline sam_ml	    *sam_es_heap_get	     (const sam_es *restrict es,
 extern bool		     sam_es_heap_set	     (sam_es *restrict es,
 						      sam_ml *restrict ml,
 						      sam_ha ha);
-extern inline size_t	     sam_es_heap_len	     (const sam_es *restrict es);
 extern sam_ha		     sam_es_heap_alloc	     (sam_es *restrict es,
 						      size_t size);
 extern sam_error	     sam_es_heap_dealloc     (sam_es *restrict es,
 						      sam_ha  ha);
-extern inline bool	     sam_es_heap_leak_check  (const sam_es *restrict es,
-						      unsigned long *restrict block_count,
-						      unsigned long *restrict leak_size);
 extern bool		     sam_es_labels_ins	     (sam_es *restrict es,
 						      char *restrict label,
 						      sam_pa line_no);

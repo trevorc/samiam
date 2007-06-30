@@ -75,6 +75,8 @@ sam_io_vfscanf(const sam_es *restrict es,
     return rv;
 }
 
+/*TODO: do we really need this function?*/
+#if 0
 static int
 sam_sprint_char(char	 *s,
 		sam_char  c)
@@ -117,7 +119,10 @@ sam_sprint_char(char	 *s,
 
     return s - start;
 }
+#endif
 
+/*TODO: do we really need this function*/
+#if 0
 static void
 sam_io_ml_value_print(const sam_es *restrict es,
 		      sam_ml_value v,
@@ -131,7 +136,11 @@ sam_io_ml_value_print(const sam_es *restrict es,
 	    sam_io_fprintf(es, SAM_IOS_ERR, "%.5g", v.f);
 	    break;
 	case SAM_ML_TYPE_HA:
-	    sam_io_fprintf(es, SAM_IOS_ERR, "%luH", (unsigned long)v.ha);
+	    sam_io_fprintf(es,
+			   SAM_IOS_ERR,
+			   "%u:%uH",
+			   v.ha.alloc,
+			   v.ha.index);
 	    break;
 	case SAM_ML_TYPE_SA:
 	    sam_io_fprintf(es, SAM_IOS_ERR, "%luS", (unsigned long)v.sa);
@@ -145,7 +154,10 @@ sam_io_ml_value_print(const sam_es *restrict es,
 	    break;
     }
 }
+#endif
 
+/* TODO: do we really need this function*/
+#if 0
 static void
 sam_io_op_value_print(const sam_es *restrict es,
 		      sam_op_value v,
@@ -174,7 +186,19 @@ sam_io_op_value_print(const sam_es *restrict es,
 	    break;
     }
 }
+#endif
 
+/*TODO: shouldn't this be part of the UI now?
+ * GSaM has no need to use this - it does it well enough just by what
+ * it is. Therefore, it's not UI-universal. What's it doing in libsam?*/
+#if 1
+static void
+sam_io_bt_default(const sam_es *restrict es) {
+    sam_io_fprintf(es,
+		   SAM_IOS_ERR,
+		   "default backtrace - not implemented");
+}
+#else
 /* Die... with style! */
 
 /*
@@ -262,6 +286,7 @@ sam_io_bt_default(const sam_es *restrict es)
     }
     sam_io_fprintf(es, SAM_IOS_ERR, "\n");
 }
+#endif
 
 FILE *
 sam_ios_to_file(sam_io_stream ios)

@@ -65,7 +65,10 @@ typedef struct {
 } sam_pa;
 
 /** An index into the heap. */
-typedef size_t sam_ha;
+typedef struct _sam_ha {
+    unsigned alloc: 12;
+    unsigned index: 12;
+} sam_ha;
 
 /** An index into the stack. */
 typedef size_t sam_sa;
