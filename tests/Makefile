@@ -4,7 +4,7 @@ TMPDIR=/tmp
 CFLAGS=-std=c99 -Werror -Wall -W -Wmissing-prototypes -Wmissing-declarations -Wstrict-prototypes -Wpointer-arith -Wnested-externs -Wdisabled-optimization -Wundef -Wendif-labels -Wshadow -Wcast-align -Wstrict-aliasing=2 -fstrict-aliasing -Wwrite-strings -Wmissing-noreturn -Wmissing-format-attribute -Wredundant-decls -Wformat -pipe -O3 -I../src/include
 LDFLAGS=-lm
 
-ALL=equal1.sam inf dltest.so dltest2.so dltest3.so dltest4.so
+ALL=equal1.sam inf dltest.so dltest2.so dltest3.so dltest4.so timer
 
 all: $(ALL)
 
@@ -34,6 +34,9 @@ flop.sam: flop
 
 flop-bench: flop-bench.o
 	$(CC) $(LDFLAGS) -o $@ $^
+
+timer: timer.o
+	$(CC) $(LDFLAGS) -lsam -L../build/libsam -o $@ $^
 
 clean:
 	$(RM) equal*.sam flop $(TMPDIR)/flop.sam flop-bench.o flop-bench $(ALL)

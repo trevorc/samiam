@@ -1,3 +1,5 @@
+#define _GNU_SOURCE
+
 #include <unistd.h>
 #include <signal.h>
 #include <stdbool.h>
@@ -33,14 +35,15 @@ commit_changes(sam_es *restrict es)
 {
     printf("number of items on the stack: %lu.\n"
 	   "number of items on the heap: %lu.\n"
-	   "pc: %lu\n"
+	   "pc: %lu:%lu\n"
 	   "fbr: %lu\n"
 	   "sp: %lu\n\n",
-	   stack_items,
-	   heap_items,
-	   sam_es_pc_get(es),
-	   sam_es_fbr_get(es),
-	   sam_es_sp_get(es));
+	   (unsigned long)stack_items,
+	   (unsigned long)heap_items,
+	   (unsigned long)sam_es_pc_get(es).m,
+	   (unsigned long)sam_es_pc_get(es).l,
+	   (unsigned long)sam_es_fbr_get(es),
+	   (unsigned long)sam_es_sp_get(es));
 }
 
 int
@@ -49,11 +52,11 @@ main(void)
     signal(SIGALRM, (sighandler_t)sighandler);
     sighandler();
 
-    sam_es *restrict es = sam_es_new(0, 0);
-    sam_parse(es, NULL);
+    sam_es *restrict es = sam_es_new(NULL, 0, NULL, NULL);
 
     for (sam_error err = SAM_OK;
-	 sam_es_pc_get(es) < sam_es_instructions_len(es) && err == SAM_OK;
+	 sam_es_pc_get(es).l < sam_es_instructions_len_cur(es) &&
+	 err == SAM_OK;
 	 sam_es_pc_pp(es)) {
 	err = sam_es_instructions_cur(es)->handler(es);
 
@@ -66,7 +69,7 @@ main(void)
 	}
     }
 
-    printf("Return value: %d\n", sam_es_stack_len(es) >= 1?
+    printf("Return value: %ld\n", sam_es_stack_len(es) >= 1?
 	   sam_es_stack_get(es, 0)->value.i: -1);
     sam_es_free(es);
     return 0;
