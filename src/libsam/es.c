@@ -136,7 +136,7 @@ struct _sam_es {
 static inline void
 sam_es_heap_allocation_free(sam_heap_allocation *alloc)
 {
-    if(alloc->free) {
+    if (alloc->free) {
 	free(alloc);
     } else {
 	sam_array_free(&alloc->words);
@@ -153,7 +153,7 @@ sam_es_heap_allocation_new(size_t size) {
     
     res->free = false;
     sam_array_init(&res->words);
-    for(i=0;i<size;i++) {
+    for (i=0;i<size;i++) {
 	sam_ml_value v = { .i = 0 };
 	sam_array_ins(&res->words, sam_ml_new(v, SAM_ML_TYPE_NONE));
     }
@@ -173,7 +173,7 @@ static inline void
 sam_es_heap_free(sam_es *restrict es)
 {
     size_t i;
-    for(i=0;i<es->heap.len;i++) {
+    for (i=0;i<es->heap.len;i++) {
 	sam_es_heap_allocation_free(es->heap.arr[i]);
 	es->heap.arr[i] = sam_es_heap_unused_allocation_new();
     }
@@ -328,7 +328,7 @@ sam_es_string_alloc(sam_es *restrict es,
      * allocations?*/
     *res = sam_es_heap_alloc(es,strlen(str)+1);
 
-    for(i=0, cur=*res; i<=strlen(str); i++, cur.index++) {
+    for (i=0, cur=*res; i<=strlen(str); i++, cur.index++) {
 	sam_ml *restrict m = sam_es_heap_get(es, cur);
 	m->type = SAM_ML_TYPE_INT;
 	m->value.i = str[i];
@@ -349,10 +349,10 @@ sam_es_string_get(/*@in@*/ sam_es *restrict es,
     *str = NULL;
     for (;; ++addr.index, ++len) {
 	sam_ml *restrict m = sam_es_heap_get(es, addr);
-	if(m == NULL) {
+	if (m == NULL) {
 	    sam_ma ma = {.ha = addr};
 	    return sam_error_segmentation_fault(es, false, ma);
-	} else if(m->value.i == '\0') {
+	} else if (m->value.i == '\0') {
 	    break;
 	}
     }
@@ -447,13 +447,15 @@ sam_es_heap_get(const sam_es *restrict es,
     sam_heap_allocation *alloc;
 
     /*get allocation*/
-    if(ha.alloc >= es->heap.len)
+    if (ha.alloc >= es->heap.len) {
 	return NULL;
+    }
     alloc = es->heap.arr[ha.alloc];
 
     /*get exact address*/
-    if(ha.index >= alloc->words.len)
+    if (ha.index >= alloc->words.len) {
 	return NULL;
+    }
     return alloc->words.arr[ha.index];
 }
 
@@ -463,13 +465,15 @@ sam_es_heap_set(sam_es *restrict es,
 		sam_ha ha)
 {
     sam_heap_allocation *alloc;
-    if (ha.alloc >= es->heap.len)
+    if (ha.alloc >= es->heap.len) {
 	goto error;
+    }
 
     alloc = es->heap.arr[ha.alloc];
     
-    if(ha.index >= alloc->words.len)
+    if (ha.index >= alloc->words.len) {
 	goto error;
+    }
 
     sam_es_change ch = {
 	.stack = 0,
@@ -685,8 +689,8 @@ sam_es_heap_alloc(/*@in@*/ sam_es *restrict es,
     size_t i;
     sam_ha res;
     res.index = 0;
-    for(i=0;i<es->heap.len;i++) {
-	if(((sam_heap_allocation*)es->heap.arr[i])->free) {
+    for (i=0;i<es->heap.len;i++) {
+	if (((sam_heap_allocation*)es->heap.arr[i])->free) {
 	    free(es->heap.arr[i]);
 	    es->heap.arr[i] = sam_es_heap_allocation_new(size);
 	    res.alloc = i;
@@ -715,13 +719,13 @@ sam_es_heap_dealloc(sam_es *restrict es,
 		    sam_ha ha)
 {
     size_t size;
-    if(ha.index != 0)
+    if (ha.index != 0)
 	goto failure; /*pointer doesn't point to start of allocation*/
 
-    if(ha.alloc >= es->heap.len)
+    if (ha.alloc >= es->heap.len)
 	goto failure; /*pointer doesn't point to a valid allocation*/
 
-    if(((sam_heap_allocation*)es->heap.arr[ha.alloc])->free)
+    if (((sam_heap_allocation*)es->heap.arr[ha.alloc])->free)
 	goto failure; /*double-free*/
 
     size = ((sam_heap_allocation*)es->heap.arr[ha.alloc])->words.len;
