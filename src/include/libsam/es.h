@@ -75,6 +75,11 @@ extern inline void	     sam_es_fbr_set	     (sam_es *restrict es,
 extern sam_error	     sam_es_string_alloc     (sam_es *restrict es,
 						      char *str,
 						      sam_ha *restrict res);
+size_t sam_es_heap_max_allocation_number(sam_es *restrict es);
+bool sam_es_heap_is_allocation_valid(sam_es *restrict es,
+				     unsigned allocation);
+size_t sam_es_heap_get_allocation_size(sam_es *restrict es,
+				       unsigned allocation);
 extern sam_error	     sam_es_string_get	     (sam_es *restrict es, char **restrict str,
 						      sam_ha ha);
 extern sam_ml		    *sam_es_stack_pop	     (sam_es *restrict es);

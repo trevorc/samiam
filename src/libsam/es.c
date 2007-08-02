@@ -168,6 +168,22 @@ sam_es_heap_unused_allocation_new() {
     return res;
 }
 
+size_t sam_es_heap_max_allocation_number(sam_es *restrict es) {
+    return es->heap.len;
+}
+
+bool sam_es_heap_is_allocation_valid(sam_es *restrict es,
+				     unsigned allocation) {
+    return allocation<es->heap.len &&
+	!((sam_heap_allocation*)es->heap.arr[allocation])->free;
+}
+
+size_t sam_es_heap_get_allocation_size(sam_es *restrict es,
+				       unsigned allocation) {
+    if(sam_es_heap_is_allocation_valid(es,allocation))
+	return -1;
+    return ((sam_heap_allocation*)es->heap.arr[allocation])->words.len;
+}
 
 static inline void
 sam_es_heap_free(sam_es *restrict es)
