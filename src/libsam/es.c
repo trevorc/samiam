@@ -169,7 +169,7 @@ sam_es_heap_unused_allocation_new() {
 }
 
 size_t sam_es_heap_max_allocation_number(sam_es *restrict es) {
-    return es->heap.len;
+    return es->heap.len-1;
 }
 
 bool sam_es_heap_is_allocation_valid(sam_es *restrict es,
