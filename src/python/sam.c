@@ -10,6 +10,12 @@ pa_to_dict_key(sam_pa pa)
 {
     return Py_BuildValue("(ll)", pa.m, pa.l);
 }
+/* ha_to_dict_key () {{{2 */
+static inline PyObject *
+ha_to_dict_key(sam_ha ha)
+{
+    return Py_BuildValue("(ll)", ha.alloc, ha.index);
+}
 /* Exceptions {{{1 */
 /* PyObject SamError {{{2 */
 static PyObject *SamError;
@@ -434,7 +440,7 @@ Value_value_get(Value *restrict self)
 {
     switch (self->value.type) {
 	case SAM_ML_TYPE_NONE:
-	    return PyLong_FromLong(0); // TODO is this right?
+	    return PyLong_FromLong(0);
 	case SAM_ML_TYPE_INT:
 	    return PyLong_FromLong(self->value.value.i);
 	case SAM_ML_TYPE_FLOAT:
@@ -442,7 +448,7 @@ Value_value_get(Value *restrict self)
 	case SAM_ML_TYPE_SA:
 	    return PyLong_FromLong(self->value.value.sa);
 	case SAM_ML_TYPE_HA:
-	    return PyLong_FromLong(self->value.value.ha);
+	    return ha_to_dict_key(self->value.value.ha);
 	case SAM_ML_TYPE_PA:
 	    return pa_to_dict_key(self->value.value.pa);
 	default:
@@ -580,19 +586,146 @@ static PyTypeObject StackType = {
     .tp_new	  = PyType_GenericNew,
 };
 
+/* HeapAllocIter {{{1*/
+/* typedef HeapAllocIter {{{2 */
+typedef struct {
+    PyObject_HEAD
+    sam_es *es;
+    size_t alloc;
+    size_t idx;
+} HeapAllocIter;
+
+/* HeapAllocIter_next () {{{2 */
+static Value *
+HeapAllocIter_next(HeapAllocIter *restrict self)
+{
+    if (self->idx >=
+	sam_es_heap_get_allocation_size(self->es, self->alloc)) {
+	return NULL;
+    }
+
+    return Value_create(*sam_es_heap_get(self->es, 
+		(sam_ha) { .alloc = self->alloc, .index = self->idx++ }));
+}
+
+/* PyTypeObject HeapAllocIterType {{{2 */
+PyTypeObject HeapAllocIterType = {
+    PyObject_HEAD_INIT(&PyType_Type)
+    .tp_name	  = "heapiterator",
+    .tp_basicsize = sizeof (HeapAllocIter),
+    .tp_free	  = PyObject_Free,
+    .tp_getattro  = PyObject_GenericGetAttr,
+    .tp_flags	  = Py_TPFLAGS_DEFAULT,
+    .tp_iter	  = PyObject_SelfIter,
+    .tp_iternext  = (iternextfunc)HeapAllocIter_next,
+};
+
+/* HeapAlloc {{{1 */
+/* typedef HeapAlloc {{{2 */
+/* Sequence of a SaM heap allocation */
+typedef struct {
+    PyObject_HEAD
+    sam_es *es;
+    size_t alloc;
+} HeapAlloc;
+
+/* HeapAlloc_iter () {{{2 */
+static PyObject *
+HeapAlloc_iter(HeapAlloc *restrict heapAlloc)
+{
+    HeapAllocIter *restrict self =
+	PyObject_New(HeapAllocIter, &HeapAllocIterType);
+
+    if (self == NULL) {
+	return NULL;
+    }
+
+    self->es = heapAlloc->es;
+    self->alloc = heapAlloc->alloc;
+    self->idx = 0;
+
+    return (PyObject *)self;
+}
+
+/* HeapAlloc_length {{{2 */
+static long
+HeapAlloc_length(HeapAlloc *self)
+{
+    return sam_es_heap_get_allocation_size(self->es, self->alloc);
+}
+
+/* HeapAlloc_item {{{2 */
+static Value *
+HeapAlloc_item(HeapAlloc *self, unsigned i)
+{
+    if (i >= sam_es_heap_get_allocation_size(self->es, self->alloc)) {
+	return NULL;
+    }
+
+    return Value_create(*sam_es_heap_get(self->es,
+			(sam_ha) { .alloc = self->alloc, .index = i }));
+}
+
+/* PySquenceMethods HeapAlloc_sequence_methods {{{2 */
+static PySequenceMethods HeapAlloc_sequence_methods = {
+    .sq_length = (inquiry)HeapAlloc_length,
+    /*(binaryfunc)*/0,			/*sq_concat*/
+    /*(intargfunc)*/0,		/*sq_repeat*/
+    .sq_item = (intargfunc)HeapAlloc_item,
+    /*(intintargfunc)*/0,		/*sq_slice*/
+    /*(intobjargproc)*/0,		/*sq_ass_item*/
+    /*(intintobjargproc)*/0,	/*sq_ass_slice*/
+};
+
+/* PyTypeObject HeapAllocType {{{2 */
+static PyTypeObject HeapAllocType = {
+    PyObject_HEAD_INIT(NULL)
+    .tp_name	  = "sam.HeapAlloc",
+    .tp_basicsize = sizeof (HeapAlloc),
+    .tp_flags     = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    .tp_doc	  = "Sam heap",
+    .tp_iter	  = (getiterfunc)HeapAlloc_iter,
+    .tp_as_sequence = &HeapAlloc_sequence_methods,
+    .tp_new	  = PyType_GenericNew,
+};
+
+static PyObject *
+HeapAlloc_create(sam_es *restrict es, size_t alloc)
+{
+    PyObject *rv;
+    if(sam_es_heap_is_allocation_valid(es, alloc)) {
+	HeapAlloc *self = PyObject_New(HeapAlloc, &HeapAllocType);
+
+	self->es = es;
+	self->alloc = alloc;
+
+	rv = (PyObject *) self;
+    }
+    else {
+	rv = Py_None;
+	Py_INCREF(rv);
+    }
+    return rv;
+}
+
 /* HeapIter {{{1*/
 /* typedef HeapIter {{{2 */
 typedef EsRefIterType HeapIter;
 
 /* HeapIter_next () {{{2 */
-static Value *
+static PyObject *
 HeapIter_next(HeapIter *restrict self)
 {
-    if (self->idx >= sam_es_heap_len(self->es)) {
+    if (self->idx >= sam_es_heap_max_allocation_number(self->es)) {
 	return NULL;
     }
 
-    return Value_create(*sam_es_heap_get(self->es, self->idx));
+    /* Only return valid heap allocations. */
+    while(!sam_es_heap_is_allocation_valid(self->es, self->idx)) {
+	self->idx++;
+    }
+
+    return HeapAlloc_create(self->es, self->idx++);
 }
 
 /* PyTypeObject HeapIterType {{{2 */
@@ -633,18 +766,20 @@ Heap_iter(Heap *restrict heap)
 static long
 Heap_length(Heap *self)
 {
-    return sam_es_heap_len(self->es);
+    /* +1 because it starts at zero */
+    return sam_es_heap_max_allocation_number(self->es) + 1;
 }
 
 /* Heap_item {{{2 */
-static Value *
+static PyObject *
 Heap_item(Heap *self, unsigned i)
 {
-    if (i >= sam_es_heap_len(self->es)) {
+    if (i >= sam_es_heap_max_allocation_number(self->es)) {
 	return NULL;
     }
 
-    return Value_create(*sam_es_heap_get(self->es, i));
+    /* HeapAlloc_create checks if it is valid */
+    return HeapAlloc_create(self->es, i);
 }
 
 /* PySquenceMethods Heap_sequence_methods {{{2 */
@@ -698,7 +833,7 @@ Change_start_get (Change *restrict self)
     if (self->change->stack) {
 	return PyLong_FromLong(self->change->ma.sa);
     } else {
-	return PyLong_FromLong(self->change->ma.ha);
+	return ha_to_dict_key(self->change->ma.ha);
     }
 }
 
@@ -1307,6 +1442,8 @@ initsam(void)
 	PyType_Ready(&InstructionsType) < 0 ||
 	PyType_Ready(&StackIterType) < 0 ||
 	PyType_Ready(&StackType) < 0 ||
+	PyType_Ready(&HeapAllocIterType) < 0 ||
+	PyType_Ready(&HeapAllocType) < 0 ||
 	PyType_Ready(&HeapIterType) < 0 ||
 	PyType_Ready(&HeapType) < 0 ||
 	PyType_Ready(&ModuleType) < 0 ||
