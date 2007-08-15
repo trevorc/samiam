@@ -11,14 +11,18 @@ import re
 
 # prepare_value_view {{{1
 # make_value_tree_store () {{{2
-def make_value_tree_store():
-    return gtk.TreeStore(gobject.TYPE_LONG,
+def make_value_tree_store(stack):
+    if stack:
+	first = gobject.TYPE_LONG
+    else:
+	first = gobject.TYPE_STRING
+    return gtk.TreeStore(first,
 			 gobject.TYPE_STRING,
 			 gobject.TYPE_STRING,
 			 gobject.TYPE_LONG)
 
 # prepare_value_view () {{{2
-def prepare_value_view(view):
+def prepare_value_view(view, stack=True):
     type_colors = {
 	'none':  ('lightgray'),
 	'int':   ('white'),
@@ -40,7 +44,7 @@ def prepare_value_view(view):
 	cell.set_property('cell-background', row_color)
 
     column_names = ('Address', 'Type', 'Value')
-    view.set_model(make_value_tree_store())
+    view.set_model(make_value_tree_store(stack))
     for n in range(0, len(column_names)):
 	renderer = gtk.CellRendererText()
 	column = gtk.TreeViewColumn(column_names[n], renderer, text=n)
@@ -353,8 +357,8 @@ class GSam:
 	self._code_view.set_search_column(3)
 
 	# Stack/heap display setup {{{4
-	prepare_value_view(self._stack_view)
-	prepare_value_view(self._heap_view)
+	prepare_value_view(self._stack_view, True)
+	prepare_value_view(self._heap_view, False)
 
 	# Handle file input if given {{{4
 	if filename:
@@ -516,17 +520,24 @@ class GSam:
 
     ### Stack/Heap display handling {{{2
     # Helpers {{{3
+    def format_addr(self, addr):
+	if type(addr).__name__ == 'tuple':
+	    return "%i:%i" % addr
+	else:
+	    return addr
+
     def value_to_row(self, addr, v):
-	if sam.Types[v.type] == 'none':
+	vtype = sam.Types[v.type]
+	if vtype == 'none':
 	    vstr = "-"
-	elif sam.Types[v.type] == 'pa':
+	elif vtype == 'pa' or vtype == 'ha':
 	    vstr = "%i:%i" % v.value
 	else:
 	    vstr = "%i" % v.value
-	return (addr, sam.TypeChars[v.type], vstr, v.type)
+	return (self.format_addr(addr), sam.TypeChars[v.type], vstr, v.type)
 
     def none_value_row(self, addr):
-	return (addr, 'N', '0', 0)
+	return (self.format_addr(addr), 'N', '0', 0)
 
     def set_row_to_value(self, model, iter, addr, v):
 	row = self.value_to_row(addr, v)
@@ -619,13 +630,13 @@ class GSam:
 		    model.remove(last)
 	    elif ctype == "heap_alloc":
 		iter = self.get_block_near_iter(model, change.start)
-		row = (change.start, "", change.size, -1)
+		row = (change.start[0], "", change.size, -1)
 		if iter is None:
 		    ai = model.insert_before(None, None, row)
 		else:
 		    ai = model.insert_after(None, iter, row)
-		for i in [x + change.start for x in range(0, change.size)]:
-		    model.append(ai, self.none_value_row(i))
+		for i in [x for x in range(0, change.size)]:
+		    model.append(ai, self.none_value_row((change.start[0], i)))
 	    elif ctype == "heap_free":
 		iter = self.get_block_iter(model, change.start)
 		# iter None here is an error
