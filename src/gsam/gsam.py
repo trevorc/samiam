@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+# imports {{{1
 import pygtk
 import gtk, gtk.glade, gobject
 import sam
@@ -578,6 +579,18 @@ class GSam:
 	else:
 	    return None
 
+    def get_heap_iter(self, model, block):
+	iter = model.get_iter_root()
+	if iter is None:
+	    return None
+	while iter and int(model.get_value(iter, 0)) <= block:
+	    piter = iter
+	    iter = model.iter_next(iter)
+	if int(model.get_value(piter, 0)) == block:
+	    return piter
+	else:
+	    return None
+
     # handle_changes () {{{3
     def handle_changes(self):
 	for change in self._prog.changes:
@@ -586,6 +599,7 @@ class GSam:
 		model = self._stack_view.get_model()
 	    else:
 		model = self._heap_view.get_model()
+	    # stack_push {{{4
 	    if ctype == "stack_push":
 		v = self.value_to_row(change.start, change.value)
 		last = self.get_last_iter(model, None)
@@ -621,6 +635,7 @@ class GSam:
 		vpath = model.get_path(viter)
 		self._stack_view.expand_to_path(vpath)
 		self._stack_view.scroll_to_cell(vpath)
+	    # stack_pop {{{4
 	    elif ctype == "stack_pop":
 		last = self.get_last_iter(model, None)
 		# If last is none, that is an error.
@@ -628,6 +643,7 @@ class GSam:
 		model.remove(llast)
 		if model.iter_n_children(last) == 0:
 		    model.remove(last)
+	    # heap_alloc {{{4
 	    elif ctype == "heap_alloc":
 		iter = self.get_block_near_iter(model, change.start)
 		row = (change.start[0], "", change.size, -1)
@@ -637,11 +653,18 @@ class GSam:
 		    ai = model.insert_after(None, iter, row)
 		for i in [x for x in range(0, change.size)]:
 		    model.append(ai, self.none_value_row((change.start[0], i)))
+	    # heap_free {{{4
 	    elif ctype == "heap_free":
-		iter = self.get_block_iter(model, change.start)
+		iter = self.get_heap_iter(model, change.start[0])
 		# iter None here is an error
 		model.remove(iter)
-	    elif ctype == "heap_change" or ctype == "stack_change":
+	    # heap_change {{{4
+	    elif ctype == "heap_change":
+		iter = self.get_heap_iter(model, change.start[0])
+		riter = model.iter_nth_child(iter, change.start[1])
+		self.set_row_to_value(model, riter, change.start, change.value)
+	    # stack_change {{{4
+	    elif ctype == "stack_change":
 		iter = self.get_block_near_iter(model, change.start)
 		base = model.get_value(model.iter_nth_child(iter, 0), 0)
 		n = change.start - base
