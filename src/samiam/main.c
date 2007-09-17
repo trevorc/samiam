@@ -28,7 +28,7 @@
  *
  */
 
-#include "libsam.h"
+#include "samiam.h"
 
 #include <stdio.h>
 #include <stdlib.h>

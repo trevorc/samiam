@@ -34,7 +34,7 @@
 #include <errno.h>
 #include <math.h>
 
-#include "libsam.h"
+#include "samiam.h"
 
 #include <libsam/es.h>
 #include <libsam/io.h>

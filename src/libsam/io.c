@@ -196,7 +196,7 @@ static void
 sam_io_bt_default(const sam_es *restrict es) {
     sam_io_fprintf(es,
 		   SAM_IOS_ERR,
-		   "default backtrace - not implemented");
+		   "default backtrace - not implemented\n");
 }
 #else
 /* Die... with style! */

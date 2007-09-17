@@ -3,7 +3,10 @@ Import('dirs')
 Import('libsam')
 Import('i18n')
 
-sources = ['samiam.c']
+sources = [
+    'execute.c',
+    'samiam.c',
+]
 domain = 'samiam'
 
 if conf.CheckFunc('getopt_long'):
