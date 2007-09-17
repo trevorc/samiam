@@ -319,7 +319,7 @@ sam_integer_arithmetic(sam_es *restrict es,
 	    m1->value.i = m1->value.i && m2->value.i;
 	    break;
 	case SAM_OP_OR:
-	    m1->value.i = m1->value.i && m2->value.i;
+	    m1->value.i = m1->value.i || m2->value.i;
 	    break;
 	case SAM_OP_XOR:
 	    m1->value.i = (!m1->value.i) ^ (!m2->value.i);
