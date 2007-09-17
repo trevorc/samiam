@@ -299,6 +299,7 @@ class GSam:
 
 	self._input_box = self._xml.get_widget('program_entry_box')
 	self._input = self._xml.get_widget('program_entry')
+	self._input_canceled = False
 
 	self._custom_dialog = self._xml.get_widget('custom_dialog')
 	self._custom_entry = self._xml.get_widget('custom_entry')
@@ -937,8 +938,8 @@ class GSam:
 	    self.copy_treestore_level(source, sourceChild, target, targetC)
 	    sourceChild = source.iter_next(sourceChild)
 
-    def copy_value_treestore(self, model):
-	rv = make_value_tree_store()
+    def copy_value_treestore(self, stack, model):
+	rv = make_value_tree_store(stack)
 	self.copy_treestore_level(model, None, rv, None)
 	return rv
 
@@ -957,9 +958,10 @@ class GSam:
 	    'fbr': self._prog.fbr,
 	    'sp': self._prog.sp,
 	    'code': prev_code,
-	    'stack': self.copy_value_treestore(
+	    'stack': self.copy_value_treestore(True,
 		self._stack_view.get_model()),
-	    'heap': self.copy_value_treestore(self._heap_view.get_model())
+	    'heap': self.copy_value_treestore(False,
+		self._heap_view.get_model())
 	}
 
     # Display data {{{3
