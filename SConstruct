@@ -8,6 +8,7 @@ debug_default = 1
 
 cflags = [
     '-std=gnu99',
+    '-fgnu89-inline',
     '-pipe',
     '-W',
     '-Werror',
