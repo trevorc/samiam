@@ -283,7 +283,8 @@ sam_try_parse_number(/*@in@*/ char **restrict input,
     if ((*optype & SAM_OP_TYPE_INT) != 0) {
 	operand->i = strtol(*input, &endptr, 0);
 	if (*input != endptr &&
-	    (*endptr == '"' || isspace(*endptr) || *endptr == '\0')) {
+	    (*endptr == '"' || isspace(*endptr) || *endptr == '\0' ||
+		(endptr[0] == '/' && endptr[1] == '/'))) {
 	    *optype = SAM_OP_TYPE_INT;
 	    *input = endptr;
 	    return true;
@@ -292,7 +293,8 @@ sam_try_parse_number(/*@in@*/ char **restrict input,
     if ((*optype & SAM_OP_TYPE_FLOAT) != 0) {
 	operand->f = strtod(*input, &endptr);
 	if (*input != endptr &&
-	    (*endptr == '"' || isspace(*endptr) || *endptr == '\0')) {
+	    (*endptr == '"' || isspace(*endptr) || *endptr == '\0' ||
+		(endptr[0] == '/' && endptr[1] == '/'))) {
 	    *optype = SAM_OP_TYPE_FLOAT;
 	    *input = endptr;
 	    return true;
