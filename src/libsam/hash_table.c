@@ -91,7 +91,7 @@ sam_hash(const char *restrict key,
     return hash % alloc;
 }
 
-static void 
+static void
 sam_hash_table_double(sam_hash_table *restrict h)
 {
     sam_hash_table tmp;

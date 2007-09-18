@@ -129,7 +129,7 @@ class CodeTreeModel(gtk.GenericTreeModel):
 		'a': item.assembly,
 		'c': column
 	    }
-    
+
     def on_iter_next(self, rowref):
 	if rowref + 1 < len(self._instructions):
 	    return rowref + 1
@@ -802,7 +802,7 @@ class GSam:
 		    self._timer_id = gobject.timeout_add(
 			self._timeout_interval,
 			self.run_step)
-    
+
     def capture(self):
 	if not self.is_waiting_for_input() and \
 	   self._prog and \
@@ -849,7 +849,7 @@ class GSam:
     def on_start_pause_clicked(self, p):
 	self.clear_temporary_breakpoints()
 	self.start_pause()
-    
+
     def on_reset_clicked(self, p):
 	self.reset()
 
@@ -872,7 +872,7 @@ class GSam:
 	if not self._finished:
 	    self._breakpoints[module]['temporary'].add(line)
 	    self.refresh_code_display()
-    
+
     def step_return(self):
 	if self._prog and self._timer_id is None:
 	    self._break_return = 1
@@ -1050,7 +1050,7 @@ class GSam:
 		self.change_speed(customSpeed)
 	    # Otherwise leave speed as it is, but custom is selected
 	    self._custom_dialog.hide()
-    
+
     def on_custom_dialog_ok(self, p):
 	self._custom_dialog.response(gtk.RESPONSE_ACCEPT)
 

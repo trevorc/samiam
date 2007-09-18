@@ -150,7 +150,7 @@ sam_es_heap_allocation_new(size_t size) {
     size_t i;
 
     res = malloc(sizeof(sam_heap_allocation));
-    
+
     res->free = false;
     sam_array_init(&res->words);
     for (i=0;i<size;i++) {
@@ -715,7 +715,8 @@ sam_es_heap_alloc(/*@in@*/ sam_es *restrict es,
     }
     sam_array_ins(&es->heap,sam_es_heap_allocation_new(size));
     res.alloc = es->heap.len-1;
-finish: 
+
+finish:
     {
 	sam_es_change ch = {
 	    .stack = 0,
@@ -759,6 +760,7 @@ sam_es_heap_dealloc(sam_es *restrict es,
     };
     sam_es_change_register(es,&ch);
     return SAM_OK;
+
 failure:
     return sam_error_free(es,ha);
 }

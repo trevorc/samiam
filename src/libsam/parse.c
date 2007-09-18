@@ -96,7 +96,7 @@ sam_parse_whitespace(char *restrict *restrict s)
 	} else {
 	    break;
 	}
-    } 
+    }
 }
 
 static void
