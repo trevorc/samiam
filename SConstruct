@@ -46,7 +46,7 @@ rpm_opt_flags = ARGUMENTS.get('RPM_OPT_FLAGS', '')
 
 cflags += rpm_opt_flags.split()
 
-prefix = '/usr'
+prefix = 'usr'
 
 dirs = {
     'install': {
@@ -94,13 +94,13 @@ def mo_builder(target, source, env):
 
 def pot_builder(target, source, env):
     args = [
-	'xgettext', 
-	 '--keyword=_',
-	 '--keyword=N_',
-	 '--from-code=UTF-8',
-	 '-o', target[0].get_path(), 
-	 "--default-domain=" + env['PACKAGE'],
-	 '--copyright-holder="Trevor Caira"'
+	'xgettext',
+	'--keyword=_',
+	'--keyword=N_',
+	'--from-code=UTF-8',
+	'-o', target[0].get_path(),
+	"--default-domain=" + env['PACKAGE'],
+	'--copyright-holder="Trevor Caira"'
     ]
     args += [src.get_path() for src in source]
     print args
