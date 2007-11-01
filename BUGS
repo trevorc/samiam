@@ -30,12 +30,12 @@ J    ---  #12  non integer return values don't work. (when the bottom of
 T    ---  #16  separate io functions from sam_*.c
      HI   #17  document everything!
 T    ---  #18  dynamic loading either needs to be removed entirely or fixed.
-     MED  #19  the heap and stack must be allocated as one huge contiguous
+     ***  #19  the heap and stack must be allocated as one huge contiguous
 	       region of memory. this doesn't play well with machines
 	       with a small amount of ram or very large heaps or stacks.
 T    ---  #20  the stack doesn't notice when it's overflowed
      MED  #21  labels are not printed in sam_stack_trace
-     MED  #22  the allocator is slow and inefficient
+J    ---  #22  the allocator is slow and inefficient
 T    ---  #23  the makefiles are broken on bsd make
 T    ---  #24  make install assumes the suffixes .so
 T    ---  #25  build fails on cygwin due to library linking issues
