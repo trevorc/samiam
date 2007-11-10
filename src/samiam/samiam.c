@@ -42,6 +42,13 @@
 
 #include "parse_options.h"
 
+static const char *
+samiam_get_localedir(void)
+{
+    const char *restrict envvar = getenv("LOCALEDIR");
+    return envvar == NULL? LOCALEDIR: envvar;
+}
+
 int
 main(int argc,
      char *const argv[restrict])
@@ -51,7 +58,7 @@ main(int argc,
 
 #if defined(HAVE_LIBINTL_H)
     setlocale(LC_ALL, "");
-    bindtextdomain(PACKAGE, LOCALEDIR);
+    bindtextdomain(PACKAGE, samiam_get_localedir());
     textdomain(PACKAGE);
 #endif /* HAVE_LIBINTL_H */
 

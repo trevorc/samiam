@@ -48,7 +48,7 @@ sam_main(sam_options options,
 	 /*@null@*/ sam_io_dispatcher io_dispatcher)
 {
     sam_es *restrict es = sam_es_new(file, options, io_dispatcher, NULL);
-    
+
     if (es == NULL) {
 	return SAM_PARSE_ERROR;
     }
