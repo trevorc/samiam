@@ -33,6 +33,7 @@
 #include <string.h>
 #include <errno.h>
 #include <math.h>
+#include <ctype.h>
 
 #include "samiam.h"
 
@@ -89,8 +90,6 @@ sam_warning_retval_type(/*@in@*/ sam_es *restrict es)
     }
 }
 
-/*TODO: do we want or need this function*/
-#if 0
 static inline void
 sam_warning_leaks(/*@in@*/ const sam_es *restrict es)
 {
@@ -107,9 +106,7 @@ sam_warning_leaks(/*@in@*/ const sam_es *restrict es)
 		       block_count, block_count == 1? "": "s");
     }
 }
-#endif
 
-/*TODO: do we want or need this function?*/
 static inline int
 sam_convert_to_int(sam_es *restrict es,
 		   /*@in@*/ sam_ml *restrict m)
@@ -134,6 +131,181 @@ sam_convert_to_int(sam_es *restrict es,
     }
 }
 
+static int
+sam_sprint_char(char	 *s,
+		sam_char  c)
+{
+    char *start = s;
+
+    if (isprint(c)) {
+	sprintf(s, "'%c'", c);
+	return 1;
+    }
+    *s++ = '\'';
+    *s++ = '\\';
+    switch (c) {
+	case '\a':
+	    *s++ = 'a';
+	    break;
+	case '\b':
+	    *s++ = 'b';
+	    break;
+	case '\f':
+	    *s++ = 'f';
+	    break;
+	case '\n':
+	    *s++ = 'n';
+	    break;
+	case '\r':
+	    *s++ = 'r';
+	    break;
+	case '\t':
+	    *s++ = 't';
+	    break;
+	case '\v':
+	    *s++ = 'v';
+	    break;
+	default:
+	    s += sprintf(s, "%d", c);
+    }
+    *s++ = '\'';
+    *s++ = '\0';
+
+    return s - start;
+}
+
+static void
+sam_io_op_value_print(const sam_es *restrict es,
+		      sam_op_value v,
+		      sam_op_type t)
+{
+    char buf[8];
+
+    switch (t) {
+	case SAM_OP_TYPE_INT:
+	    sam_io_fprintf(es, SAM_IOS_ERR, "%ld", v.i);
+	    break;
+	case SAM_OP_TYPE_FLOAT:
+	    sam_io_fprintf(es, SAM_IOS_ERR, "%.5g", v.f);
+	    break;
+	case SAM_OP_TYPE_CHAR:
+	    sam_sprint_char(buf, v.c);
+	    sam_io_fprintf(es, SAM_IOS_ERR, "%s", buf);
+	    break;
+	case SAM_OP_TYPE_STR: /*@fallthrough@*/
+	case SAM_OP_TYPE_LABEL:
+	    sam_io_fprintf(es, SAM_IOS_ERR, "\"%s\"", v.s);
+	    break;
+	case SAM_OP_TYPE_NONE: /*@fallthrough@*/
+	default:
+	    sam_io_fprintf(es, SAM_IOS_ERR, "?");
+	    break;
+    }
+}
+
+static void
+sam_io_ml_value_print(const sam_es *restrict es,
+		      sam_ml_value v,
+		      sam_ml_type t)
+{
+    switch (t) {
+	case SAM_ML_TYPE_INT:
+	    sam_io_fprintf(es, SAM_IOS_ERR, "%ld", v.i);
+	    break;
+	case SAM_ML_TYPE_FLOAT:
+	    sam_io_fprintf(es, SAM_IOS_ERR, "%.5g", v.f);
+	    break;
+	case SAM_ML_TYPE_HA:
+	    sam_io_fprintf(es,
+			   SAM_IOS_ERR,
+			   "%u:%uH",
+			   v.ha.alloc,
+			   v.ha.index);
+	    break;
+	case SAM_ML_TYPE_SA:
+	    sam_io_fprintf(es, SAM_IOS_ERR, "%luS", (unsigned long)v.sa);
+	    break;
+	case SAM_ML_TYPE_PA:
+	    sam_io_fprintf(es, SAM_IOS_ERR, "%hu:%hu", v.pa.m, v.pa.l);
+	    break;
+	case SAM_ML_TYPE_NONE: /*@fallthrough@*/
+	default:
+	    sam_io_fprintf(es, SAM_IOS_ERR, "?");
+	    break;
+    }
+}
+
+/* Die... with style! */
+/*
+ * TODO:
+ *  - module specific
+ *  - print labels
+ *  - i18n friendly
+ */
+static void
+sam_bt(const sam_es *restrict es)
+{
+    size_t i;
+
+    sam_io_fprintf(es,
+		   SAM_IOS_ERR,
+		   _("\nstate of execution:\n"
+		     "PC:\t%hu:%hu\n"
+		     "FBR:\t%lu\n"
+		     "SP:\t%lu\n\n"),
+		   sam_es_pc_get(es).m,
+		   sam_es_pc_get(es).l,
+		   (unsigned long)sam_es_fbr_get(es),
+		   (unsigned long)sam_es_stack_len(es));
+
+    sam_io_fprintf(es,
+		   SAM_IOS_ERR,
+		   _("    Stack\t    Program\n"));
+    for (i = 0;
+	 i <= sam_es_instructions_len_cur(es) ||
+	 i <= sam_es_stack_len(es);
+	 ++i) {
+	if (i < sam_es_stack_len(es)) {
+	    sam_ml *m = sam_es_stack_get(es, i);
+	    if (i == sam_es_fbr_get(es)) {
+		sam_io_fprintf(es, SAM_IOS_ERR, "==> ");
+	    } else {
+		sam_io_fprintf(es, SAM_IOS_ERR, "    ");
+	    }
+	    sam_io_fprintf(es,
+			   SAM_IOS_ERR,
+			   "%c: ",
+			   sam_ml_type_to_char(m->type));
+	    sam_io_ml_value_print(es, m->value, m->type);
+	    sam_io_fprintf(es, SAM_IOS_ERR, "\t");
+	} else {
+	    sam_io_fprintf(es, SAM_IOS_ERR, "    \t\t");
+	}
+	if (i <= sam_es_instructions_len_cur(es)) {
+	    if (i == sam_es_pc_get(es).l) {
+		sam_io_fprintf(es, SAM_IOS_ERR, "==> ");
+	    } else {
+		sam_io_fprintf(es, SAM_IOS_ERR, "    ");
+	    }
+	    if (i < sam_es_instructions_len_cur(es)) {
+		sam_instruction *restrict inst =
+		    sam_es_instructions_get_cur(es, i);
+		sam_io_fprintf(es, SAM_IOS_ERR, "%s", inst->name);
+		if (inst->optype != SAM_OP_TYPE_NONE) {
+		    sam_io_fprintf(es, SAM_IOS_ERR, " ");
+		    sam_io_op_value_print(es, inst->operand, inst->optype);
+		}
+#if 0
+		char *restrict label = sam_es_labels_get(es, );
+		sam_io_fprintf(es, SAM_IOS_ERR, " [%s]", );
+#endif
+	    }
+	}
+	sam_io_fprintf(es, SAM_IOS_ERR, "\n");
+    }
+    sam_io_fprintf(es, SAM_IOS_ERR, "\n");
+}
+
 sam_exit_code
 sam_execute(/*@in@*/ sam_es *restrict es)
 {
@@ -148,12 +320,12 @@ sam_execute(/*@in@*/ sam_es *restrict es)
 #if defined(SAM_EXTENSIONS) && defined(HAVE_DLFCN_H)
     sam_es_dlhandles_close(es);
 #endif /* SAM_EXTENSIONS && HAVE_DLFCN_H */
-    /*sam_warning_leaks(es);*/
+    sam_warning_leaks(es);
     if (err == SAM_OK) {
 	sam_warning_forgot_stop(es);
     }
     if (sam_es_bt_get(es)) {
-	sam_io_bt(es);
+	sam_bt(es);
     }
 
     sam_ml *restrict m = sam_es_stack_get(es, 0);

@@ -54,8 +54,6 @@ typedef int   (*sam_io_vfscanf_func)    (sam_io_stream ios,
 typedef char *(*sam_io_afgets_func)	(char **restrict s,
 					 sam_io_stream ios,
 					 void *data);
-typedef void  (*sam_io_bt_func)		(const sam_es *restrict es,
-					 void *data);
 
 /**
  *  Input/output callbacks. Used by various i/o opcodes.
@@ -64,21 +62,18 @@ typedef union {
     /*@null@*/ /*@dependent@*/ sam_io_vfprintf_func vfprintf;
     /*@null@*/ /*@dependent@*/ sam_io_vfscanf_func  vfscanf;
     /*@null@*/ /*@dependent@*/ sam_io_afgets_func   afgets;
-    /*@null@*/ /*@dependent@*/ sam_io_bt_func	    bt;
 } sam_io_func;
 
 typedef enum {
     SAM_IO_VFPRINTF,
     SAM_IO_VFSCANF,
     SAM_IO_AFGETS,
-    SAM_IO_BT,
 } sam_io_func_name;
 
 typedef sam_io_func (*sam_io_dispatcher)(sam_io_func_name io_func,
 					 void *io_data);
 
 extern FILE *sam_ios_to_file   (sam_io_stream ios);
-extern void  sam_io_bt         (const sam_es *restrict es);
 extern int   sam_io_printf     (const sam_es *restrict es,
 				const char *restrict fmt,
 				...)

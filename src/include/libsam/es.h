@@ -75,11 +75,14 @@ extern inline void	     sam_es_fbr_set	     (sam_es *restrict es,
 extern sam_error	     sam_es_string_alloc     (sam_es *restrict es,
 						      char *str,
 						      sam_ha *restrict res);
-size_t sam_es_heap_max_allocation_number(sam_es *restrict es);
-bool sam_es_heap_is_allocation_valid(sam_es *restrict es,
-				     unsigned allocation);
-size_t sam_es_heap_get_allocation_size(sam_es *restrict es,
-				       unsigned allocation);
+size_t                       sam_es_heap_max_allocation_number(const sam_es *restrict es);
+bool                         sam_es_heap_is_allocation_valid(const sam_es *restrict es,
+                                                             unsigned allocation);
+size_t                       sam_es_heap_get_allocation_size(const sam_es *restrict es,
+                                                             unsigned allocation);
+inline bool                  sam_es_heap_leak_check(const sam_es *restrict es,
+                                                    unsigned long *restrict block_count,
+                                                    unsigned long *restrict leak_size);
 extern sam_error	     sam_es_string_get	     (sam_es *restrict es, char **restrict str,
 						      sam_ha ha);
 extern sam_ml		    *sam_es_stack_pop	     (sam_es *restrict es);
@@ -145,7 +148,6 @@ extern void		     sam_es_import	     (const sam_es *restrict es,
 extern sam_io_vfprintf_func  sam_es_io_func_vfprintf (const sam_es *restrict es);
 extern sam_io_vfscanf_func   sam_es_io_func_vfscanf  (const sam_es *restrict es);
 extern sam_io_afgets_func    sam_es_io_func_afgets   (const sam_es *restrict es);
-extern sam_io_bt_func	     sam_es_io_func_bt	     (const sam_es *restrict es);
 extern void		    *sam_es_io_data_get	     (const sam_es *restrict es);
 extern bool		     sam_es_options_get	     (const sam_es *restrict es,
 						      sam_options option);
