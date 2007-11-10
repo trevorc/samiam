@@ -39,4 +39,4 @@ timer: timer.o
 	$(CC) $(LDFLAGS) -lsam -L../build/libsam -o $@ $^
 
 clean:
-	$(RM) equal*.sam flop $(TMPDIR)/flop.sam flop-bench.o flop-bench $(ALL)
+	$(RM) equal*.sam flop $(TMPDIR)/flop.sam flop-bench.o flop-bench timer.o $(ALL)
