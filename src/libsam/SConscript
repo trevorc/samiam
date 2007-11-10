@@ -10,16 +10,16 @@ conf.CheckLib('intl')
 
 domain = 'libsam'
 sources = [
-	'array.c',
-	'error.c',
-	'es.c',
-	'execute_types.c',
-	'hash_table.c',
-	'io.c',
-	'opcode.c',
-	'parse.c',
-	'string.c',
-	'util.c',
+        'array.c',
+        'error.c',
+        'es.c',
+        'execute_types.c',
+        'hash_table.c',
+        'io.c',
+        'opcode.c',
+        'parse.c',
+        'string.c',
+        'util.c',
 ]
 
 conf.env.Append(PACKAGE=domain)
@@ -32,6 +32,6 @@ libsam = conf.env.SharedLibrary('sam', sources)
 # TODO: portable
 Alias('install',
       conf.env.InstallAs(os.path.join(dirs['install']['lib'],
-			 'libsam' + conf.env['SHLIBSUFFIX'] + '.' + version),
-			 libsam))
+                         'libsam%s.%s' % (conf.env['SHLIBSUFFIX'], version)),
+                         libsam))
 SConscript(['../samiam/SConscript'], ['conf', 'dirs', 'libsam', 'i18n'])
