@@ -107,4 +107,3 @@ insert into tests values('cmpf5.sam', '1', null, null);
 insert into tests values('jump.sam', '13', null, null);
 insert into tests values('dltest.sam', '6', null, null);
 insert into tests values('dltest2.sam', '64', null, null);
-insert into tests values('dltest4.sam', '247', null, null);

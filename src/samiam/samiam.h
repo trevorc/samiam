@@ -40,8 +40,6 @@
 # else /* !HAVE_LIBINTL_H */
 #define _(String) (String)
 #define N_(String) String
-#define textdomain(Domain)
-#define bindtextdomain(Package, Directory)
 #endif /* HAVE_LIBINTL_H */
 
 #if defined(__GNUC__)

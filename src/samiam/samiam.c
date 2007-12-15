@@ -42,12 +42,14 @@
 
 #include "parse_options.h"
 
+#if defined(HAVE_LIBINTL_H)
 static const char *
 samiam_get_localedir(void)
 {
     const char *restrict envvar = getenv("LOCALEDIR");
     return envvar == NULL? LOCALEDIR: envvar;
 }
+#endif
 
 int
 main(int argc,
