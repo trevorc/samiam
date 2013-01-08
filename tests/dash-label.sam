@@ -1,3 +1,0 @@
-JUMP "dash-label"
-"dash-label": PUSHIMM 4
-STOP

@@ -1,6 +1,0 @@
-#!/bin/sh
-# $Id$
-
-gdb=`which gdb`
-. scripts/paths
-$gdb samiam

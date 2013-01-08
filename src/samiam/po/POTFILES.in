@@ -1,4 +1,0 @@
-src/samiam/parse_options_bsd.c
-src/samiam/parse_options_gnu.c
-src/samiam/parse_options_plain.c
-src/samiam/samiam.c

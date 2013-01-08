@@ -1,6 +1,0 @@
-#!/bin/sh
-# $Id$
-
-valgrind=`which valgrind`
-. scripts/paths
-$valgrind --tool=memcheck --leak-check=yes samiam $@

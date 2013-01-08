@@ -1,6 +1,0 @@
-#!/bin/sh
-
-set -e
-
-. ../python/env.sh
-python gsam.py $*
